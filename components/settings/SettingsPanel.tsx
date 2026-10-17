@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Database, Info, Languages, SunMoon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { toggleLayer } from "@/components/onboarding/LayerGrid";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Dict, type Lang } from "@/lib/i18n";
@@ -10,8 +10,7 @@ import { HIDDEN_LAYERS, isLayerId, LAYERS, type LayerId } from "@/lib/layers";
 import { usePrefs, type Prefs } from "@/lib/prefs";
 import { version } from "@/package.json";
 import { DataHealth, statusSummary, useHealth, type HealthRow } from "./DataHealth";
-import { Choice, HeaderButton, List, row, RowContent, rowStatic, Section, SwitchKnob } from "./Grouped";
-import { spring } from "@/lib/motion";
+import { Choice, HeaderButton, insetFocus, List, row, RowContent, rowStatic, Section, SwitchKnob } from "./Grouped";
 
 const LANGS: Lang[] = ["mk", "en"];
 
@@ -39,7 +38,6 @@ function DisplaySection() {
         <div className={rowStatic}>
           <RowContent icon={Languages} title={t("settings.language")}>
             <Choice<Lang>
-              id="settings-lang"
               label={t("settings.language")}
               options={LANGS.map((l) => ({ value: l, label: t(`lang.${l}.short`), lang: l, title: t(`lang.${l}`) }))}
               value={lang}
@@ -50,10 +48,10 @@ function DisplaySection() {
         <div className={rowStatic}>
           <RowContent icon={SunMoon} title={t("settings.theme")} wrap>
             <Choice<Prefs["theme"]>
-              id="settings-theme"
               label={t("settings.theme")}
               options={(["system", "light", "dark"] as const).map((v) => ({ value: v, label: t(`settings.theme.${v}`) }))}
               value={prefs.theme}
+              fill
               onChange={(theme) => setPrefs({ theme })}
             />
           </RowContent>
@@ -106,7 +104,7 @@ function Root({ health, onSources }: { health: HealthRow[] | null | undefined; o
   const [, setPrefs] = usePrefs();
   const sources = health ? [...new Map(health.filter((r) => r.source.url).map((r) => [r.source.name, r.source.url]))] : [];
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <h2 className="t-large-title px-1">{t("settings.title")}</h2>
 
       <DisplaySection />
@@ -174,7 +172,7 @@ function SourcesPage({ health, onBack }: { health: HealthRow[] | null | undefine
         type="button"
         autoFocus
         onClick={onBack}
-        className={cx("t-body -ml-2 flex min-h-11 items-center self-start pr-2 text-(--system-blue)", focusRing)}
+        className={cx("t-body flex min-h-11 items-center self-start pr-2 text-(--system-blue)", insetFocus)}
       >
         <ChevronLeft size={26} strokeWidth={2.25} aria-hidden />
         {t("common.back")}
@@ -182,47 +180,54 @@ function SourcesPage({ health, onBack }: { health: HealthRow[] | null | undefine
       <h2 className="t-large-title px-1">{t("settings.sources")}</h2>
       <div className="flex flex-col">
         <DataHealth rows={health} />
-        <p className="t-footnote px-4 pt-1.5 text-label-2">{t("settings.healthBody")}</p>
+        <p className="t-footnote px-4 pt-2 text-label-2">{t("settings.healthBody")}</p>
       </div>
     </div>
   );
 }
 
+/** Push/pop slide: the incoming page covers the outgoing one, which drifts a third of the way off like in a navigation stack. */
+const PAGE = {
+  enter: (dir: 1 | -1) => ({ x: dir > 0 ? "100%" : "-30%", opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: 1 | -1) => ({ x: dir > 0 ? "-30%" : "100%", opacity: 0 }),
+};
+const SLIDE = { duration: 0.2, ease: [0.32, 0.72, 0, 1] } as const;
+const NONE = { duration: 0 } as const;
+
 /**
  * Settings tab as an iOS grouped list: Display, Map layers, Data, About.
- * "Sources" pushes the data health page (slide; fades only with reduced motion); Back returns focus to the row.
+ * "Sources" pushes the data health page with a 200 ms slide (none with reduced motion); Back pops it and returns focus to the row.
  */
 export function SettingsPanel() {
   const health = useHealth();
-  const [view, setView] = useState<"root" | "sources">("root");
+  const reduce = useReducedMotion();
+  const [{ view, dir }, setNav] = useState<{ view: "root" | "sources"; dir: 1 | -1 }>({ view: "root", dir: 1 });
   const top = useRef<HTMLDivElement>(null);
   const returning = useRef(false);
 
   const show = (next: "root" | "sources") => {
     returning.current = next === "root";
-    setView(next);
+    setNav({ view: next, dir: next === "sources" ? 1 : -1 });
     top.current?.scrollIntoView({ block: "nearest" }); // a scrolled panel shows the new page from its top
   };
 
+  useEffect(() => {
+    if (view === "root" && returning.current) top.current?.querySelector<HTMLElement>("[data-opens='sources']")?.focus({ preventScroll: true });
+    returning.current = false;
+  }, [view]);
+
+  const page = { variants: PAGE, custom: dir, initial: "enter", animate: "center", exit: "exit", transition: reduce ? NONE : SLIDE } as const;
+
   return (
-    <div ref={top} className="relative">
-      <AnimatePresence mode="popLayout" initial={false}>
+    <div ref={top} className="relative overflow-x-clip">
+      <AnimatePresence mode="popLayout" initial={false} custom={dir}>
         {view === "sources" ? (
-          <motion.div key="sources" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }} transition={spring}>
+          <motion.div key="sources" {...page}>
             <SourcesPage health={health} onBack={() => show("root")} />
           </motion.div>
         ) : (
-          <motion.div
-            key="root"
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={spring}
-            onAnimationComplete={() => {
-              if (returning.current) top.current?.querySelector<HTMLElement>("[data-opens='sources']")?.focus();
-              returning.current = false;
-            }}
-          >
+          <motion.div key="root" {...page}>
             <Root health={health} onSources={() => show("sources")} />
           </motion.div>
         )}

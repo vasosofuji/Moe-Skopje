@@ -68,12 +68,12 @@ export const mk = {
 
   // ── onboarding
   "onboarding.welcome": "Добредојдовте во Мое Скопје",
-  "onboarding.welcomeBody": "Воздух, прекини, автобуси, паркинг и аптеки, сè на една карта.",
+  "onboarding.welcomeBody": "Воздух, прекини, автобуси, паркинг и аптеки на една карта.",
   "onboarding.language": "Јазик",
-  "onboarding.layersTitle": "Што сакате да следите?",
-  "onboarding.layersBody": "Подоцна можете да го промените ова во Поставки.",
-  "onboarding.locationTitle": "Најдете што има во ваша близина",
-  "onboarding.locationBody": "Локацијата се користи само за приказ на автобуси и аптеки во близина.",
+  "onboarding.layersTitle": "Изберете слоеви",
+  "onboarding.layersBody": "Може да се менуваат во Поставки.",
+  "onboarding.locationTitle": "Што има во близина",
+  "onboarding.locationBody": "Локацијата служи само за автобуси и аптеки во близина.",
   "onboarding.allowLocation": "Дозволи локација",
   "onboarding.skip": "Прескокни",
   "onboarding.start": "Започни",
@@ -82,12 +82,12 @@ export const mk = {
   "settings.title": "Поставки",
   "settings.language": "Јазик",
   "settings.theme": "Тема",
-  "settings.theme.system": "Системска",
+  "settings.theme.system": "Авто",
   "settings.theme.light": "Светла",
   "settings.theme.dark": "Темна",
   "settings.layers": "Стандардни слоеви",
   "settings.health": "Состојба на податоците",
-  "settings.healthBody": "Секој извор, неговата состојба и кога последно е ажуриран.",
+  "settings.healthBody": "Состојба и последно ажурирање на секој извор.",
   "settings.openSource": "Отвори го изворот",
   "settings.about": "За апликацијата",
   "settings.aboutBody":
@@ -131,7 +131,7 @@ export const mk = {
   "explore.distance": "{d} од вас",
   "marker.when": "Кога",
   "onboarding.step": "Чекор {n} од {total}",
-  "onboarding.locationDenied": "Локацијата не е дозволена. Можете да ја вклучите подоцна со копчето на картата.",
+  "onboarding.locationDenied": "Локацијата е исклучена. Вклучете ја подоцна од картата.",
   "settings.healthEmpty": "Сè уште нема поврзани извори.",
   "settings.items": "Записи: {n}",
 
@@ -189,8 +189,8 @@ export const mk = {
   // --- S1 settings ---
   "settings.display": "Приказ",
   "settings.mapLayers": "Слоеви на картата",
-  "settings.showAll": "Прикажи ги сите",
-  "settings.hideAll": "Скриј ги сите",
+  "settings.showAll": "Прикажи сите",
+  "settings.hideAll": "Скриј сите",
   "settings.group.environment": "Животна средина",
   "settings.group.utilities": "Комуналии",
   "settings.group.transport": "Сообраќај",
@@ -270,4 +270,7 @@ export const mk = {
 
   // --- final fixes UI ---
   "outages.activeNow": "Во тек сега: {n}",
+
+  // --- u5-settings ---
+  "settings.ago": "Пред {age}",
 };

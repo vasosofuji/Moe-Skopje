@@ -22,7 +22,10 @@ type GlassButtonProps = {
   children: ReactNode;
 };
 
-/** Glass capsule or circle button. Press feedback (instant 97 % scale and tint) comes from .glass-button in globals.css. */
+/**
+ * Glass capsule or circle button. Press feedback (instant 97 % scale and tint) comes from .glass-button in globals.css;
+ * disabled is 40 % opacity; the hit area stays at least 44 x 44 even if `className` shrinks the visual.
+ */
 export function GlassButton({ shape = "pill", size = "md", type = "button", className, children, ...rest }: GlassButtonProps) {
   const s = SIZE[size];
   return (
@@ -37,6 +40,7 @@ export function GlassButton({ shape = "pill", size = "md", type = "button", clas
         className,
       )}
     >
+      <span aria-hidden className="absolute top-1/2 left-1/2 size-full min-h-11 min-w-11 -translate-1/2" />
       {children}
     </button>
   );
