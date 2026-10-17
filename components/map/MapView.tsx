@@ -11,6 +11,7 @@ import { getCachedLayer, useLayer } from "@/lib/useLayer";
 import { localizeLabels, muteStyle, styleUrl } from "./mapStyle";
 import { HIGHLIGHT_LAYERS, hitLayersOf, removeOverlay, renderLayer, setOverlay } from "./renderLayer";
 import { renderRoadworks } from "./roadworksLayer";
+import { showUserLocation } from "./userLocationLayer";
 
 export type LngLat = [number, number];
 export type BBox = [west: number, south: number, east: number, north: number];
@@ -149,7 +150,7 @@ export const MapView = memo(function MapView({
   onTileError(): void;
 }) {
   const { t, lang } = useT();
-  const { map, select, location, highlight, setHighlight } = useMap();
+  const { map, select, highlight, setHighlight } = useMap();
   const container = useRef<HTMLDivElement>(null);
   const appliedDark = useRef<boolean | null>(null);
   const [styleKey, setStyleKey] = useState(0);
@@ -232,23 +233,10 @@ export const MapView = memo(function MapView({
     map.setStyle(styleUrl(dark), { diff: false });
   }, [map, dark]);
 
-  // "You are here" dot.
+  // "You are here": a map layer fed straight from the position watch, so a new fix never re-renders anything.
   useEffect(() => {
-    if (!map || !location) return;
-    let marker: { remove(): void } | undefined;
-    let cancelled = false;
-    void import("maplibre-gl").then(({ Marker }) => {
-      if (cancelled) return;
-      const el = document.createElement("div");
-      el.className = "user-dot";
-      el.setAttribute("aria-label", t("map.myLocation"));
-      marker = new Marker({ element: el }).setLngLat(location).addTo(map);
-    });
-    return () => {
-      cancelled = true;
-      marker?.remove();
-    };
-  }, [map, location, t]);
+    if (map && styleKey > 0) return showUserLocation(map, cssColor("var(--system-blue)"));
+  }, [map, styleKey]);
 
   // Attribution: the style's own (OpenFreeMap, OpenMapTiles, OSM contributors) plus the FOSSGIS-required "fix the map" link.
   // Added here, not through the constructor, so the link follows the UI language.
