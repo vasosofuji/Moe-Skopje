@@ -281,3 +281,19 @@ Radii: sheet 22, card 14, chip/pill 999. `corner-shape: squircle` where supporte
 ## 10. Path to production (not built now)
 
 Split `lib/sources` into a scheduled worker writing `source_snapshots`; frontend reads snapshots only. Add Supabase Auth, moderation queue + city admin view for reports, Playwright, monitoring on source health, AL language, street-level geocoding.
+
+## 11. Scope change (user, 2026-10-17, during build) — supersedes earlier sections where they conflict
+
+1. **No citizen reporting.** Reports (UI, API, adapter, schema tables, assistant `list_reports`) are removed. Tabs: Explore, Ask, Settings.
+2. **Main panel = information widgets only.** Layer toggles live only in Settings. No layer-chip pills over the map on desktop.
+3. **De-slop.** No sparkle icons, no logo tile, no gradient icon squares, no decorative glow. Typographic wordmark only.
+4. **Desktop assistant** is a Spotlight-style glass chat bar docked bottom-centre (⌘K / Ctrl+K), expanding upward into the conversation. Mobile keeps Ask as a sheet tab.
+5. **Air quality** renders as a heat map (MapLibre `heatmap` layer weighted by PM10) from the pulse.eco sensors, with station points at high zoom.
+6. **Buses** use JSP's official GTFS (Modeshift producer feed, refreshed daily): stops only, no route lines. A stop card lists the next scheduled departures per line. Tapping a departure shows that bus on the map:
+   - **Live GPS** from Modeshift's vehicles API when `MODESHIFT_API_KEY` is set. The endpoint exists but returns 401 without a key; there is no public realtime feed.
+   - **Otherwise an estimated position**, interpolated along the GTFS shape from `stop_times`, labelled "Проценета позиција (возен ред)".
+7. **Parking** renders real zone regions (A0 orange, A red, B yellow, C green, D white per City Parking). Zone streets come from gradskiparking.com.mk zone lists, matched to OSM street geometry, buffered and unioned.
+8. **Outages** are geolocated at street level, not by painting whole municipalities. Painting a whole municipality made Karpoš (36.7 km², correct per OSM) look like half the city. Affected streets come from the baked OSM street index.
+   - **Main panel** gets an outage widget grouped by day for the next 7 days; tapping an entry flies to its streets.
+   - **Water:** scraped from vodovod-skopje.com.mk (live).
+   - **Electricity:** EVN's only data endpoint (`portal-api.elektrodistribucija.mk/DSO/Prekini/ZemiPrekini`) returns 404 for everyone as of 2026-10-17. The adapter keeps polling and flips to live automatically when it returns; until then it serves seed data with the honest "Demo data" badge.
