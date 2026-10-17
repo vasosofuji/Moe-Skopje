@@ -3,7 +3,7 @@
 import { CornerUpRight, LocateFixed, LocateOff, WifiOff } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { Activity, useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { AskBar } from "@/components/assistant/AskBar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import type { Citation } from "@/components/assistant/Citation";
@@ -89,6 +89,8 @@ export function AppShell() {
   const [location, setLocation] = useState<LngLat>();
   const [toast, setToast] = useState<keyof Dict | null>(null);
   const [routeOpen, setRouteOpen] = useState(false); // phones and tablets; desktop's planner lives in AskBar
+  const [routeKept, setRouteKept] = useState(false); // the planner is mounted: open, or folded away by a tab switch
+  const [opened, setOpened] = useState<Tab[]>(["explore"]); // panels mount on first open and then stay
 
   // A switch or theme tap paints first; the map's heavier redraw follows in a lower-priority render.
   const mapLayers = useDeferredValue(prefs.layers);
@@ -160,6 +162,10 @@ export function AppShell() {
   // load alongside the basemap instead of after it. refreshLayer shares any request a component starts as well.
   const prefetch = useEffectEvent(() => {
     for (const id of new Set([...TODAY_LAYERS, ...prefs.layers])) if (!HIDDEN_LAYERS.includes(id)) void refreshLayer(id);
+    // The other panels' code as well, so a first tab switch never waits for a chunk.
+    void import("@/components/assistant/AssistantPanel");
+    void import("@/components/settings/SettingsPanel");
+    void import("@/components/route/RoutePlanner");
   });
   useEffect(() => {
     if (hydrated) prefetch();
@@ -173,13 +179,15 @@ export function AppShell() {
 
   const go = (next: Tab) => {
     setTab(next);
-    setRouteOpen(false);
+    setOpened((o) => (o.includes(next) ? o : [...o, next]));
+    setRouteOpen(false); // folds the planner; its fields come back with the directions button
     if (isWide) return;
     if (next === "ask") setSnap(2); // the chat's input sits in the panel
     else if (snap === 0) setSnap(1);
   };
   const toggleRoute = () => {
     setRouteOpen(!routeOpen);
+    setRouteKept(true);
     if (!isWide && !routeOpen) setSnap(1);
   };
 
@@ -196,25 +204,40 @@ export function AppShell() {
     if (!hit) void refreshLayer(c.layer).then(() => select((prev) => prev ?? find() ?? null));
   };
   const closeCard = useCallback(() => select(null), []);
-  const closeRoute = useCallback(() => setRouteOpen(false), []);
+  const closeRoute = useCallback(() => {
+    setRouteOpen(false);
+    setRouteKept(false);
+  }, []);
   const stopTracking = useCallback(() => track(null), []);
   const api = useMemo<MapApi>(
     () => ({ map, flyTo, showArea, reveal, select, location, locate, highlight, setHighlight, trip, track }),
     [map, flyTo, showArea, reveal, location, locate, highlight, trip],
   );
 
+  // Every panel opened so far stays mounted, so a tab switch is instant and keeps the chat, scroll and fields; the
+  // hidden ones are display: none with their effects paused (no polling, no map drawing) until shown again.
   // Phones and tablets: the planner takes the panel's place while it is open (the sheet sits at its middle detent).
   // A phone sheet drops to its peek while a point is tapped on the map, and rises while a field is typed in.
-  const content = planner ? (
-    <RoutePlanner
-      variant="panel"
-      insetLeft={insetLeft}
-      onClose={closeRoute}
-      onPicking={(on) => !isWide && setSnap(on ? 0 : 1)}
-      onEditing={(on) => !isWide && setSnap(on ? 2 : 1)}
-    />
-  ) : (
-    <Panel tab={isWide ? panelTab : tab} onCitation={onCitation} />
+  const shown = isWide ? panelTab : tab;
+  const content = (
+    <>
+      {opened.map((id) => (
+        <Activity key={id} mode={!planner && id === shown ? "visible" : "hidden"}>
+          <Panel tab={id} onCitation={onCitation} />
+        </Activity>
+      ))}
+      {routeKept && !isDesktop && (
+        <Activity mode={planner ? "visible" : "hidden"}>
+          <RoutePlanner
+            variant="panel"
+            insetLeft={insetLeft}
+            onClose={closeRoute}
+            onPicking={(on) => !isWide && setSnap(on ? 0 : 1)}
+            onEditing={(on) => !isWide && setSnap(on ? 2 : 1)}
+          />
+        </Activity>
+      )}
+    </>
   );
 
   const onboarding = hydrated && !prefs.onboarded;
