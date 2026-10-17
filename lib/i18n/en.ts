@@ -274,4 +274,7 @@ export const en: Dict = {
   "route.needBoth": "Choose a start and an end.",
   "route.error.same": "Choose two different points.",
   "route.error.network": "Can't reach the server. Check your connection.",
+
+  // --- final fixes UI ---
+  "outages.activeNow": "Under way now: {n}",
 };

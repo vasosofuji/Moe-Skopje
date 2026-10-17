@@ -1,9 +1,11 @@
 "use client";
 
 import { PersonStanding } from "lucide-react";
+import { LayerBadge } from "@/components/glass/StatusBadge";
 import { pm10Severity } from "@/lib/aqi";
 import { goOutScore } from "@/lib/goOut";
 import { useT } from "@/lib/i18n";
+import type { Status } from "@/lib/sources/types";
 
 const R = 22;
 const CIRCUMFERENCE = 2 * Math.PI * R;
@@ -18,9 +20,20 @@ const band = (score: number) =>
 
 /**
  * "Good to go out?" Today tile: a score ring (0..100 from PM10, rain and temperature) with a one-line verdict and what pulls
- * it down. Same tile shape as the other Today cards. Standalone: the Explore panel passes it the air and weather readings.
+ * it down. Same tile shape as the other Today cards. Standalone: the Explore panel passes it the air and weather readings
+ * and `source`, the less trustworthy of their two layers (badged when not live).
  */
-export function GoOutCard({ pm10, tempC, precipMm }: { pm10: number | null; tempC: number | null; precipMm: number | null }) {
+export function GoOutCard({
+  pm10,
+  tempC,
+  precipMm,
+  source,
+}: {
+  pm10: number | null;
+  tempC: number | null;
+  precipMm: number | null;
+  source?: { status: Status; updatedAt?: string };
+}) {
   const { t } = useT();
   const hasData = pm10 !== null || tempC !== null || precipMm !== null;
   const score = goOutScore(pm10, tempC, precipMm);
@@ -71,6 +84,7 @@ export function GoOutCard({ pm10, tempC, precipMm }: { pm10: number | null; temp
           </div>
         )}
       </div>
+      <LayerBadge data={source} className="mt-1.5" />
     </section>
   );
 }

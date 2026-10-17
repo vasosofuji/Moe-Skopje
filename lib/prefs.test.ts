@@ -34,6 +34,16 @@ test("loadPrefs drops unknown layer ids and keeps valid ones", () => {
   expect(loadPrefs(s).onboarded).toBe(true);
 });
 
+test("a new visitor starts with air, water outages and buses", () => {
+  expect(DEFAULT_PREFS.layers).toEqual(["air", "outages-water", "buses"]);
+  expect(loadPrefs(memStorage({})).layers).toEqual(["air", "outages-water", "buses"]);
+});
+
+test("loadPrefs drops hidden layers, so waste stays off even if it was saved", () => {
+  const s = memStorage({ "moe-skopje:prefs": JSON.stringify({ ...DEFAULT_PREFS, layers: ["air", "waste", "buses"] }) });
+  expect(loadPrefs(s).layers).toEqual(["air", "buses"]);
+});
+
 test("getDeviceId is stable across calls", () => {
   const s = memStorage({});
   expect(getDeviceId(s)).toBe(getDeviceId(s));

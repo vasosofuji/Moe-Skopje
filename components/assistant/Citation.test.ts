@@ -23,6 +23,11 @@ test("parseReply strips the citation trailer even when it arrives split across c
   expect(parseReply(raw)).toEqual({ text: "PM10 во Карпош е 45 µg/m³.", citations: [cite] });
 });
 
+test("parseReply drops a citation of a hidden layer", () => {
+  const waste = `Hi\n[[cite:${JSON.stringify([{ ...cite, layer: "waste" }, cite])}]]`;
+  expect(parseReply(waste)).toEqual({ text: "Hi", citations: [cite] });
+});
+
 test("parseReply keeps plain text and drops malformed citations", () => {
   expect(parseReply("Hello [world]")).toEqual({ text: "Hello [world]", citations: [] });
   const bad = `Hi\n[[cite:${JSON.stringify([{ ...cite, lng: "x" }, { ...cite, layer: "nope" }, cite])}]]`;

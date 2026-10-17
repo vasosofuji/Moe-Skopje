@@ -275,4 +275,7 @@ export const mk = {
   "route.needBoth": "Изберете почеток и крај на патот.",
   "route.error.same": "Изберете две различни точки.",
   "route.error.network": "Нема врска со серверот. Проверете ја интернет-врската.",
+
+  // --- final fixes UI ---
+  "outages.activeNow": "Во тек сега: {n}",
 };

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { LayerBadge, StatusBadge, worstOf } from "@/components/glass/StatusBadge";
 import { useMap } from "@/components/map/MapView";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Lang } from "@/lib/i18n";
 import { formatDate, formatWhen, skopjeTime, weekdayShort } from "@/lib/i18n/format";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import type { OutageDay, OutageItem, OutageType } from "@/lib/server/outages";
+import { activeNow } from "./activeNow";
 
 const REFRESH_MS = 5 * 60_000;
 const TYPES: OutageType[] = ["power", "water", "heating"];
@@ -50,13 +52,20 @@ export function OutagesWidget() {
   const [picked, setPicked] = useState(0);
   const { showArea, reveal, highlight, setHighlight } = useMap();
   const day = days?.[picked];
+  // Today's list also holds outages that only start later today; "under way" counts just the ones whose window contains now.
+  const active = activeNow(days?.[0]?.items ?? []).length;
   // Macedonian takes the singular after 1, 21, 31… (not 11); English only after 1.
   const one = (n: number) => (lang === "mk" ? n % 10 === 1 && n % 100 !== 11 : n === 1);
   const count = (n: number) => t(one(n) ? "outages.count.one" : "outages.count.other", { n });
 
   return (
     <section aria-busy={days === undefined} className="rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-3">
-      <h3 className="t-headline px-1">{t("outages.title")}</h3>
+      <div className="flex items-center justify-between gap-2 px-1">
+        <h3 className="t-headline">{t("outages.title")}</h3>
+        {/* demo or stale items anywhere in the week taint the counts too, so the widget says so up front */}
+        <LayerBadge data={worstOf(days?.flatMap((d) => d.items) ?? [])} />
+      </div>
+      {active > 0 && <p className="t-footnote px-1 text-label-2">{t("outages.activeNow", { n: active })}</p>}
 
       {days === undefined ? (
         <div className="mt-3 flex flex-col gap-2">
@@ -134,7 +143,12 @@ export function OutagesWidget() {
                           <span className="t-footnote shrink-0 text-label-2 tabular-nums">{span(item, lang)}</span>
                         </span>
                         <span className="t-footnote line-clamp-2 text-label-2">{item.streets.join(", ")}</span>
-                        {item.status === "offline" && <span className="t-caption text-label-2">{t("status.offline")}</span>}
+                        {/* the item carries its layer's status but not its age, so a stale badge has none */}
+                        {item.status !== "live" && (
+                          <span className="mt-1 self-start">
+                            <StatusBadge status={item.status} updatedAt="" />
+                          </span>
+                        )}
                       </span>
                     </button>
                   </li>
