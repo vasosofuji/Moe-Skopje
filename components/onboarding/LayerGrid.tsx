@@ -13,12 +13,15 @@ export const TIER1 = LAYER_IDS.filter((id) => LAYERS[id].tier === 1 && !HIDDEN_L
 export const toggleLayer = (ids: LayerId[], id: LayerId) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
 
 
-/** Onboarding tiles to pick layers: icon, name and a check. Settings edits the same prefs.layers as switch rows. */
+/**
+ * Onboarding tiles to pick layers: icon and name, all the same size. A picked tile gets a system-blue border, a faint
+ * blue tint and a filled check; unpicked ones show an empty ring. Settings edits the same prefs.layers as switch rows.
+ */
 export function LayerGrid({ value, onChange }: { value: LayerId[]; onChange(ids: LayerId[]): void }) {
   const { t } = useT();
   return (
     <div className="@container">
-      <div className="grid grid-cols-2 gap-2 @md:grid-cols-3">
+      <div className="grid auto-rows-[100px] grid-cols-2 gap-2 @md:grid-cols-3">
         {TIER1.map((id) => {
           const { icon: Icon, color, titleKey } = LAYERS[id];
           const on = value.includes(id);
@@ -30,24 +33,23 @@ export function LayerGrid({ value, onChange }: { value: LayerId[]; onChange(ids:
               onClick={() => onChange(toggleLayer(value, id))}
               style={{ "--c": color } as CSSProperties}
               className={cx(
-                "relative flex min-h-[84px] flex-col items-start justify-between gap-1.5 rounded-card border-[0.5px] p-3 text-left transition-colors",
+                "relative flex min-w-0 flex-col items-start justify-between rounded-card border-[1.5px] p-3 text-left transition-colors",
                 focusRing,
-                // Neutral when picked: a system-blue check and hairline border, no category colour fill.
-                on ? "border-(--system-blue)/60 bg-(--tile)" : "border-(--glass-stroke) bg-(--tile)",
+                on ? "border-(--system-blue) bg-(--system-blue)/10" : "border-(--label)/10 bg-(--tile)",
               )}
             >
-              <span className="flex size-8 items-center justify-center rounded-full bg-(--label)/8 text-(--c)">
-                <Icon size={17} aria-hidden />
+              <span className="flex size-7 items-center justify-center rounded-full bg-(--label)/8 text-(--c)">
+                <Icon size={16} aria-hidden />
               </span>
-              <span className="t-subhead font-semibold">{t(titleKey)}</span>
+              <span className="t-subhead line-clamp-2 font-semibold">{t(titleKey)}</span>
               <span
                 aria-hidden
                 className={cx(
-                  "absolute right-2.5 top-2.5 flex size-5.5 items-center justify-center rounded-full transition-colors",
+                  "absolute top-4 right-3 flex size-5 items-center justify-center rounded-full transition-colors",
                   on ? "bg-(--system-blue) text-white" : "border-[1.5px] border-(--label)/20",
                 )}
               >
-                {on && <Check size={13} strokeWidth={3} />}
+                {on && <Check size={12} strokeWidth={3} />}
               </span>
             </button>
           );

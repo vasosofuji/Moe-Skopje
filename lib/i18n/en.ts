@@ -68,12 +68,12 @@ export const en: Dict = {
 
   // ── onboarding
   "onboarding.welcome": "Welcome to Moe Skopje",
-  "onboarding.welcomeBody": "Air, outages, buses, parking and pharmacies, all on one map.",
+  "onboarding.welcomeBody": "Air, outages, buses, parking and pharmacies on one map.",
   "onboarding.language": "Language",
-  "onboarding.layersTitle": "What do you want to follow?",
-  "onboarding.layersBody": "You can change this later in Settings.",
-  "onboarding.locationTitle": "Find what's near you",
-  "onboarding.locationBody": "Your location is only used to show nearby buses and pharmacies.",
+  "onboarding.layersTitle": "Choose layers",
+  "onboarding.layersBody": "You can change them in Settings.",
+  "onboarding.locationTitle": "See what's nearby",
+  "onboarding.locationBody": "Location is only used for nearby buses and pharmacies.",
   "onboarding.allowLocation": "Allow location",
   "onboarding.skip": "Skip",
   "onboarding.start": "Get started",
@@ -82,12 +82,12 @@ export const en: Dict = {
   "settings.title": "Settings",
   "settings.language": "Language",
   "settings.theme": "Theme",
-  "settings.theme.system": "System",
+  "settings.theme.system": "Auto",
   "settings.theme.light": "Light",
   "settings.theme.dark": "Dark",
   "settings.layers": "Default layers",
   "settings.health": "Data health",
-  "settings.healthBody": "Every source, its status and when it was last updated.",
+  "settings.healthBody": "Status and last update of every source.",
   "settings.openSource": "Open the source",
   "settings.about": "About",
   "settings.aboutBody":
@@ -131,7 +131,7 @@ export const en: Dict = {
   "explore.distance": "{d} away",
   "marker.when": "When",
   "onboarding.step": "Step {n} of {total}",
-  "onboarding.locationDenied": "Location wasn't allowed. You can turn it on later with the button on the map.",
+  "onboarding.locationDenied": "Location is off. Turn it on later from the map.",
   "settings.healthEmpty": "No sources connected yet.",
   "settings.items": "Items: {n}",
 
@@ -269,4 +269,7 @@ export const en: Dict = {
 
   // --- final fixes UI ---
   "outages.activeNow": "Under way now: {n}",
+
+  // --- u5-settings ---
+  "settings.ago": "{age} ago",
 };
