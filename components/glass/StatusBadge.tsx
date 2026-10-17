@@ -1,8 +1,8 @@
-import type { CSSProperties } from "react";
-import type { Status } from "@/lib/sources/types";
+"use client";
 
-// ponytail: English copy from spec §6.8; switch to useT() once Task 2's dictionaries land.
-const LABEL: Record<Status, string> = { live: "Live", stale: "Stale", offline: "Demo data", static: "Static" };
+import type { CSSProperties } from "react";
+import { useT } from "@/lib/i18n";
+import type { Status } from "@/lib/sources/types";
 
 const COLOR: Record<Status, string> = {
   live: "var(--system-green)",
@@ -11,17 +11,21 @@ const COLOR: Record<Status, string> = {
   static: "var(--system-blue)",
 };
 
-/** "3 min", "2 h", "4 d"; null when the timestamp does not parse. */
-function age(updatedAt: string): string | null {
-  const minutes = (Date.now() - Date.parse(updatedAt)) / 60_000;
+export type Age = { n: number; unit: "min" | "h" | "d" };
+
+/** Data age as whole minutes, hours or days (floored, at least 1 min); null when the timestamp does not parse. */
+export function age(updatedAt: string, now = Date.now()): Age | null {
+  const minutes = (now - Date.parse(updatedAt)) / 60_000;
   if (!Number.isFinite(minutes)) return null;
-  if (minutes < 60) return `${Math.max(1, Math.floor(minutes))} min`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)} h`;
-  return `${Math.floor(minutes / 1440)} d`;
+  if (minutes < 60) return { n: Math.max(1, Math.floor(minutes)), unit: "min" };
+  if (minutes < 1440) return { n: Math.floor(minutes / 60), unit: "h" };
+  return { n: Math.floor(minutes / 1440), unit: "d" };
 }
 
 export function StatusBadge({ status, updatedAt }: { status: Status; updatedAt: string }) {
+  const { t } = useT();
   const ago = status === "live" || status === "stale" ? age(updatedAt) : null;
+  const label = t(`status.${status}`);
   return (
     <span
       className="t-caption inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-(--badge)/15 px-2 whitespace-nowrap"
@@ -29,7 +33,7 @@ export function StatusBadge({ status, updatedAt }: { status: Status; updatedAt: 
     >
       <span aria-hidden className="size-1.5 rounded-full bg-(--badge) ring-2 ring-(--badge)/25" />
       {/* Age depends on the clock, so server and client renders may differ by a minute. */}
-      <span suppressHydrationWarning>{ago ? `${LABEL[status]} · ${ago}` : LABEL[status]}</span>
+      <span suppressHydrationWarning>{ago ? `${label} · ${t(`age.${ago.unit}`, { n: ago.n })}` : label}</span>
     </span>
   );
 }

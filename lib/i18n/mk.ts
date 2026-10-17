@@ -1,0 +1,139 @@
+// Macedonian is the source of copy. en.ts must have exactly the same keys (its type is `Dict`).
+// Add new keys to the section of the feature that owns them and mirror them in en.ts.
+// Placeholders look like {n}; they are filled by t(key, { n: 3 }).
+export const mk = {
+  // ── app and shared
+  "app.name": "Мое Скопје",
+  "app.tagline": "Живи податоци за градот, на едно место.",
+  "common.close": "Затвори",
+  "common.back": "Назад",
+  "common.continue": "Продолжи",
+  "common.done": "Готово",
+  "common.cancel": "Откажи",
+  "common.retry": "Обиди се повторно",
+  "common.source": "Извор",
+  "common.error": "Нешто тргна наопаку. Обидете се повторно.",
+  "search.placeholder": "Пребарај во Скопје",
+
+  // ── tabs
+  "tab.explore": "Истражи",
+  "tab.report": "Пријави",
+  "tab.ask": "Прашај",
+  "tab.settings": "Поставки",
+
+  // ── layers (titleKey in lib/layers.ts)
+  "layer.air": "Воздух",
+  "layer.weather": "Време",
+  "layer.outages-power": "Прекини на струја",
+  "layer.outages-water": "Прекини на вода",
+  "layer.outages-heating": "Прекини на греење",
+  "layer.buses": "Автобуси",
+  "layer.parking": "Паркинг",
+  "layer.pharmacies": "Дежурни аптеки",
+  "layer.earthquakes": "Земјотреси",
+  "layer.reports": "Пријави од граѓани",
+  "layer.events": "Настани",
+  "layer.waste": "Собирање смет",
+  "layer.schools": "Училишта и градинки",
+
+  // ── status badges (spec §6.8): "<status> · <age>", e.g. "Во живо · 3 мин"
+  "status.live": "Во живо",
+  "status.stale": "Застарено",
+  "status.offline": "Демо податоци",
+  "status.static": "Статично",
+  "age.min": "{n} мин",
+  "age.h": "{n} ч",
+  "age.d": "{n} д",
+
+  // ── map
+  "map.tilesUnavailable": "Картата моментално не е достапна",
+  "map.myLocation": "Моја локација",
+  "map.layers": "Слоеви",
+
+  // ── explore
+  "explore.today": "Денес во Скопје",
+  "explore.airNow": "Воздух сега",
+  "explore.weather": "Време",
+  "explore.outages": "Активни прекини",
+  "explore.nextBus": "Следен автобус во близина",
+  "explore.layers": "Слоеви",
+  "explore.noData": "Нема податоци",
+
+  // ── air detail
+  "air.level.0": "Добар",
+  "air.level.1": "Умерен",
+  "air.level.2": "Нездрав за чувствителни",
+  "air.level.3": "Нездрав",
+  "air.advice.0": "Воздухот е чист. Одлично време за престој надвор.",
+  "air.advice.1": "Воздухот е прифатлив. Многу чувствителните лица нека не се задржуваат долго надвор.",
+  "air.advice.2": "Децата, постарите лица и астматичарите нека го скратат времето надвор.",
+  "air.advice.3": "Воздухот е нездрав. Избегнувајте напорни активности надвор и држете ги прозорците затворени.",
+
+  // ── onboarding
+  "onboarding.welcome": "Добредојдовте во Мое Скопје",
+  "onboarding.welcomeBody": "Воздух, струја, автобуси и пријави од граѓани, сè на една карта.",
+  "onboarding.language": "Јазик",
+  "onboarding.layersTitle": "Што сакате да следите?",
+  "onboarding.layersBody": "Подоцна можете да го промените ова во Поставки.",
+  "onboarding.locationTitle": "Најдете што има во ваша близина",
+  "onboarding.locationBody": "Локацијата се користи само за приказ на автобуси и аптеки во близина.",
+  "onboarding.allowLocation": "Дозволи локација",
+  "onboarding.skip": "Прескокни",
+  "onboarding.start": "Започни",
+
+  // ── settings and data health
+  "settings.title": "Поставки",
+  "settings.language": "Јазик",
+  "settings.theme": "Тема",
+  "settings.theme.system": "Системска",
+  "settings.theme.light": "Светла",
+  "settings.theme.dark": "Темна",
+  "settings.layers": "Стандардни слоеви",
+  "settings.health": "Состојба на податоците",
+  "settings.healthBody": "Секој извор, неговата состојба и кога последно е ажуриран.",
+  "settings.openSource": "Отвори го изворот",
+  "settings.about": "За апликацијата",
+  "settings.aboutBody":
+    "Мое Скопје ги собира јавните податоци на градот на едно место. Податоците доаѓаат од јавни извори и може да каснат или да недостасуваат; секогаш е означено колку се свежи.",
+
+  // ── reports
+  "report.title": "Пријавете проблем",
+  "report.step.category": "Што пријавувате?",
+  "report.step.photo": "Додајте фотографија",
+  "report.step.pin": "Означете ја локацијата",
+  "report.step.note": "Уште некои детали",
+  "report.category.pothole": "Дупка на патот",
+  "report.category.dump": "Дива депонија",
+  "report.category.streetlight": "Улично осветлување",
+  "report.category.dogs": "Бездомни кучиња",
+  "report.category.parking": "Нерегуларно паркирање",
+  "report.category.water-leak": "Протекување на вода",
+  "report.category.other": "Друго",
+  "report.takePhoto": "Сликај или избери фотографија",
+  "report.skipPhoto": "Без фотографија",
+  "report.photoTooLarge": "Фотографијата е преголема. Може најмногу 4 MB.",
+  "report.photoType": "Дозволени се само слики.",
+  "report.description": "Опис",
+  "report.descriptionPlaceholder": "Што се случува? (најмногу 500 знаци)",
+  "report.nickname": "Прекар (по желба)",
+  "report.submit": "Испрати",
+  "report.success": "Пријавата е испратена. Ви благодариме!",
+  "report.rateLimited": "Испративте премногу пријави. Обидете се повторно подоцна.",
+  "report.disabled": "Пријавувањето моментално не е достапно.",
+  "report.error": "Пријавата не се испрати. Обидете се повторно.",
+  "report.upvote": "Поддржи",
+  "report.alreadyVoted": "Веќе сте гласале за оваа пријава.",
+  "report.empty": "Сè уште нема пријави.",
+  "report.status.new": "Нова",
+
+  // ── assistant
+  "assistant.title": "Асистент за градот",
+  "assistant.placeholder": "Прашајте нешто за Скопје…",
+  "assistant.send": "Испрати",
+  "assistant.suggest.1": "Каков е воздухот во Аеродром?",
+  "assistant.suggest.2": "Има ли струја утре во Карпош?",
+  "assistant.suggest.3": "Која аптека е дежурна во моја близина?",
+  "assistant.refused": "Не можам да одговорам на ова. Обидете се со друго прашање.",
+  "assistant.unavailable": "Асистентот не е достапен",
+  "assistant.rateLimited": "Ја достигнавте границата на пораки за овој час. Обидете се подоцна.",
+};
