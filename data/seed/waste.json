@@ -1,0 +1,20 @@
+{
+  "note": "Illustrative weekly pattern (1 = Monday ... 7 = Sunday), served as Demo data. ЈП Комунална хигиена publishes no machine-readable schedule.",
+  "window": ["06:00", "14:00"],
+  "types": {
+    "mixed": { "mk": "Мешан комунален отпад", "en": "Mixed household waste" },
+    "recycling": { "mk": "Селектиран отпад (хартија, пластика, стакло)", "en": "Recyclables (paper, plastic, glass)" }
+  },
+  "schedule": {
+    "Центар": { "mixed": [1, 2, 3, 4, 5, 6, 7], "recycling": [2, 5] },
+    "Чаир": { "mixed": [1, 2, 3, 4, 5, 6], "recycling": [3] },
+    "Карпош": { "mixed": [1, 3, 5], "recycling": [2] },
+    "Аеродром": { "mixed": [2, 4, 6], "recycling": [1] },
+    "Кисела Вода": { "mixed": [1, 3, 5], "recycling": [4] },
+    "Гази Баба": { "mixed": [2, 4, 6], "recycling": [5] },
+    "Бутел": { "mixed": [1, 4], "recycling": [3] },
+    "Шуто Оризари": { "mixed": [2, 5], "recycling": [6] },
+    "Ѓорче Петров": { "mixed": [3, 6], "recycling": [1] },
+    "Сарај": { "mixed": [1, 4], "recycling": [2] }
+  }
+}

@@ -1,0 +1,10 @@
+[
+  { "day": 0, "time": "09:00", "hours": 7, "mk": "Пазарен ден на Бит Пазар", "en": "Market day at Bit Pazar", "place": "Бит Пазар", "municipality": "Чаир" },
+  { "day": 1, "time": "11:00", "hours": 3, "mk": "Детска работилница во Градскиот парк", "en": "Children's workshop in City Park", "place": "Градски парк", "municipality": "Центар" },
+  { "day": 1, "time": "20:00", "hours": 2, "mk": "Симфониски концерт на Македонската филхармонија", "en": "Macedonian Philharmonic symphony concert", "place": "Македонска филхармонија", "municipality": "Центар" },
+  { "day": 2, "time": "19:00", "hours": 3, "mk": "Џез вечер на плоштадот", "en": "Jazz evening on the square", "place": "Плоштад Македонија", "municipality": "Центар" },
+  { "day": 3, "time": "18:00", "hours": 2, "mk": "Трибина за урбанизам и зеленило", "en": "Talk on urban planning and green space", "place": "Општина Карпош", "municipality": "Карпош" },
+  { "day": 4, "time": "10:00", "hours": 4, "mk": "Семејна велосипедска вожња", "en": "Family bike ride", "place": "Кисела Вода", "municipality": "Кисела Вода" },
+  { "day": 5, "time": "18:00", "hours": 3, "mk": "Кошаркарски натпревар", "en": "Basketball game", "place": "Спортска сала во Аеродром", "municipality": "Аеродром" },
+  { "day": 6, "time": "12:00", "hours": 6, "mk": "Фестивал на улична храна и музика", "en": "Street food and music festival", "place": "Гази Баба", "municipality": "Гази Баба" }
+]

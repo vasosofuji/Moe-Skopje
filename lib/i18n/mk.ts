@@ -179,4 +179,17 @@ export const mk = {
   "assistant.barPlaceholder": "Прашај за градот…",
   "assistant.collapse": "Скриј го разговорот",
   "assistant.expand": "Прикажи го разговорот",
+
+  // --- Task 13: tier 2 ---
+  "goOut.title": "Како е за надвор?",
+  "goOut.score": "Оцена {score} од 100",
+  "goOut.verdict.good": "Одличен ден за надвор",
+  "goOut.verdict.fair": "Во ред, но внимавајте",
+  "goOut.verdict.poor": "Подобро останете внатре",
+  "goOut.reason.air": "Загаден воздух",
+  "goOut.reason.rain": "Врне",
+  "goOut.reason.temp": "Екстремна температура",
+  "eservices.title": "е-Услуги",
+  "eservices.hint": "Најчестите работи што можете да ги средите онлајн.",
+  "eservices.opensNew": "се отвора во нов прозорец",
 };
