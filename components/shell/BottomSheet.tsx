@@ -36,6 +36,7 @@ export function midDetent(blockBottom: number | null, area: number): number | st
  * A `[data-sheet-pin]` block (the chat) is sized to the top snap's visible area (`--sheet-pin-h`) and kept bottom-aligned
  * with the visible part of the sheet at every snap and through a drag: it is shifted up by how far the sheet sits
  * below its top snap, a transform written in the same task as vaul's own and eased with the same curve when it snaps.
+ * While something sits above it (a marker card), it stays in the flow instead of sliding over that.
  */
 export function BottomSheet({
   snap,
@@ -61,7 +62,8 @@ export function BottomSheet({
     const el = body?.querySelector<HTMLElement>("[data-sheet-pin]");
     const y = sheet && /translate3d\([^,]+,\s*(-?[\d.]+)px/.exec(sheet.style.transform)?.[1];
     if (!el || !y) return;
-    const lift = `translate3d(0, ${Math.min(0, area.current * (1 - FULL) - Number(y)).toFixed(1)}px, 0)`;
+    const up = el.offsetTop > 0 ? 0 : Math.min(0, area.current * (1 - FULL) - Number(y));
+    const lift = `translate3d(0, ${up.toFixed(1)}px, 0)`;
     if (pinned.current.el === el && pinned.current.lift === lift) return; // our own write comes back as a mutation
     pinned.current = { el, lift };
     el.style.transform = lift;
@@ -112,7 +114,8 @@ export function BottomSheet({
     <>
       <div
         ref={setContainer}
-        className="pointer-events-none fixed inset-x-0 top-0 bottom-[var(--tabbar-h,calc(49px_+_env(safe-area-inset-bottom)))] z-10 overflow-hidden"
+        // z-index: --z-sheet, from layout-tokens.css
+        className="pointer-events-none fixed inset-x-0 top-0 bottom-(--tabbar-h) overflow-hidden"
       />
       {container && (
         <Drawer.Root
@@ -149,7 +152,7 @@ export function BottomSheet({
                 data-vaul-no-drag={top ? "" : undefined}
                 className={cx(
                   // A size container: 100cqh is this content box, which is the top snap's visible area.
-                  "min-h-0 flex-1 overscroll-contain pt-3 pr-[max(16px,env(safe-area-inset-right))] pb-4 pl-[max(16px,env(safe-area-inset-left))] [container-type:size] [--sheet-pin-h:100cqh]",
+                  "min-h-0 flex-1 overscroll-contain pt-3 pr-[max(16px,var(--safe-r))] pb-4 pl-[max(16px,var(--safe-l))] [container-type:size] [--sheet-pin-h:100cqh]",
                   top ? "overflow-y-auto" : "overflow-hidden",
                 )}
               >
