@@ -63,7 +63,8 @@ test("parseNotice reads the Skopje marathon notice: day, start, streets from the
   });
   expect(p.detail).toMatchObject({ source: "МВР", published: "2026-10-03" });
   const streets = String(p.detail?.streets);
-  for (const name of ["Крушевска Република", "Јане Сандански", "Димитрие Чуповски", "Васко Карангелевски"]) expect(streets).toContain(name);
+  // the whole route, from Аеродром (Јане Сандански) to Карпош (Ангел Динев), however long
+  for (const name of ["Крушевска Република", "Јане Сандански", "Димитрие Чуповски", "Васко Карангелевски", "Васил Чакаларов", "Ангел Динев"]) expect(streets).toContain(name);
   expect(p.detail?.approx).toBeUndefined();
   expect(f.geometry.type).toBe("MultiLineString");
   // every matched street lies in the city: nothing from Сарај or Шуто Оризари

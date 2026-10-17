@@ -4,7 +4,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
 import { parseSkopjeTime } from "./geo";
-import { bboxOf } from "./geom";
 import { toLatin } from "./static";
 import { findStreets, streetKey, type StreetFeature } from "./streets";
 import type { Adapter, Feature } from "./types";
@@ -52,18 +51,18 @@ const PLACES: { re: RegExp; at: [number, number] }[] = [
   { re: /плоштад\s+„?македонија|порта\s+македонија|централно\s+подрачје/iu, at: SQUARE },
 ];
 
-const NEAR_M = 3000;
+const NEAR_M = 1500; // a street that exists in several municipalities counts when it passes this close to a street that is certain
+const NEAR_CENTRE_M = 3000; // ...or, when no street is certain, this close to the city centre
 
 const coordsOf = (f: StreetFeature) => f.geometry.coordinates.flat();
-const middleOf = (f: StreetFeature) => {
-  const [w, s, e, n] = bboxOf(f.geometry);
-  return [(w + e) / 2, (s + n) / 2];
-};
+const COS = Math.cos((42 * Math.PI) / 180); // Skopje's latitude: metres per degree of longitude = COS x 111 320
+const metres = (a: number[], b: number[]) => Math.hypot((a[0] - b[0]) * COS, a[1] - b[1]) * 111_320;
 
 /**
  * Streets named in a notice. Only names that follow ул./бул./булевар and sit in quotes count, so a bare word such as "Илинден"
- * (a municipality, and a boulevard) is not taken for a street. Many names exist in several municipalities; the ones nearest the
- * middle of the unambiguous streets win (the median of the names found in one municipality only, else the city centre).
+ * (a municipality, and a boulevard) is not taken for a street. Many names exist in several municipalities ("Мајка Тереза" has
+ * five): of those, only the parts that touch the streets which are certain (named in one municipality only) are kept, so the
+ * route stays one connected stretch of the city however long it is.
  */
 export function noticeStreets(text: string): StreetFeature[] {
   const names = [...text.matchAll(/(?:ул(?:ица(?:та)?)?|бул(?:евар(?:от)?)?)\.?\s*[„"«]([^„“"»]{2,60})[“"»]/giu)]
@@ -73,12 +72,9 @@ export function noticeStreets(text: string): StreetFeature[] {
   const found = findStreets(names.map((n) => `ул. ${n}`).join(", "));
   const byKey = new Map<string, StreetFeature[]>();
   for (const f of found) byKey.set(streetKey(f.properties.name_mk), [...(byKey.get(streetKey(f.properties.name_mk)) ?? []), f]);
-  const median = (vals: number[]) => [...vals].sort((a, b) => a - b)[Math.floor(vals.length / 2)];
-  const sure = [...byKey.values()].filter((g) => g.length === 1).map((g) => middleOf(g[0]));
-  const anchor = sure.length ? [median(sure.map((p) => p[0])), median(sure.map((p) => p[1]))] : SQUARE;
-  const k = Math.cos((anchor[1] * Math.PI) / 180) * 111_320;
-  const nearest = (f: StreetFeature) => Math.min(...coordsOf(f).map((p) => Math.hypot((p[0] - anchor[0]) * k, (p[1] - anchor[1]) * 111_320)));
-  return found.filter((f) => nearest(f) <= NEAR_M);
+  const certain = [...byKey.values()].filter((g) => g.length === 1).flatMap((g) => coordsOf(g[0]));
+  const [anchors, reach] = certain.length ? [certain, NEAR_M] : [[SQUARE], NEAR_CENTRE_M];
+  return found.filter((f) => byKey.get(streetKey(f.properties.name_mk))!.length === 1 || coordsOf(f).some((p) => anchors.some((a) => metres(p, a) <= reach)));
 }
 
 const pad = (n: number | string) => String(n).padStart(2, "0");
