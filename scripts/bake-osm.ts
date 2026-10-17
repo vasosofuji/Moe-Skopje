@@ -1,8 +1,9 @@
 // One-off Overpass export → data/static/*.geojson (runtime data, committed). Run: npm run bake:osm [dataset ...]
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import osmtogeojson from "osmtogeojson";
-import { toLatin } from "../lib/sources/static";
+import { normalizeName } from "../lib/sources/geo";
+import { municipalityAt, toLatin, type MunicipalityCollection } from "../lib/sources/static";
 
 const ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
@@ -25,6 +26,8 @@ type Dataset = {
   query: string;
   /** Keeps the wanted features and reduces their properties. */
   pick: (f: GeoJSON.Feature<GeoJSON.Geometry, Props>) => GeoJSON.Feature | null;
+  /** Serialises the picked features when the file is not a FeatureCollection. */
+  format?: (features: GeoJSON.Feature[]) => Promise<{ body: string; count: number }>;
 };
 
 /** Overpass tags with `:` → `_`, only the listed keys. */
@@ -45,6 +48,37 @@ const rounded = (g: GeoJSON.Geometry) => ({ ...g, coordinates: round5((g as GeoJ
 /** `out center` ways/relations arrive as point features at their centre; keep points only. */
 const point = (keys: string[]): Dataset["pick"] => (f) =>
   f.geometry.type === "Point" ? base(f, rounded(f.geometry), keys) : null;
+
+// "13 Ноември" and "11 Октомври" are neighbourhoods, but in outage text they read as dates, and matching drops digits.
+const DATE_LIKE = /^\d+\s+(јануари|февруари|март|април|мај|јуни|јули|август|септември|октомври|ноември|декември)(\s|$)/i;
+const jsonLines = (items: unknown[]) => items.map((x) => JSON.stringify(x)).join(",\n");
+
+/**
+ * Settlement gazetteer (spec §5.3): named place nodes → { name_mk, name_en?, municipality_mk }, municipality by
+ * point-in-polygon against the baked municipalities.geojson. Nodes outside all 10 are dropped, and so is a name that
+ * is in two municipalities, is a municipality's own name (matchMunicipality finds those without help) or looks like a date.
+ */
+async function settlementRows(features: GeoJSON.Feature[]): Promise<{ body: string; count: number }> {
+  const munis = JSON.parse(await readFile(join(OUT_DIR, "municipalities.geojson"), "utf8")) as MunicipalityCollection;
+  const own = new Set(munis.features.map((m) => normalizeName(m.properties.name_mk)));
+  const byName = new Map<string, { name_mk: string; name_en?: string; municipality_mk: string }[]>();
+  for (const f of features) {
+    if (f.geometry.type !== "Point") continue;
+    const p = f.properties as Record<string, string | undefined>;
+    const name_mk = p.name_mk ?? p.name;
+    if (!name_mk) continue;
+    const municipality_mk = municipalityAt(munis, f.geometry.coordinates[0], f.geometry.coordinates[1]);
+    if (!municipality_mk) continue;
+    const key = normalizeName(name_mk);
+    if (!key || own.has(key) || DATE_LIKE.test(name_mk.trim())) continue;
+    byName.set(key, [...(byName.get(key) ?? []), { name_mk, ...(p.name_en ? { name_en: p.name_en } : {}), municipality_mk }]);
+  }
+  const rows = [...byName.values()]
+    .filter((hits) => hits.every((h) => h.municipality_mk === hits[0].municipality_mk))
+    .map((hits) => hits[0])
+    .sort((a, b) => a.municipality_mk.localeCompare(b.municipality_mk, "mk") || a.name_mk.localeCompare(b.name_mk, "mk"));
+  return { body: `[\n${jsonLines(rows)}\n]\n`, count: rows.length };
+}
 
 const DATASETS: Record<string, Dataset> = {
   municipalities: {
@@ -85,6 +119,12 @@ const DATASETS: Record<string, Dataset> = {
     file: "pharmacies.geojson",
     query: q(`nwr["amenity"="pharmacy"](${BBOX});`, "out center;"),
     pick: point(["opening_hours", "phone", "operator", "website", "addr:street", "addr:housenumber"]),
+  },
+  settlements: {
+    file: "settlements.json",
+    query: q(`node["place"~"^(suburb|neighbourhood|quarter|village|hamlet)$"](${BBOX});`, "out;"),
+    pick: point(["name:mk"]),
+    format: settlementRows,
   },
   schools: {
     file: "schools.geojson",
@@ -141,10 +181,13 @@ async function bake(name: string, ds: Dataset) {
   if (name === "bus-stops" && features.length <= 300) throw new Error(`bus-stops: expected over 300, got ${features.length}`);
 
   // one feature per line keeps git diffs and merges readable
-  const body = `{"type":"FeatureCollection","features":[\n${features.map((f) => JSON.stringify(f)).join(",\n")}\n]}\n`;
+  const { body, count } = ds.format
+    ? await ds.format(features)
+    : { body: `{"type":"FeatureCollection","features":[\n${jsonLines(features)}\n]}\n`, count: features.length };
+  if (count === 0) throw new Error(`${name}: 0 rows after filtering`);
   await writeFile(join(OUT_DIR, ds.file), body);
-  console.log(`${name}: ${features.length} features → data/static/${ds.file} (${(body.length / 1024).toFixed(0)} KB)`);
-  return features.length;
+  console.log(`${name}: ${count} features → data/static/${ds.file} (${(body.length / 1024).toFixed(0)} KB)`);
+  return count;
 }
 
 async function main() {

@@ -14,10 +14,14 @@ const TIMEOUT_MS = 8000;
 const abort = (signal?: AbortSignal) => (signal ? AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]) : AbortSignal.timeout(TIMEOUT_MS));
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; MoeSkopje/1.0)" };
 
-/** One municipality polygon per distinct (municipality, start, end); streets of equal intervals are merged. */
-function toFeatures(id: OutageId, munis: MunicipalityCollection, outages: Outage[]): Feature[] {
+/**
+ * One municipality polygon per distinct (municipality, start, end); streets of equal intervals are merged.
+ * An outage whose end is already past is dropped: a source keeps listing today's finished work until midnight.
+ */
+function toFeatures(id: OutageId, munis: MunicipalityCollection, outages: Outage[], now: number): Feature[] {
   const merged = new Map<string, Outage>();
   for (const o of outages) {
+    if (Date.parse(o.endsAt) < now) continue;
     const key = `${o.name}|${o.startsAt}|${o.endsAt}`;
     const prev = merged.get(key);
     if (prev) prev.streets.push(...o.streets.filter((s) => !prev.streets.includes(s)));
@@ -44,6 +48,46 @@ function toFeatures(id: OutageId, munis: MunicipalityCollection, outages: Outage
   return out;
 }
 
+// --- Seeds ----------------------------------------------------------------------------------------------------------
+// The seed files hold one fixed day's outages. Served as-is they would show last week's dates as "demo data", so they are
+// shifted by whole days until the first outage starts today (Skopje time).
+
+const LOCAL = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/;
+
+/** `iso` moved by `days`, same wall-clock time, with the offset Skopje has on the new date. */
+function shiftDays(iso: string, days: number): string {
+  const m = LOCAL.exec(iso);
+  if (!m) return iso;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days));
+  const dd = `${String(d.getUTCDate()).padStart(2, "0")}.${String(d.getUTCMonth() + 1).padStart(2, "0")}.${d.getUTCFullYear()}`;
+  return parseSkopjeTime(dd, `${m[4]}:${m[5]}`);
+}
+
+/** Seed outages with every startsAt/endsAt (and the start inside the id) moved so the earliest start falls on today. */
+export function rebaseOutages(features: Feature[], now = Date.now()): Feature[] {
+  const firsts = features.map((f) => f.properties.startsAt).filter((s): s is string => LOCAL.test(s ?? ""));
+  if (firsts.length === 0) return features;
+  const first = firsts.reduce((a, b) => (Date.parse(b) < Date.parse(a) ? b : a));
+  const [y, mo, d] = first.slice(0, 10).split("-").map(Number);
+  const [ty, tmo, td] = skopjeToday(now).split("-").map(Number);
+  const days = Math.round((Date.UTC(ty, tmo - 1, td) - Date.UTC(y, mo - 1, d)) / 86_400_000);
+  if (days === 0) return features;
+  return features.map((f) => {
+    const { startsAt, endsAt, id } = f.properties;
+    const start = startsAt && shiftDays(startsAt, days);
+    return {
+      ...f,
+      properties: {
+        ...f.properties,
+        ...(startsAt && start ? { startsAt: start, id: id.replace(startsAt, start) } : {}),
+        ...(endsAt ? { endsAt: shiftDays(endsAt, days) } : {}),
+      },
+    };
+  });
+}
+
+const seedOf = async (id: OutageId) => rebaseOutages(await loadSeed(id));
+
 // --- Power: EVN Elektrodistribucija -----------------------------------------------------------------------------------
 // elektrodistribucija.mk/Grid/Planned-disconnections.aspx only links to /Grid/OutagesMap.aspx, whose inline script does
 //   $.getJSON("https://portal-api.elektrodistribucija.mk/DSO/Prekini/ZemiPrekini")
@@ -66,17 +110,25 @@ function evnTime(s: string): string {
   throw new Error(`unrecognised EVN time: ${s}`);
 }
 
-/** EVN rows → municipality polygons. Rows outside the Skopje KECs or without a municipality in the text are dropped. */
-export function parseEvn(rows: EvnRow[], munis: MunicipalityCollection, id: OutageId = "outages-power"): Feature[] {
+/** Rows about Skopje; a row without a kecId is kept, since nothing says it is elsewhere. */
+const inSkopje = (r: EvnRow) => r.kecId === undefined || SKOPJE_KEC.has(r.kecId);
+
+/** Skopje rows that name a municipality, as outages. Rows outside the Skopje KECs or without a municipality in the text are dropped. */
+function evnOutages(rows: EvnRow[]): Outage[] {
   const outages: Outage[] = [];
   for (const r of rows) {
-    if (r.kecId !== undefined && !SKOPJE_KEC.has(r.kecId)) continue;
+    if (!inSkopje(r)) continue;
     const name = matchMunicipality(r.nasMesto ?? "") ?? matchMunicipality(r.adresa ?? "");
     if (!name) continue;
     const street = (r.adresa ?? "").trim().replace(/[\s,;]+$/, "") || (r.nasMesto ?? "").trim();
     outages.push({ name, startsAt: evnTime(r.pocetok), endsAt: evnTime(r.kraj), streets: street ? [street] : [], type: r.tipPrekin });
   }
-  return toFeatures(id, munis, outages);
+  return outages;
+}
+
+/** EVN rows → municipality polygons for the outages that have not ended by `now`. */
+export function parseEvn(rows: EvnRow[], munis: MunicipalityCollection, id: OutageId = "outages-power", now = Date.now()): Feature[] {
+  return toFeatures(id, munis, evnOutages(rows), now);
 }
 
 const power: Adapter = {
@@ -89,17 +141,22 @@ const power: Adapter = {
     if (!res.ok) throw new Error(`EVN API HTTP ${res.status}`);
     const rows: unknown = await res.json();
     if (!Array.isArray(rows)) throw new Error("EVN API: expected an array of rows");
-    return parseEvn(rows as EvnRow[], await municipalities());
+    const outages = evnOutages(rows as EvnRow[]);
+    // Skopje rows that all fail to map mean the feed changed, not that the grid is fine: throw so getLayer falls back
+    // instead of publishing an empty "Live" layer. (Outages that mapped but have ended are a genuinely quiet day.)
+    if (outages.length === 0 && (rows as EvnRow[]).some(inSkopje)) throw new Error("EVN API: Skopje rows but none map to a municipality");
+    return toFeatures("outages-power", await municipalities(), outages, Date.now());
   },
-  seed: () => loadSeed("outages-power"),
+  seed: () => seedOf("outages-power"),
 };
 
 // --- Water: JP Vodovod i kanalizacija ---------------------------------------------------------------------------------
 // The announcements are free text paragraphs ("Ве известуваме дека на ден 13.10.2026 поради ... од 09:55 часот до
 // завршување"), newest first, mostly naming streets, not municipalities. Only announcements dated today or later that
 // name a municipality can be placed; the rest are dropped. "Until completion" ends the same day at 23:59.
-// With minFeatures 1, a page where nothing maps counts as failed and getLayer serves the seed ("Demo data").
-// ponytail: a street/settlement → municipality gazetteer would place far more of them.
+// Announcements dated today or later that all fail to map are a failed fetch (getLayer serves the seed, "Demo data");
+// no announcement for today at all is a real, empty answer, so minFeatures stays 0.
+// ponytail: the gazetteer (data/static/settlements.json) places settlements and neighbourhoods, not individual streets.
 const WATER_URL = "https://www.vodovod-skopje.com.mk/mk-MK/article/INFORMACIIIZAPREKINNAVODOSNABDUVANjEIDEFEKTI_1";
 
 export function parseVodovod(html: string, munis: MunicipalityCollection, now = Date.now()): Feature[] {
@@ -117,9 +174,10 @@ export function parseVodovod(html: string, munis: MunicipalityCollection, now = 
   if (dated.length === 0) throw new Error("vodovod-skopje: no dated announcements found (markup changed?)");
 
   const today = skopjeToday(now);
+  const upcoming = dated.filter((d) => d.ymd >= today);
   const outages: Outage[] = [];
-  for (const { text, date, ymd } of dated) {
-    const name = ymd >= today ? matchMunicipality(text) : null;
+  for (const { text, date } of upcoming) {
+    const name = matchMunicipality(text);
     if (!name) continue;
     const from = /од\s+(\d{1,2})[:.](\d{2})\s*час/.exec(text);
     const to = /до\s+(\d{1,2})[:.](\d{2})\s*час/.exec(text);
@@ -131,20 +189,21 @@ export function parseVodovod(html: string, munis: MunicipalityCollection, now = 
       streets: [(who ?? text).slice(0, 200)],
     });
   }
-  return toFeatures("outages-water", munis, outages);
+  if (upcoming.length > 0 && outages.length === 0) throw new Error("vodovod-skopje: announcements for today or later, but none names a municipality or settlement");
+  return toFeatures("outages-water", munis, outages, now);
 }
 
 const water: Adapter = {
   id: "outages-water",
   ttl: 1800,
-  minFeatures: 1, // nothing mappable is a failed fetch: getLayer serves the seed ("Demo data") instead of an empty live layer
+  minFeatures: 0, // parseVodovod throws when announcements exist but none maps; an empty day is honest
   source: { name: "ЈП Водовод и канализација", url: "https://www.vodovod-skopje.com.mk/" },
   async fetch(signal) {
     const res = await fetch(WATER_URL, { signal: abort(signal), headers: HEADERS });
     if (!res.ok) throw new Error(`vodovod-skopje HTTP ${res.status}`);
     return parseVodovod(await res.text(), await municipalities());
   },
-  seed: () => loadSeed("outages-water"),
+  seed: () => seedOf("outages-water"),
 };
 
 // --- Heating: Balkan Energy Group -------------------------------------------------------------------------------------
@@ -159,7 +218,7 @@ const heating: Adapter = {
     if (!res.ok) throw new Error(`beg.com.mk HTTP ${res.status}`);
     throw new Error("beg.com.mk: no outage list parser yet");
   },
-  seed: () => loadSeed("outages-heating"),
+  seed: () => seedOf("outages-heating"),
 };
 
 export const outages: Record<OutageId, Adapter> = { "outages-power": power, "outages-water": water, "outages-heating": heating };

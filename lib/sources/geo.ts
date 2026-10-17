@@ -1,4 +1,5 @@
-// Name and time helpers for outage text (spec §5.3). Pure; no I/O.
+// Name and time helpers for outage text (spec §5.3). Pure; no I/O (the settlement gazetteer is bundled as a module).
+import gazetteer from "../../data/static/settlements.json";
 
 /** The 10 Skopje municipalities as named in data/static/municipalities.geojson (`name_mk`). */
 export const MUNICIPALITIES = ["Центар", "Карпош", "Аеродром", "Кисела Вода", "Гази Баба", "Чаир", "Бутел", "Шуто Оризари", "Ѓорче Петров", "Сарај"] as const;
@@ -26,16 +27,38 @@ export function normalizeName(s: string): string {
 export const fold =(s: string) => s.replace(/ч/g, "ц").replace(/ш/g, "с").replace(/ж/g, "з").replace(/ѓ/g, "г").replace(/ќ/g, "к").replace(/ѕ/g, "з");
 const words = (s: string) => ` ${fold(normalizeName(s)).split(/[^\p{L}]+/u).filter(Boolean).join(" ")} `;
 const KEYS = MUNICIPALITIES.map((name) => ({ name, key: words(name) }));
+type Key = (typeof KEYS)[number];
+// "центар" is also a common noun ("Трговски центар"), so the municipality of that name only counts when nothing else matched.
+const OTHERS = KEYS.filter((k) => k.name !== "Центар");
+const CENTAR = KEYS.filter((k) => k.name === "Центар");
 
-/** `name_mk` of the municipality named first in `text`, or null. Matches whole words in any script or case. */
-export function matchMunicipality(text: string): string | null {
-  const hay = words(text);
+// scripts/bake-osm.ts bakes OSM place nodes (suburb, neighbourhood, village, ...) with the municipality each lies in.
+type Settlement = { name_mk: string; name_en?: string; municipality_mk: string };
+const SETTLEMENTS: Key[] = (gazetteer as Settlement[]).flatMap((s) =>
+  [s.name_mk, s.name_en].flatMap((n) => {
+    const key = n ? words(n) : "";
+    return key.trim() ? [{ name: s.municipality_mk, key } as Key] : [];
+  }),
+);
+
+/** The municipality of whichever key occurs first in `hay`. */
+function firstHit(hay: string, keys: Key[]): string | null {
   let best: { name: string; at: number } | null = null;
-  for (const { name, key } of KEYS) {
+  for (const { name, key } of keys) {
     const at = hay.indexOf(key);
     if (at >= 0 && (!best || at < best.at)) best = { name, at };
   }
   return best?.name ?? null;
+}
+
+/**
+ * `name_mk` of the municipality `text` points at, or null. Matches whole words in any script or case: first a municipality
+ * name (the one named first; Центар only when no other municipality and no settlement is named), then a settlement
+ * from the baked gazetteer (data/static/settlements.json).
+ */
+export function matchMunicipality(text: string): string | null {
+  const hay = words(text);
+  return firstHit(hay, OTHERS) ?? firstHit(hay, SETTLEMENTS) ?? firstHit(hay, CENTAR);
 }
 
 const skopjeOffset = new Intl.DateTimeFormat("en", { timeZone: "Europe/Skopje", timeZoneName: "longOffset" });

@@ -25,14 +25,25 @@ test("baked layers resolve as static; buses merge stops and routes", async () =>
   expect(parking.features.features.length).toBeGreaterThan(100);
 });
 
-test("water: a live page where no announcement maps to a municipality serves the seed (demo data), not an empty live layer", async () => {
+test("water: announcements for today that name no place serve the seed (demo data), not an empty live layer", async () => {
   vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(Date.parse("2026-10-17T10:00:00Z"));
-  const html = readFileSync(new URL("./__fixtures__/vodovod.html", import.meta.url), "utf8");
+  const html =
+    '<div id="pills-tabContent"><p>Ве известуваме дека на ден 17.10.2026 поради дефект на ул. Непозната бр.5 од 09:00 часот до 12:00 часот.</p></div>';
   vi.stubGlobal("fetch", vi.fn(async () => new Response(html)));
   const layer = await getLayer("outages-water", deps);
   vi.useRealTimers();
   expect(layer.status).toBe("offline");
   expect(layer.features.features.length).toBeGreaterThanOrEqual(2);
+});
+
+test("water: a live page with nothing announced for today is an honest empty live layer, not demo data", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(Date.parse("2026-10-17T10:00:00Z")); // the fixture's newest announcement is 15.10
+  const html = readFileSync(new URL("./__fixtures__/vodovod.html", import.meta.url), "utf8");
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(html)));
+  const layer = await getLayer("outages-water", deps);
+  vi.useRealTimers();
+  expect(layer.status).toBe("live");
+  expect(layer.features.features).toEqual([]);
 });
 
 test("outages and pharmacies fall back to a valid seed (offline) when the live source is down", async () => {
