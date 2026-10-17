@@ -114,3 +114,54 @@ test("static adapter → status static, no snapshot write", async () => {
   expect(ids(res)).toEqual(["a", "b"]);
   expect(put).not.toHaveBeenCalled();
 });
+
+test("a stale or offline answer is re-fetched after 61 s, however long the adapter ttl is; a live one is not", async () => {
+  const failing = setAdapter({ ttl: 3600, fetch: vi.fn(async () => Promise.reject(new Error("boom"))) });
+  const snapshots = memorySnapshots();
+
+  expect((await getLayer("air", { now, snapshots })).status).toBe("offline");
+  await getLayer("air", { now: () => NOW + 59_000, snapshots });
+  expect(failing.fetch).toHaveBeenCalledTimes(1);
+  await getLayer("air", { now: () => NOW + 61_000, snapshots });
+  expect(failing.fetch).toHaveBeenCalledTimes(2);
+
+  resetLayerCache();
+  const live = setAdapter({ ttl: 3600 });
+  await getLayer("air", { now, snapshots });
+  await getLayer("air", { now: () => NOW + 61_000, snapshots });
+  expect(live.fetch).toHaveBeenCalledTimes(1);
+
+  resetLayerCache();
+  const stale = setAdapter({ ttl: 3600, fetch: vi.fn(async () => Promise.reject(new Error("boom"))) });
+  expect((await getLayer("air", { now, snapshots: memorySnapshots({ air: snapshot }) })).status).toBe("stale");
+  await getLayer("air", { now: () => NOW + 61_000, snapshots: memorySnapshots({ air: snapshot }) });
+  expect(stale.fetch).toHaveBeenCalledTimes(2);
+});
+
+test("the race honors the adapter's own timeoutMs, and the deps override wins", async () => {
+  const slow = (ms: number) => vi.fn((signal?: AbortSignal) => new Promise<Feature[]>((resolve, reject) => {
+    const t = setTimeout(() => resolve([feat("late")]), ms);
+    signal?.addEventListener("abort", () => (clearTimeout(t), reject(new Error("aborted"))), { once: true });
+  }));
+  setAdapter({ timeoutMs: 400, fetch: slow(150) });
+  expect((await getLayer("air", { snapshots: memorySnapshots() })).status).toBe("live"); // 150 ms < 400 ms (default budget is 8 s)
+
+  resetLayerCache();
+  setAdapter({ timeoutMs: 40, fetch: slow(300) });
+  expect((await getLayer("air", { snapshots: memorySnapshots() })).status).toBe("offline"); // adapter budget exceeded
+
+  resetLayerCache();
+  setAdapter({ timeoutMs: 40, fetch: slow(150) });
+  expect((await getLayer("air", { snapshots: memorySnapshots(), timeoutMs: 400 })).status).toBe("live");
+});
+
+test("concurrent calls for one layer share a single adapter.fetch", async () => {
+  const adapter = setAdapter();
+  const snapshots = memorySnapshots();
+
+  const all = await Promise.all([1, 2, 3, 4, 5, 6].map(() => getLayer("air", { now, snapshots })));
+
+  expect(adapter.fetch).toHaveBeenCalledTimes(1);
+  expect(new Set(all.map((r) => r.updatedAt)).size).toBe(1);
+  expect(all.every((r) => r.status === "live")).toBe(true);
+});

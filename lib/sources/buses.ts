@@ -32,13 +32,14 @@ type Options = {
 };
 
 /**
- * The GTFS download is not tied to getLayer's 8 s signal (see loadGtfs): a cold one may take longer, and finishing it
+ * The GTFS download is not tied to getLayer's signal (see loadGtfs), and getLayer waits up to `timeoutMs` for it; finishing it
  * fills the cache for the next request. When it fails the layer falls back to the last snapshot, then to the baked OSM stops.
  */
 export function busesAdapter({ load = () => loadGtfs(), fallback = staticAdapter("buses", "bus-stops.geojson", "bus-stop"), now = Date.now }: Options = {}): Adapter {
   return {
     id: "buses",
     ttl: 3600,
+    timeoutMs: 20_000, // cold GTFS download + parse takes ~3 s, capped at 20 s by loadGtfs; getLayer's default 8 s would serve OSM stops with ids that are not GTFS ids
     source: { name: "JSP Скопје (GTFS, Modeshift)", url: "https://skopjebus.mk/" },
     minFeatures: 100, // Skopje has ~1300 stops; a handful means a broken feed
     fetch: async () => stopFeatures(await load(), now()),

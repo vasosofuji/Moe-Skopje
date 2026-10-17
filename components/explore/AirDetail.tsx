@@ -44,7 +44,9 @@ function useTrend() {
     fetch("/api/air-trend", { signal: ac.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((v: unknown) => {
-        if (Array.isArray(v) && v.length > 1 && v.every((n) => typeof n === "number" && Number.isFinite(n))) setTrend(v);
+        // [{ date, value }]; the sparkline only needs the values
+        const values = Array.isArray(v) ? v.map((p: { value?: unknown }) => p?.value) : [];
+        if (values.length > 1 && values.every((n): n is number => typeof n === "number" && Number.isFinite(n))) setTrend(values);
       })
       .catch(() => {});
     return () => ac.abort();

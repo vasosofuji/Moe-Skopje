@@ -9,13 +9,16 @@ export type { SnapshotStore };
 
 const FeaturesSchema = z.array(FeatureSchema);
 const FETCH_TIMEOUT_MS = 8000;
+/** A stale/offline answer is re-tried after this long, whatever the adapter's ttl: a fallback must not outlive the outage that caused it. */
+const FALLBACK_TTL_MS = 60_000;
 
-// ponytail: per-instance cache with no in-flight dedupe, so a cold burst can fetch twice. The CDN header does the real work.
-const cache = new Map<LayerId, { at: number; res: LayerResponse }>();
+// ponytail: per-instance cache; the CDN header does the real work. Concurrent callers share one in-flight fetch per layer.
+const cache = new Map<LayerId, { at: number; ttlMs: number; res: LayerResponse }>();
+const inflight = new Map<LayerId, Promise<LayerResponse>>();
 const defaultSnapshots = supabaseSnapshots();
 
 /** Clears the in-memory cache (tests). */
-export const resetLayerCache = () => cache.clear();
+export const resetLayerCache = () => (cache.clear(), inflight.clear());
 
 type Deps = { now?: () => number; snapshots?: SnapshotStore; timeoutMs?: number };
 
@@ -56,7 +59,7 @@ async function resolve(id: LayerId, adapter: Adapter, deps: Deps): Promise<Layer
 
   let features: Feature[] | null = null;
   try {
-    features = FeaturesSchema.parse(await withTimeout((signal) => adapter.fetch(signal), deps.timeoutMs ?? FETCH_TIMEOUT_MS));
+    features = FeaturesSchema.parse(await withTimeout((signal) => adapter.fetch(signal), deps.timeoutMs ?? adapter.timeoutMs ?? FETCH_TIMEOUT_MS));
     const min = adapter.minFeatures ?? 0;
     if (features.length < min) throw new Error(`got ${features.length} features, expected at least ${min}`);
   } catch (err) {
@@ -96,10 +99,19 @@ export async function getLayer(id: LayerId, deps: Deps = {}): Promise<LayerRespo
   if (!adapter) return offline(id, { name: id, url: "" }, now());
   try {
     const hit = cache.get(id);
-    if (hit && now() - hit.at < adapter.ttl * 1000) return hit.res;
-    const res = await resolve(id, adapter, deps);
-    cache.set(id, { at: now(), res });
-    return res;
+    if (hit && now() - hit.at < hit.ttlMs) return hit.res;
+    let pending = inflight.get(id);
+    if (!pending) {
+      pending = resolve(id, adapter, deps)
+        .then((res) => {
+          const full = res.status === "live" || res.status === "static";
+          cache.set(id, { at: now(), ttlMs: full ? adapter.ttl * 1000 : Math.min(adapter.ttl * 1000, FALLBACK_TTL_MS), res });
+          return res;
+        })
+        .finally(() => inflight.delete(id));
+      inflight.set(id, pending);
+    }
+    return await pending;
   } catch (err) {
     console.warn(`[layer:${id}] unexpected failure: ${reason(err)}`);
     return offline(id, adapter.source, now());

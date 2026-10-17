@@ -117,6 +117,13 @@ test("closures that are over, not started, or on demo data are ignored", async (
   expect(demo.calls).toHaveLength(1); // a closure from seed data is never detoured around
 });
 
+test("only the roadworks layer is asked for closures: water and heating outages do not close a road", async () => {
+  const asked: string[] = [];
+  const layer = async (id: LayerId) => (asked.push(id), layerOf([])(id));
+  await handleRoute(request(body), { ...deps(upstream(valhalla(FREE)).fetch), layer });
+  expect(asked).toEqual(["roadworks"]);
+});
+
 test("no way around the closure: the free route comes back with the closure listed as unavoidable", async () => {
   const up = upstream(valhalla(FREE), Response.json({ error_code: 442, error: "No path could be found for input" }, { status: 400 }));
   const res = await handleRoute(request(body), deps(up.fetch, [closure("r1")]));

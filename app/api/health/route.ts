@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import type { LayerId } from "@/lib/layers";
+import { HIDDEN_LAYERS, type LayerId } from "@/lib/layers";
 import { getLayer } from "@/lib/server/layer";
 import { registry } from "@/lib/sources/registry";
 
+// buses may use a 20 s fetch budget on a cold GTFS load
+export const maxDuration = 30;
+
 /** GET /api/health → one row per registered layer, for the Data health panel. */
 export async function GET() {
-  const ids = Object.keys(registry) as LayerId[];
+  const ids = (Object.keys(registry) as LayerId[]).filter((id) => !HIDDEN_LAYERS.includes(id));
   const rows = await Promise.all(
     ids.map(async (id) => {
       const res = await getLayer(id);

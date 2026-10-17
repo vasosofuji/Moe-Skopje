@@ -50,3 +50,7 @@ test("the seed is the baked OSM stops: points only, valid, with no GTFS stop id 
 test("the registry serves the GTFS buses adapter", () => {
   expect(registry.buses).toBe(buses);
 });
+
+test("the buses layer waits up to 20 s for a cold GTFS load (getLayer would give up at 8 s)", () => {
+  expect(buses.timeoutMs).toBe(20_000);
+});

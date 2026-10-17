@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchPm10Trend } from "@/lib/sources/air";
 
-/** GET /api/air-trend → number[]: daily city-wide PM10 averages for the last 7 days. 502 with [] when pulse.eco is unreachable (the sparkline just hides). */
+/** GET /api/air-trend → { date: "YYYY-MM-DD", value }[]: daily city-wide PM10 averages over the last 7 days, oldest first. 502 with [] when pulse.eco is unreachable (the sparkline just hides). */
 export async function GET() {
   try {
     return NextResponse.json(await fetchPm10Trend(), {

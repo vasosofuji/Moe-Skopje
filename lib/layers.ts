@@ -59,4 +59,7 @@ export const LAYERS: Record<LayerId, LayerMeta> = {
 
 export const LAYER_IDS = Object.keys(LAYERS) as LayerId[];
 
+/** Layers that stay in the registry but are never shown or offered (UI, assistant, health). */
+export const HIDDEN_LAYERS: readonly LayerId[] = ["waste"];
+
 export const isLayerId = (v: unknown): v is LayerId => typeof v === "string" && Object.hasOwn(LAYERS, v);

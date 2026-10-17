@@ -49,8 +49,10 @@ export const FeatureSchema: z.ZodType<Feature> = z.object({
 export interface Adapter {
   id: string; // 'air' | 'weather' | 'outages-power' | ...
   ttl: number; // seconds
+  /** How long getLayer waits for fetch() before falling back. Default 8000. */
+  timeoutMs?: number;
   source: { name: string; url: string };
-  /** Throws on failure. getLayer passes a signal that aborts after 8 s; adapters should hand it to their fetch calls. */
+  /** Throws on failure. getLayer passes a signal that aborts after `timeoutMs` (default 8 s); adapters should hand it to their fetch calls. */
   fetch(signal?: AbortSignal): Promise<Feature[]>;
   /** Fewer features than this counts as a failed fetch (a 200 with changed markup parses to []). Default 0. */
   minFeatures?: number;

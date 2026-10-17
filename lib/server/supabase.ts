@@ -27,6 +27,7 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   return (client ??= createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }));
 }
 
+const IO_TIMEOUT_MS = 2000; // a hung Supabase must not hold up a layer response
 let warnedFailure = false;
 function swallow(action: string, err: unknown): void {
   if (warnedFailure) return;
@@ -41,7 +42,7 @@ export function supabaseSnapshots(): SnapshotStore {
       const db = getSupabaseAdmin();
       if (!db) return null;
       try {
-        const { data, error } = await db.from("source_snapshots").select("payload, fetched_at").eq("source_id", id).maybeSingle();
+        const { data, error } = await db.from("source_snapshots").select("payload, fetched_at").eq("source_id", id).abortSignal(AbortSignal.timeout(IO_TIMEOUT_MS)).maybeSingle();
         if (error) throw error;
         return data ? { payload: data.payload as Feature[], fetchedAt: new Date(data.fetched_at).toISOString() } : null;
       } catch (err) {
@@ -53,7 +54,7 @@ export function supabaseSnapshots(): SnapshotStore {
       const db = getSupabaseAdmin();
       if (!db) return;
       try {
-        const { error } = await db.from("source_snapshots").upsert({ source_id: id, payload, fetched_at: new Date().toISOString() });
+        const { error } = await db.from("source_snapshots").upsert({ source_id: id, payload, fetched_at: new Date().toISOString() }).abortSignal(AbortSignal.timeout(IO_TIMEOUT_MS));
         if (error) throw error;
       } catch (err) {
         swallow("write", err);

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { pm10Severity, pm25Severity } from "@/lib/aqi";
 import { fetchJson } from "./fetch-json";
+import { skopjeToday } from "./geo";
 import { loadSeed } from "./seed";
 import type { Adapter, Feature } from "./types";
 
@@ -20,6 +21,10 @@ export type PulseReading = z.infer<typeof Reading>;
 const EXTRA = { no2: "no2", o3: "o3", noise_dba: "noise", temperature: "temperature" } as const;
 
 const num = (s: string) => Number.parseFloat(s);
+
+// Skopje and its suburbs; community sensors with a wrong position (one sat in Belgium) are dropped.
+const BBOX = { w: 21.25, s: 41.9, e: 21.6, n: 42.1 };
+const inSkopje = (lng: number, lat: number) => lng >= BBOX.w && lng <= BBOX.e && lat >= BBOX.s && lat <= BBOX.n;
 
 /** Pure: latest reading per sensor and type (≤3 h old, numeric) → one air-station point per sensor with pm10 or pm25. */
 export function parseAir(readings: PulseReading[], names: ReadonlyMap<string, string>, now = Date.now()): Feature[] {
@@ -40,7 +45,8 @@ export function parseAir(readings: PulseReading[], names: ReadonlyMap<string, st
     const pm25 = latest.get("pm25")?.v;
     const value = pm10 ?? pm25;
     const [lat, lng] = position.split(",").map(num);
-    if (value === undefined || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    if (value === undefined || !Number.isFinite(lat) || !Number.isFinite(lng) || !inSkopje(lng, lat)) continue;
+    if (!((pm10 ?? 0) > 0 || (pm25 ?? 0) > 0)) continue; // a dead sensor reports exactly 0, never real particulate air
 
     const detail: Record<string, string | number> = {};
     if (pm10 !== undefined) detail.pm10 = pm10;
@@ -95,16 +101,19 @@ export const air: Adapter = {
 
 const pulseTime = (ms: number) => new Date(ms).toISOString().slice(0, 19) + "Z";
 
+export type TrendPoint = { date: string; value: number };
+
 /**
- * Daily city-wide PM10 averages for the last 7 days, oldest first (sensorId -1 is pulse.eco's all-sensors average).
+ * Daily city-wide PM10 averages over the last 7 days, oldest first, each with its Skopje date (YYYY-MM-DD); the oldest day
+ * can be missing, so expect 6 or 7 points (sensorId -1 is pulse.eco's all-sensors average).
  * Used by the air detail sparkline through /api/air-trend: pulse.eco sends no CORS headers, so a browser cannot call it directly.
  */
-export async function fetchPm10Trend(signal?: AbortSignal): Promise<number[]> {
+export async function fetchPm10Trend(signal?: AbortSignal): Promise<TrendPoint[]> {
   const now = Date.now();
   const url = `${BASE}/avgData/day?sensorId=-1&type=pm10&from=${pulseTime(now - 7 * 86_400_000)}&to=${pulseTime(now)}`;
   return Readings.parse(await fetchJson(url, signal))
     .map((r) => ({ at: Date.parse(r.stamp), v: num(r.value) }))
     .filter((p) => Number.isFinite(p.at) && Number.isFinite(p.v))
     .sort((a, b) => a.at - b.at)
-    .map((p) => p.v);
+    .map((p) => ({ date: skopjeToday(p.at), value: p.v }));
 }

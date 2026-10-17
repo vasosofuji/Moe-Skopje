@@ -107,10 +107,13 @@ test("air.fetch rejects when pulse.eco is down", async () => {
   await expect(air.fetch()).rejects.toThrow(/503/);
 });
 
-test("fetchPm10Trend returns the daily city averages as numbers, oldest first", async () => {
+test("fetchPm10Trend returns the daily city averages with their Skopje dates, oldest first", async () => {
   const fetchMock = vi.fn<typeof fetch>(async () => Response.json(avg));
   vi.stubGlobal("fetch", fetchMock);
-  expect(await fetchPm10Trend()).toEqual([17, 9, 4, 5, 5, 8, 10]);
+  const trend = await fetchPm10Trend();
+  expect(trend.map((p) => p.value)).toEqual([17, 9, 4, 5, 5, 8, 10]);
+  expect(trend[0].date).toBe("2026-10-10");
+  expect(trend.every((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.date))).toBe(true);
   expect(String(fetchMock.mock.calls[0][0])).toContain(
     "/rest/avgData/day?sensorId=-1&type=pm10&from=2026-10-10T11:00:00Z&to=2026-10-17T11:00:00Z",
   );
@@ -121,11 +124,41 @@ test("GET /api/air-trend is cached for 10 minutes on success and 1 minute on a 5
   const ok = await airTrendRoute();
   expect(ok.status).toBe(200);
   expect(ok.headers.get("cache-control")).toBe("public, s-maxage=600, stale-while-revalidate=6000");
-  expect(await ok.json()).toEqual([17, 9, 4, 5, 5, 8, 10]);
+  expect(((await ok.json()) as { date: string; value: number }[]).map((p) => p.value)).toEqual([17, 9, 4, 5, 5, 8, 10]);
 
   vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 503 })));
   const down = await airTrendRoute();
   expect(down.status).toBe(502);
   expect(down.headers.get("cache-control")).toBe("public, s-maxage=60");
   expect(await down.json()).toEqual([]);
+});
+
+test("parseAir drops sensors outside the Skopje box, all-zero readings and non-finite values", () => {
+  const at = (id: string, position: string, pm10: string, pm25: string) => [
+    { ...reading(id, "pm10", pm10), position },
+    { ...reading(id, "pm25", pm25), position },
+  ];
+  const ids = parseAir(
+    [
+      ...current,
+      ...at("belgium", "50.854,2.86", "5", "3"), // a community sensor with a wrong position
+      ...at("dead", "41.99,21.43", "0", "0"),
+      ...at("nan", "41.99,21.43", "n/a", "n/a"),
+      ...at("edge", "42.1,21.25", "7", "4"), // on the box edge: kept
+    ],
+    names,
+    NOW,
+  ).map((f) => f.properties.id);
+  expect(ids).not.toContain("air-belgium");
+  expect(ids).not.toContain("air-dead");
+  expect(ids).not.toContain("air-nan");
+  expect(ids).toContain("air-edge");
+  for (const f of parseAir(current, names, NOW)) {
+    const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
+    expect(lng).toBeGreaterThanOrEqual(21.25);
+    expect(lng).toBeLessThanOrEqual(21.6);
+    expect(lat).toBeGreaterThanOrEqual(41.9);
+    expect(lat).toBeLessThanOrEqual(42.1);
+    expect(Number(f.properties.detail?.pm10 ?? 0) > 0 || Number(f.properties.detail?.pm25 ?? 0) > 0).toBe(true);
+  }
 });
