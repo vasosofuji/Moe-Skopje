@@ -161,7 +161,7 @@ export function makeTools(lang: Lang, cites: Citation[]) {
       "(planned outages, one feature per affected street with startsAt/endsAt and detail.municipality; detail.approx=1 means only the municipality is known), " +
       "buses (JSP stops with detail.stopId; detail.lines = the lines with scheduled departures from that stop today; this layer gives stops and the lines serving them, not live positions), " +
       "parking (City Parking zone polygons A0, A, B, C, D with the price per hour), pharmacies (onDuty=1 means on duty), " +
-      "roadworks (street closures, traffic regimes and works with startsAt/endsAt), events (City of Skopje announcements and events with startsAt/endsAt and detail.venue), " +
+      "roadworks (street closures, traffic regimes and works with startsAt/endsAt), " +
       "earthquakes, schools.",
     inputSchema: z.object({
       id: z.enum(LAYER_IDS.filter((id) => !HIDDEN_LAYERS.includes(id)) as [LayerId, ...LayerId[]]),

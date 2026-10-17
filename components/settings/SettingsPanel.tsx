@@ -21,7 +21,7 @@ const GROUPS: { key: keyof Dict; ids: string[] }[] = [
   { key: "settings.group.environment", ids: ["air", "weather", "earthquakes"] },
   { key: "settings.group.utilities", ids: ["outages-power", "outages-water", "outages-heating"] },
   { key: "settings.group.transport", ids: ["buses", "parking", "roadworks"] },
-  { key: "settings.group.services", ids: ["pharmacies", "events", "schools"] },
+  { key: "settings.group.services", ids: ["pharmacies"] },
 ];
 
 /** Layers offered in Settings, by category; empty categories are dropped. */

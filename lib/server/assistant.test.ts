@@ -84,14 +84,14 @@ test("the tools are get_layer and find_place, with eager input streaming (no rep
   expect(tools.every((t) => t.eager_input_streaming)).toBe(true);
 });
 
-test("get_layer cannot reach hidden layers (waste) and describes buses, roadworks and events", () => {
+test("get_layer cannot reach hidden layers (waste, events, schools) and describes buses and roadworks", () => {
   const getLayer = makeTools("en", []).find((t) => t.name === "get_layer") as unknown as { description: string; input_schema: { properties: { id: { enum: string[] } } } };
   const ids = getLayer.input_schema.properties.id.enum;
-  expect(ids).not.toContain("waste");
-  expect(ids).toEqual(expect.arrayContaining(["buses", "roadworks", "events"]));
+  for (const hidden of ["waste", "events", "schools"]) expect(ids).not.toContain(hidden);
+  expect(ids).toEqual(expect.arrayContaining(["buses", "roadworks"]));
   expect(getLayer.description).not.toMatch(/waste/i);
   expect(getLayer.description).toMatch(/roadworks/);
-  expect(getLayer.description).toMatch(/events/);
+  expect(getLayer.description).not.toMatch(/events/);
   expect(getLayer.description).toMatch(/stops/);
 });
 
@@ -229,8 +229,8 @@ test("the trailer lists what the tools returned (deduplicated), and parseReply r
       events: [delta("Три училишта.")],
       beforeEvents: async () => {
         const getLayer = calls[0].tools.find((t) => t.name === "get_layer")!;
-        await getLayer.run({ id: "schools" });
-        await getLayer.run({ id: "schools" }); // the same three again
+        await getLayer.run({ id: "parking" });
+        await getLayer.run({ id: "parking" }); // the same three again
       },
     }),
   );
@@ -239,7 +239,7 @@ test("the trailer lists what the tools returned (deduplicated), and parseReply r
   expect(text).toBe("Три училишта.");
   expect(citations).toHaveLength(3);
   expect(new Set(citations.map((c) => c.featureId)).size).toBe(3);
-  expect(citations.every((c) => c.layer === "schools" && c.status === "static")).toBe(true);
+  expect(citations.every((c) => c.layer === "parking" && c.status === "static")).toBe(true);
 });
 
 test("a trailer the model wrote itself cannot supply citations: the server's trailer is last and the client reads only that", async () => {

@@ -1,16 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
 import { translate } from "@/lib/i18n/core";
-import { LAYER_IDS } from "@/lib/layers";
+import { HIDDEN_LAYERS, LAYER_IDS } from "@/lib/layers";
 import { statusSummary } from "./DataHealth";
 import { SettingsPanel, LAYER_GROUPS } from "./SettingsPanel";
 
 const t = (lang: "mk" | "en") => (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(lang, key, vars);
 
-test("every layer except waste sits in exactly one settings category, in category order", () => {
+test("every visible layer sits in exactly one settings category, in category order", () => {
   const listed = LAYER_GROUPS.flatMap((g) => g.ids);
   expect(new Set(listed).size).toBe(listed.length);
-  expect([...listed].sort()).toEqual(LAYER_IDS.filter((id) => id !== "waste").sort());
+  expect([...listed].sort()).toEqual(LAYER_IDS.filter((id) => !HIDDEN_LAYERS.includes(id)).sort());
   expect(LAYER_GROUPS.map((g) => g.key)).toEqual([
     "settings.group.environment",
     "settings.group.utilities",
