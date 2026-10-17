@@ -50,9 +50,9 @@ export const en: Dict = {
 
   // ── explore
   "explore.today": "Today in Skopje",
-  "explore.airNow": "Air now",
+  "explore.airNow": "Air",
   "explore.weather": "Weather",
-  "explore.nextBus": "Next bus near you",
+  "explore.nextBus": "Next bus",
   "explore.layers": "Layers",
   "explore.noData": "No data",
 
@@ -68,12 +68,12 @@ export const en: Dict = {
 
   // ── onboarding
   "onboarding.welcome": "Welcome to Moe Skopje",
-  "onboarding.welcomeBody": "Air, outages, buses, parking and pharmacies, all on one map.",
+  "onboarding.welcomeBody": "Air, outages, buses, parking and pharmacies on one map.",
   "onboarding.language": "Language",
-  "onboarding.layersTitle": "What do you want to follow?",
-  "onboarding.layersBody": "You can change this later in Settings.",
-  "onboarding.locationTitle": "Find what's near you",
-  "onboarding.locationBody": "Your location is only used to show nearby buses and pharmacies.",
+  "onboarding.layersTitle": "Choose layers",
+  "onboarding.layersBody": "You can change them in Settings.",
+  "onboarding.locationTitle": "See what's nearby",
+  "onboarding.locationBody": "Location is only used for nearby buses and pharmacies.",
   "onboarding.allowLocation": "Allow location",
   "onboarding.skip": "Skip",
   "onboarding.start": "Get started",
@@ -82,12 +82,12 @@ export const en: Dict = {
   "settings.title": "Settings",
   "settings.language": "Language",
   "settings.theme": "Theme",
-  "settings.theme.system": "System",
+  "settings.theme.system": "Auto",
   "settings.theme.light": "Light",
   "settings.theme.dark": "Dark",
   "settings.layers": "Default layers",
   "settings.health": "Data health",
-  "settings.healthBody": "Every source, its status and when it was last updated.",
+  "settings.healthBody": "Status and last update of every source.",
   "settings.openSource": "Open the source",
   "settings.about": "About",
   "settings.aboutBody":
@@ -99,7 +99,7 @@ export const en: Dict = {
   "assistant.send": "Send",
   "assistant.refused": "I can't help with that. Try a different question.",
   "assistant.unavailable": "The assistant isn't connected.",
-  "assistant.rateLimited": "You've reached the message limit for this hour. Please try again later.",
+  "assistant.rateLimited": "Too many messages. Try again later.",
 
   // --- Task 7: air ---
   "air.cityPm10": "City PM10",
@@ -114,7 +114,7 @@ export const en: Dict = {
 
   // --- Task 12: assistant ---
   "assistant.typing": "Typing…",
-  "assistant.error": "The assistant couldn't answer. Please try again.",
+  "assistant.error": "Couldn't get an answer.",
 
   // --- Task 4: shell ---
   "lang.mk": "Македонски",
@@ -131,7 +131,7 @@ export const en: Dict = {
   "explore.distance": "{d} away",
   "marker.when": "When",
   "onboarding.step": "Step {n} of {total}",
-  "onboarding.locationDenied": "Location wasn't allowed. You can turn it on later with the button on the map.",
+  "onboarding.locationDenied": "Location is off. Turn it on later from the map.",
   "settings.healthEmpty": "No sources connected yet.",
   "settings.items": "Items: {n}",
 
@@ -166,11 +166,11 @@ export const en: Dict = {
   "assistant.expand": "Show the conversation",
 
   // --- Task 13: tier 2 ---
-  "goOut.title": "Good to go out?",
+  "goOut.title": "Go out?",
   "goOut.score": "Score {score} out of 100",
-  "goOut.verdict.good": "A great day",
-  "goOut.verdict.fair": "Fine, with some care",
-  "goOut.verdict.poor": "Better to stay in",
+  "goOut.verdict.good": "Great day",
+  "goOut.verdict.fair": "With care",
+  "goOut.verdict.poor": "Better indoors",
   "goOut.reason.air": "Polluted air",
   "goOut.reason.rain": "Rain",
   "goOut.reason.temp": "Extreme temperature",
@@ -183,8 +183,8 @@ export const en: Dict = {
   "buses.inMin": "in {n} min",
   "buses.now": "now",
   "buses.toward": "to {headsign}",
-  "buses.tapDeparture": "Tap a departure to see the bus on the map.",
-  "buses.unavailable": "The timetable is unavailable right now.",
+  "buses.tapDeparture": "Tap to follow the bus.",
+  "buses.unavailable": "Timetable unavailable.",
 
   // --- S1 settings ---
   "settings.display": "Display",
@@ -226,10 +226,10 @@ export const en: Dict = {
   "route.openGoogle": "Open in Google Maps",
   "route.openWaze": "Open in Waze",
   "route.wazeNote": "Waze only takes a destination, so it picks its own route.",
-  "route.error.router": "Routing isn't available right now. Please try again.",
-  "route.error.rate": "Too many requests. Wait a moment and try again.",
+  "route.error.router": "Routing isn't available.",
+  "route.error.rate": "Too many requests. Wait a moment.",
   "route.error.bbox": "Both points must be in Skopje.",
-  "route.error.noroute": "We couldn't find a route between these two points.",
+  "route.error.noroute": "No route between these points.",
   "route.attribution": "Routing: FOSSGIS Valhalla. Data © OpenStreetMap contributors",
   "route.fixTheMap": "Report a map error",
 
@@ -237,7 +237,7 @@ export const en: Dict = {
   "outages.title": "Outages",
   "outages.days": "Pick a day",
   "outages.today": "Today",
-  "outages.none": "No planned outages on this day.",
+  "outages.none": "No planned outages.",
   "outages.count.one": "{n} outage",
   "outages.count.other": "{n} outages",
   "outages.type.power": "Power",
@@ -265,8 +265,25 @@ export const en: Dict = {
   "route.clear": "Clear the route",
   "route.detour": "Detour: +{distance}",
   "route.error.same": "Choose two different points.",
-  "route.error.network": "Can't reach the server. Check your connection.",
+  "route.error.network": "Can't reach the server.",
 
   // --- final fixes UI ---
   "outages.activeNow": "Under way now: {n}",
+
+  // --- u5-settings ---
+  "settings.ago": "{age} ago",
+
+  // --- u3-widgets ---
+  "status.demo": "Demo",
+  "status.ago": "{age} ago",
+  "unit.min": "min",
+
+  // --- u4-route-chat ---
+  "route.min": "{min} min",
+  "route.hour": "{h} h",
+  "route.hourMin": "{h} h {min} min",
+  "route.avoidsOne": "avoids 1 closure",
+  "route.avoidsMany": "avoids {n} closures",
+  "route.noClosures": "no closures",
+  "assistant.empty": "Ask about air, outages, buses, parking, roads.",
 };

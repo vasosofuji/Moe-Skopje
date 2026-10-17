@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
-import { coords, RoutePlanner, toPlace } from "./RoutePlanner";
+import { avoidsText, coords, durationText, RoutePlanner, toPlace } from "./RoutePlanner";
 
 test("the planner renders both fields in one card, a swap button and the three travel modes, with no submit button", () => {
   const html = renderToStaticMarkup(<RoutePlanner variant="panel" onClose={() => {}} />);
@@ -23,4 +23,13 @@ test("toPlace checks a /api/places row, keys it by id and picks the second line"
   expect(toPlace({ name: "x", kind: "settlement", lng: 1, lat: 2 }, "mk")?.kind).toBe("area");
   expect(toPlace({ name: "x", lng: "1", lat: 2 }, "mk")).toBeNull();
   expect(coords([21.4254, 41.9981])).toBe("41.99810, 21.42540");
+});
+
+test("the summary reads the trip time and the closures it avoids in each language", () => {
+  expect(durationText(40, "mk")).toBe("1 мин");
+  expect(durationText(12 * 60 + 20, "mk")).toBe("12 мин");
+  expect(durationText(3600, "en")).toBe("1 h");
+  expect(durationText(65 * 60, "en")).toBe("1 h 5 min");
+  expect([0, 1, 3].map((n) => avoidsText(n, "mk"))).toEqual(["без затворања", "заобиколува 1 затворање", "заобиколува 3 затворања"]);
+  expect(avoidsText(2, "en")).toBe("avoids 2 closures");
 });

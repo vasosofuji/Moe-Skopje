@@ -11,9 +11,8 @@ import { formatWhen } from "@/lib/i18n/format";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature } from "@/lib/sources/types";
 import { cachedLayers } from "@/lib/useLayer";
-import { colorFor, metricOf } from "@/lib/aqi";
 import { BusDepartures, tidyName } from "./BusDepartures";
-import { featureCenter, SEVERITY_COLORS } from "./renderLayer";
+import { featureCenter } from "./renderLayer";
 import { spring } from "@/lib/motion";
 
 const WIDTH = 320;
@@ -59,15 +58,6 @@ const FIELDS: [key: string, label: keyof Dict, unit?: Unit][] = [
 
 /** Units adapters write in Macedonian, in the reader's language. */
 const UNITS: Record<string, Unit> = { "МКД/час": u("ден./час", "MKD/h") };
-
-/** The card's accent: the air band, the parking zone's own colour, the outage type, otherwise severity or the layer colour. */
-function accentOf(p: Feature["properties"], layerColor?: string): string {
-  const d = p.detail ?? {};
-  if (p.kind === "air-station" && typeof p.value === "number") return colorFor(metricOf(d), p.value);
-  if (p.kind === "parking-zone" && typeof d.color === "string") return d.color;
-  if (p.kind === "outage" && layerColor) return layerColor;
-  return p.severity !== undefined ? SEVERITY_COLORS[p.severity] : (layerColor ?? "var(--system-blue)");
-}
 
 const httpUrl = (v: string) => {
   try {
@@ -115,13 +105,20 @@ export function MarkerCard({
   const [lng, lat] = featureCenter(feature.geometry);
   const [point, setPoint] = useState(() => map.project([lng, lat]));
 
+  // Only a floating card follows the map; a docked one (phones) would re-render on every pan frame for nothing.
   useEffect(() => {
-    const follow = () => setPoint(map.project([lng, lat]));
+    if (docked) return;
+    let frame = 0;
+    const follow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setPoint(map.project([lng, lat])));
+    };
     map.on("move", follow);
     return () => {
+      cancelAnimationFrame(frame);
       map.off("move", follow);
     };
-  }, [map, lng, lat]);
+  }, [map, lng, lat, docked]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -132,14 +129,14 @@ export function MarkerCard({
   const layer = layerOf(feature);
   const meta = layer && LAYERS[layer.id as LayerId];
   const p = feature.properties;
-  const accent = accentOf(p, meta?.color);
-  const whiteAccent = accent.toUpperCase() === "#FFFFFF"; // parking zone D
   const title = p.kind === "bus-stop" ? tidyName(pick(p.title, lang)) : pick(p.title, lang);
   const unit = p.unit && (UNITS[p.unit]?.[lang] ?? p.unit);
   const Icon = meta?.icon;
   const d = p.detail ?? {};
   const time = formatWhen(p.startsAt, p.endsAt, lang);
   const rows = FIELDS.filter(([k]) => d[k] !== undefined && d[k] !== "");
+  // Lists and long text read better under their label than squeezed right of it.
+  const wide = (k: string) => k === "streets" || k === "lines" || String(d[k]).length > 28;
 
   // Placement: docked cards span the top of the screen; floating ones centre on the point, clamped to the free area.
   const box = map.getContainer().getBoundingClientRect();
@@ -176,30 +173,26 @@ export function MarkerCard({
         style={{ transformOrigin: origin, maxHeight }}
         className="glass glass-card flex max-h-[60dvh] flex-col gap-3 overflow-y-auto"
       >
-        <header className="flex items-start gap-3">
-          <span
-            className={cx(
-              "flex size-9 shrink-0 items-center justify-center rounded-full",
-              whiteAccent ? "text-black/70 ring-[0.5px] ring-black/20" : "text-white",
-            )}
-            style={{ background: accent }}
-          >
-            {Icon && <Icon size={18} aria-hidden />}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="t-headline">{title}</h2>
-            {meta && <p className="t-footnote text-label-2">{t(meta.titleKey)}</p>}
-            {d.onDuty === 1 && (
-              <span className="t-caption mt-1 inline-flex h-6 items-center rounded-full bg-(--system-green)/15 px-2 text-(--system-green)">
-                {t("marker.onDuty")}
-              </span>
+        <header className="flex items-start gap-2">
+          <div className="min-w-0 flex-1 pt-1">
+            <h2 className="t-headline line-clamp-2" title={title}>
+              {title}
+            </h2>
+            {meta && (
+              <p className="t-footnote flex min-w-0 items-center gap-1.5 text-label-2">
+                {Icon && <Icon size={13} strokeWidth={2.25} aria-hidden className="shrink-0" />}
+                <span className="truncate">
+                  {t(meta.titleKey)}
+                  {d.onDuty === 1 && <span className="font-semibold text-label"> · {t("marker.onDuty")}</span>}
+                </span>
+              </p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label={t("common.close")}
-            className={cx("-m-1.5 flex size-11 shrink-0 items-center justify-center rounded-full", focusRing)}
+            className={cx("-mt-1.5 -mr-1.5 flex size-11 shrink-0 items-center justify-center rounded-full", focusRing)}
           >
             <span className="flex size-7 items-center justify-center rounded-full bg-(--label)/8 text-label-2">
               <X size={15} strokeWidth={2.5} aria-hidden />
@@ -225,13 +218,20 @@ export function MarkerCard({
         )}
 
         {rows.length > 0 && (
-          <dl className="t-subhead grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-            {rows.map(([k, label, unit]) => (
-              <div key={k} className="contents">
-                <dt className="text-label-2">{t(label)}</dt>
-                <dd className="min-w-0 break-words text-right">{detailValue(k, d[k], d, t, lang, unit)}</dd>
-              </div>
-            ))}
+          <dl className="t-subhead grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+            {rows.map(([k, label, unit]) =>
+              wide(k) ? (
+                <div key={k} className="col-span-2 flex flex-col">
+                  <dt className="t-footnote text-label-2">{t(label)}</dt>
+                  <dd className="min-w-0 break-words">{detailValue(k, d[k], d, t, lang, unit)}</dd>
+                </div>
+              ) : (
+                <div key={k} className="contents">
+                  <dt className="text-label-2">{t(label)}</dt>
+                  <dd className="min-w-0 break-words text-right">{detailValue(k, d[k], d, t, lang, unit)}</dd>
+                </div>
+              ),
+            )}
           </dl>
         )}
 
@@ -242,20 +242,23 @@ export function MarkerCard({
         )}
 
         {layer && (
-          <footer className="flex flex-wrap items-center justify-between gap-2 border-t-[0.5px] border-(--label)/10 pt-3">
-            <StatusBadge status={layer.data.status} updatedAt={layer.data.updatedAt} />
+          <footer className="-mb-2 flex flex-col items-start border-t-[0.5px] border-(--label)/10 pt-3">
+            {/* freshness on its own line, so a long source name never squeezes it */}
+            <StatusBadge status={layer.data.status} updatedAt={layer.data.updatedAt} showLive />
             {layer.data.source.url ? (
               <a
                 href={layer.data.source.url}
                 target="_blank"
                 rel="noreferrer"
-                className={cx("t-footnote flex min-h-11 items-center gap-1 text-(--system-blue)", focusRing)}
+                className={cx("t-footnote flex min-h-11 max-w-full items-center gap-1 text-(--system-blue) active:scale-98", focusRing)}
               >
-                {t("common.source")}: {layer.data.source.name}
-                <ExternalLink size={13} aria-hidden />
+                <span className="truncate">
+                  {t("common.source")}: {layer.data.source.name}
+                </span>
+                <ExternalLink size={13} aria-hidden className="shrink-0" />
               </a>
             ) : (
-              <span className="t-footnote text-label-2">
+              <span className="t-footnote flex min-h-11 items-center text-label-2">
                 {t("common.source")}: {layer.data.source.name}
               </span>
             )}

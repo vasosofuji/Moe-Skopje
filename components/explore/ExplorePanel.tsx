@@ -2,21 +2,22 @@
 
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
 import { LineBadge, tidyName, useDepartures } from "@/components/map/BusDepartures";
 import { CENTER, useMap, type LngLat } from "@/components/map/MapView";
 import { featureCenter } from "@/components/map/renderLayer";
 import { LayerBadge, worstOf } from "@/components/glass/StatusBadge";
-import { AQI_COLORS, aqiColor, aqiPosition, pm10Severity } from "@/lib/aqi";
+import { pm10Severity } from "@/lib/aqi";
 import { cx, focusRing } from "@/lib/cx";
 import { pick, useT, type Dict } from "@/lib/i18n";
 import { formatDate, formatDistance } from "@/lib/i18n/format";
-import { LAYERS, type LayerId } from "@/lib/layers";
+import { LAYERS } from "@/lib/layers";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
 import { useLayer } from "@/lib/useLayer";
-import { AirDetail, cityPm10, stationsOf } from "./AirDetail";
+import { AirDetail, AqiBar, cityPm10, stationsOf } from "./AirDetail";
 import { GoOutCard } from "./GoOutCard";
 import { OutagesWidget } from "./OutagesWidget";
+import { Empty, Line, Tile, Value } from "./Tile";
 import { spring } from "@/lib/motion";
 
 const featuresOf = (data?: LayerResponse) => (data?.features.features ?? []) as Feature[];
@@ -42,118 +43,31 @@ export function condition(code: number): keyof Dict {
 }
 
 
-/** A "Today" tile. With `onOpen` a button stretched over the whole tile opens more; `data` is its layer, badged when not live. */
-function Card({
-  id,
-  title,
-  loading,
-  data,
-  onOpen,
-  openLabel,
-  children,
-}: {
-  id: LayerId;
-  title: string;
-  loading: boolean;
-  data?: LayerResponse;
-  onOpen?(): void;
-  openLabel?: string;
-  children: ReactNode;
-}) {
-  const { icon: Icon, color } = LAYERS[id];
-  return (
-    <section
-      aria-busy={loading}
-      className={cx(
-        "relative flex min-h-[116px] min-w-0 flex-col rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-3",
-        // Press feedback for the whole tile: in at once, out in 200 ms.
-        onOpen && "transition-transform duration-200 has-[button:active]:scale-97 has-[button:active]:duration-0 motion-reduce:has-[button:active]:scale-100",
-      )}
-    >
-      {onOpen && (
-        <button
-          type="button"
-          data-opens={id}
-          onClick={onOpen}
-          aria-label={openLabel}
-          className={cx("absolute inset-0 rounded-card active:scale-100", focusRing)}
-        />
-      )}
-      <h3 className="t-footnote flex min-w-0 items-center gap-1.5 font-semibold text-label-2">
-        <Icon size={15} aria-hidden className="shrink-0" style={{ color }} />
-        <span className="truncate">{title}</span>
-      </h3>
-      <div className="mt-auto flex min-w-0 flex-col gap-0.5 pt-3">
-        {loading ? (
-          <>
-            <span className="skeleton h-7 w-16" />
-            <span className="skeleton mt-1 h-3.5 w-24" />
-          </>
-        ) : (
-          <>
-            {children}
-            <LayerBadge data={data} className="mt-1.5" />
-          </>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Big({ value, unit }: { value: ReactNode; unit?: string }) {
-  return (
-    <p className="t-title2 truncate tabular-nums">
-      {value}
-      {unit && <span className="t-subhead ml-1 font-medium text-label-2">{unit}</span>}
-    </p>
-  );
-}
-
-const Caption = ({ children }: { children: ReactNode }) => <p className="t-footnote truncate text-label-2">{children}</p>;
-
-function Empty() {
-  const { t } = useT();
-  return (
-    <>
-      <Big value={<span className="text-label-2">—</span>} />
-      <Caption>{t("explore.noData")}</Caption>
-    </>
-  );
-}
-
-/** The AQI scale as a bar with a dot at the reading: the legend of the heat map, which uses the same colours and spots. */
-function AqiBar({ pm10 }: { pm10: number }) {
-  const stops = AQI_COLORS.map((c, i) => `${c} ${(((i + 0.5) / 6) * 100).toFixed(1)}%`).join(", ");
-  return (
-    <span aria-hidden className="relative mt-2 block h-1.5 rounded-full" style={{ background: `linear-gradient(90deg, ${stops})` }}>
-      <span
-        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_1.5px_rgb(0_0_0/.35)]"
-        style={{ left: `${aqiPosition("pm10", pm10) * 100}%` }}
-      />
-    </span>
-  );
-}
-
 /** Same number as the air detail: the median over the PM10 stations. */
 function AirCard({ onOpen }: { onOpen(): void }) {
   const { t } = useT();
   const { data, loading } = useLayer("air", true);
   const city = data ? cityPm10(stationsOf(data)) : null;
   return (
-    <Card id="air" title={t("explore.airNow")} loading={loading} data={data} onOpen={onOpen} openLabel={t("air.details")}>
+    <Tile
+      icon={LAYERS.air.icon}
+      title={t("explore.airNow")}
+      loading={loading}
+      source={data}
+      onOpen={onOpen}
+      openLabel={t("air.details")}
+      opens="air"
+    >
       {city !== null ? (
         <>
-          <Big value={city} unit="µg/m³" />
-          <p className="t-footnote flex min-w-0 items-center gap-1.5 font-medium">
-            <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: aqiColor(city) }} />
-            <span className="truncate">{t(`air.level.${pm10Severity(city)}`)}</span>
-          </p>
-          <AqiBar pm10={city} />
+          <Value unit="µg/m³">{city}</Value>
+          <Line>{t(`air.level.${pm10Severity(city)}`)}</Line>
+          <AqiBar pm10={city} className="mt-auto" />
         </>
       ) : (
         <Empty />
       )}
-    </Card>
+    </Tile>
   );
 }
 
@@ -163,27 +77,28 @@ function WeatherCard() {
   const now = featuresOf(data).find((f) => typeof f.properties.value === "number");
   const code = now?.properties.detail?.weatherCode;
   return (
-    <Card id="weather" title={t("explore.weather")} loading={loading} data={data}>
+    <Tile icon={LAYERS.weather.icon} title={t("explore.weather")} loading={loading} source={data}>
       {now ? (
         <>
-          <Big value={`${Math.round(now.properties.value!)}°`} />
-          {typeof code === "number" && <Caption>{t(condition(code))}</Caption>}
+          <Value>{`${Math.round(now.properties.value!)}°`}</Value>
+          {typeof code === "number" && <Line>{t(condition(code))}</Line>}
         </>
       ) : (
         <Empty />
       )}
-    </Card>
+    </Tile>
   );
 }
 
 /** "Good to go out?" from the same city PM10 as the air tile and the current weather; badged with the worse of the two layers. */
 function GoOut() {
-  const air = useLayer("air", true).data;
-  const weatherData = useLayer("weather", true).data;
+  const { data: air, loading: airLoading } = useLayer("air", true);
+  const { data: weatherData, loading: weatherLoading } = useLayer("weather", true);
   const weather = featuresOf(weatherData).find((f) => typeof f.properties.value === "number");
   const precip = weather?.properties.detail?.precipitation;
   return (
     <GoOutCard
+      loading={airLoading || weatherLoading} // one score from both readings, not an interim one from the first to answer
       source={worstOf([air, weatherData])}
       pm10={air ? cityPm10(stationsOf(air)) : null}
       tempC={weather?.properties.value ?? null}
@@ -210,17 +125,17 @@ function BusCard() {
   }, [data, location]);
   const stopId = nearest?.f.properties.detail?.stopId;
   const list = useDepartures(typeof stopId === "string" ? stopId : undefined);
-  // The tile is narrow: "4 мин" rather than "за 4 мин".
-  const when = (d: { inMin: number; at: string }) => (d.inMin <= 0 ? t("buses.now") : d.inMin < 60 ? t("age.min", { n: d.inMin }) : d.at);
   const where = location && nearest ? t("explore.distance", { d: formatDistance(nearest.m, lang) }) : t("explore.nearCentre");
+  const name = nearest && tidyName(pick(nearest.f.properties.title, lang));
   const next = list?.[0];
+  const line = next ? name : t(list === null ? "buses.unavailable" : "buses.none");
 
   return (
-    <Card
-      id="buses"
+    <Tile
+      icon={LAYERS.buses.icon}
       title={t("explore.nextBus")}
       loading={loading || (typeof stopId === "string" && list === undefined)}
-      data={data}
+      source={data}
       onOpen={
         nearest &&
         (() => {
@@ -229,25 +144,32 @@ function BusCard() {
           reveal();
         })
       }
-      openLabel={nearest && tidyName(pick(nearest.f.properties.title, lang))}
+      openLabel={name}
     >
       {nearest ? (
         <>
           {next ? (
-            <p className="flex min-w-0 items-center gap-2">
-              <LineBadge route={next.route} className="t-footnote h-6 min-w-7" />
-              <span className="t-title2 truncate tabular-nums">{when(next)}</span>
-            </p>
+            <div className="flex h-[41px] min-w-0 items-center gap-1.5">
+              <LineBadge route={next.route} compact />
+              {/* The tile is narrow: "4 мин" rather than "за 4 мин". */}
+              {next.inMin <= 0 ? (
+                <Value>{t("buses.now")}</Value>
+              ) : next.inMin < 60 ? (
+                <Value unit={t("unit.min")}>{next.inMin}</Value>
+              ) : (
+                <Value>{next.at}</Value>
+              )}
+            </div>
           ) : (
-            <p className="t-subhead text-label-2">{t(list === null ? "buses.unavailable" : "buses.none")}</p>
+            <Value dim>—</Value>
           )}
-          <Caption>{tidyName(pick(nearest.f.properties.title, lang))}</Caption>
-          <Caption>{where}</Caption>
+          <Line title={line}>{line}</Line>
+          <p className="t-footnote mt-auto truncate text-label-2">{where}</p>
         </>
       ) : (
         <Empty />
       )}
-    </Card>
+    </Tile>
   );
 }
 
@@ -300,10 +222,14 @@ function ExploreList({ onOpenAir }: { onOpenAir(): void }) {
         href="https://uslugi.gov.mk/"
         target="_blank"
         rel="noopener noreferrer"
-        className={cx("flex min-h-12 items-center justify-between gap-3 rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) px-4", focusRing)}
+        className={cx(
+          "flex min-h-12 items-center gap-3 rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) px-4 active:scale-98",
+          focusRing,
+        )}
       >
-        <span className="t-subhead font-semibold">{t("eservices.title")}</span>
-        <ExternalLink size={16} aria-hidden className="shrink-0 text-label-2" />
+        <span className="t-body min-w-0 flex-1 truncate">{t("eservices.title")}</span>
+        <span className="t-subhead shrink-0 text-label-2">uslugi.gov.mk</span>
+        <ExternalLink size={15} aria-hidden className="-ml-1 shrink-0 text-label-2" />
         <span className="sr-only">{t("eservices.opensNew")}</span>
       </a>
     </div>

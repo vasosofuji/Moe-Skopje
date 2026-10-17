@@ -34,7 +34,7 @@ const dayDate = (date: string) => new Date(`${date}T12:00:00Z`); // midday UTC i
 
 /**
  * "Outages" widget: planned water, power and heating outages for the next 7 days. A strip of day chips (each with the
- * count and a bar split by type) picks the day; tapping an outage flies to its streets and highlights them on the map.
+ * count and a thin bar split by type) picks the day; tapping an outage flies to its streets and highlights them on the map.
  */
 export function OutagesWidget() {
   const { t, lang } = useT();
@@ -42,6 +42,11 @@ export function OutagesWidget() {
   const [picked, setPicked] = useState(0);
   const { showArea, reveal, highlight, setHighlight } = useMap();
   const day = days?.[picked];
+  const all = days?.flatMap((d) => d.items) ?? [];
+  // Demo or stale items anywhere in the week taint the counts too, so the header says so up front. A row repeats it only
+  // when the week is mixed, i.e. when its own status is news.
+  const worst = worstOf(all);
+  const mixed = new Set(all.map((i) => i.status)).size > 1;
   // Today's list also holds outages that only start later today; "under way" counts just the ones whose window contains now.
   const active = activeNow(days?.[0]?.items ?? []).length;
   // Macedonian takes the singular after 1, 21, 31… (not 11); English only after 1.
@@ -50,23 +55,22 @@ export function OutagesWidget() {
 
   return (
     <section aria-busy={days === undefined} className="rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-3">
-      <div className="flex items-center justify-between gap-2 px-1">
-        <h3 className="t-headline">{t("outages.title")}</h3>
-        {/* demo or stale items anywhere in the week taint the counts too, so the widget says so up front */}
-        <LayerBadge data={worstOf(days?.flatMap((d) => d.items) ?? [])} />
+      <div className="flex min-h-6 items-center justify-between gap-2 px-1">
+        <h3 className="t-headline min-w-0 truncate">{t("outages.title")}</h3>
+        <LayerBadge data={worst} />
       </div>
-      {active > 0 && <p className="t-footnote px-1 text-label-2">{t("outages.activeNow", { n: active })}</p>}
+      {active > 0 && <p className="t-footnote px-1 text-label-2 tabular-nums">{t("outages.activeNow", { n: active })}</p>}
 
       {days === undefined ? (
         <div className="mt-3 flex flex-col gap-2">
-          <span className="skeleton h-14" />
+          <span className="skeleton h-[60px]" />
           <span className="skeleton h-11" />
         </div>
       ) : days === null || days.length === 0 ? (
         <p className="t-subhead mt-1 px-1 text-label-2">{t("explore.noData")}</p>
       ) : (
         <>
-          <div role="group" aria-label={t("outages.days")} className="mt-3 grid grid-cols-7 gap-0.5 rounded-[12px] bg-(--label)/6 p-0.5">
+          <div role="group" aria-label={t("outages.days")} className="-mx-1 mt-3 grid grid-cols-7 rounded-[12px] bg-(--label)/6 p-0.5">
             {days.map((d, i) => {
               const on = i === picked;
               const n = d.items.length;
@@ -79,17 +83,23 @@ export function OutagesWidget() {
                   aria-label={`${formatDate(dayDate(d.date), lang, { weekday: true })}: ${count(n)}`}
                   onClick={() => setPicked(i)}
                   className={cx(
-                    "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[10px] transition-colors",
+                    "flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[10px] active:scale-95",
                     focusRing,
-                    on && "bg-(--thumb) shadow-[0_3px_8px_rgb(0_0_0/.12),0_1px_1px_rgb(0_0_0/.06)]",
+                    on && "bg-(--thumb) shadow-[0_1px_3px_rgb(0_0_0/.12)]",
                   )}
                 >
-                  <span className={cx("max-w-full truncate text-[11px] leading-4 font-medium tracking-[-0.2px]", on ? "text-label" : "text-label-2")}>
+                  <span
+                    className={cx(
+                      "t-caption tracking-tight whitespace-nowrap", // "Денес" fits a 320 px chip to the pixel; a hair of overhang beats an ellipsis
+                      // today in the accent colour, as in Calendar
+                      i === 0 ? "text-(--system-blue)" : on ? "text-label" : "text-label-2",
+                    )}
+                  >
                     {label}
                   </span>
-                  <span className={cx("t-headline tabular-nums", !n && "text-label-2")}>{n || "–"}</span>
-                  {/* the day's outages by type, as a split bar */}
-                  <span aria-hidden className="flex h-1 w-6 overflow-hidden rounded-full">
+                  <span className={cx("t-headline leading-5 tabular-nums", !n && "text-label-2")}>{n || "–"}</span>
+                  {/* the day's outages by type, as a thin split bar; the slot stays on empty days so chips line up */}
+                  <span aria-hidden className="flex h-1 w-6 gap-px overflow-hidden rounded-full">
                     {TYPES.map((type) => {
                       const k = d.items.filter((x) => x.type === type).length;
                       return k ? <span key={type} style={{ flexGrow: k, background: LAYERS[LAYER[type]].color }} /> : null;
@@ -106,6 +116,8 @@ export function OutagesWidget() {
             <ul className="mt-2 flex flex-col">
               {day?.items.map((item) => {
                 const on = highlight?.id === item.id;
+                const { icon: Icon, color } = LAYERS[LAYER[item.type]];
+                const area = item.streets.join(", ");
                 return (
                   <li key={item.id} className="border-t-[0.5px] border-(--label)/10 [contain-intrinsic-size:auto_64px] [content-visibility:auto] first:border-t-0">
                     <button
@@ -117,28 +129,28 @@ export function OutagesWidget() {
                         showArea(item.bbox);
                         reveal();
                       }}
-                      style={{ "--c": LAYERS[LAYER[item.type]].color } as CSSProperties}
+                      style={{ "--c": color } as CSSProperties}
                       className={cx(
-                        "my-0.5 flex min-h-11 w-full items-start gap-2.5 rounded-[10px] px-1 py-2 text-left transition-colors",
+                        "my-0.5 flex min-h-11 w-full items-start gap-2.5 rounded-[10px] px-1.5 py-2 text-left active:scale-98",
                         focusRing,
                         on ? "bg-[color-mix(in_srgb,var(--c)_14%,transparent)]" : "hover:bg-(--label)/5",
                       )}
                     >
-                      <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-(--c)" />
+                      <Icon size={15} strokeWidth={2.25} aria-hidden className="mt-0.5 shrink-0 text-(--c)" />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="flex items-baseline gap-2">
-                          <span className="t-subhead min-w-0 flex-1 truncate font-semibold">
+                          <span className="t-subhead min-w-0 flex-1 truncate font-semibold" title={`${t(`outages.type.${item.type}`)} · ${item.municipality}`}>
                             {t(`outages.type.${item.type}`)} · {item.municipality}
                           </span>
                           <span className="t-footnote shrink-0 text-label-2 tabular-nums">{span(item, lang)}</span>
                         </span>
-                        <span className="t-footnote line-clamp-2 text-label-2">{item.streets.join(", ")}</span>
-                        {/* the item carries its layer's status but not its age, so a stale badge has none */}
-                        {item.status !== "live" && (
-                          <span className="mt-1 self-start">
-                            <StatusBadge status={item.status} updatedAt="" />
+                        {area && (
+                          <span className="t-footnote line-clamp-2 text-label-2" title={area}>
+                            {area}
                           </span>
                         )}
+                        {/* the item carries its layer's status but not its age, so a stale badge has none */}
+                        {mixed && <StatusBadge status={item.status} updatedAt="" className="mt-0.5" />}
                       </span>
                     </button>
                   </li>

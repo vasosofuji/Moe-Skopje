@@ -1,26 +1,26 @@
 "use client";
 
-import { CornerUpRight, LocateFixed, LocateOff, WifiOff } from "lucide-react";
+import { CornerUpRight, LocateOff, WifiOff } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import dynamic from "next/dynamic";
 import { Activity, useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from "react";
-import { AskBar } from "@/components/assistant/AskBar";
-import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import type { Citation } from "@/components/assistant/Citation";
 import { ExplorePanel } from "@/components/explore/ExplorePanel";
 import { GlassButton } from "@/components/glass/GlassButton";
 import { BusTracker } from "@/components/map/BusTracker";
+import { LocateButton } from "@/components/map/LocateButton";
 import { MapContext, MapView, type BBox, type Highlight, type LngLat, type MapApi, type Trip } from "@/components/map/MapView";
 import { MarkerCard } from "@/components/map/MarkerCard";
+import { centerOnUser } from "@/components/map/userLocationLayer";
 import { Onboarding } from "@/components/onboarding/Onboarding";
-import { RoutePlanner } from "@/components/route/RoutePlanner";
-import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Dict } from "@/lib/i18n";
 import { HIDDEN_LAYERS, type LayerId } from "@/lib/layers";
 import { spring } from "@/lib/motion";
 import { usePrefs } from "@/lib/prefs";
 import type { Feature } from "@/lib/sources/types";
+import { useGeolocation } from "@/lib/useGeolocation";
 import { getCachedLayer, refreshLayer } from "@/lib/useLayer";
 import { useHydrated, useIsDesktop, useMedia } from "@/lib/useMedia";
 import { BottomSheet, type Snap } from "./BottomSheet";
@@ -29,6 +29,12 @@ import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 
 export type Tab = "explore" | "ask" | "settings";
+
+// Off the first load: only Explore shows at start, and AskBar is desktop-only.
+const AskBar = dynamic(() => import("@/components/assistant/AskBar").then((m) => m.AskBar));
+const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel").then((m) => m.AssistantPanel));
+const RoutePlanner = dynamic(() => import("@/components/route/RoutePlanner").then((m) => m.RoutePlanner));
+const SettingsPanel = dynamic(() => import("@/components/settings/SettingsPanel").then((m) => m.SettingsPanel));
 
 const TOAST_MS = 6000;
 /** Camera moves stay short and run even with reduced motion (they say where the content went). */
@@ -86,7 +92,7 @@ export function AppShell() {
   const [highlight, setHighlight] = useState<Highlight | null>(null);
   const [trip, track] = useState<Trip | null>(null);
   const [map, setMap] = useState<MapLibreMap>();
-  const [location, setLocation] = useState<LngLat>();
+  const { location, locate: findMe } = useGeolocation();
   const [toast, setToast] = useState<keyof Dict | null>(null);
   const [routeOpen, setRouteOpen] = useState(false); // phones and tablets; desktop's planner lives in AskBar
   const [routeKept, setRouteKept] = useState(false); // the planner is mounted: open, or folded away by a tab switch
@@ -129,24 +135,13 @@ export function AppShell() {
   }, [isWide]);
 
   const locate = useCallback(
-    (fly = true) =>
-      new Promise<boolean>((resolve) => {
-        if (!("geolocation" in navigator)) return resolve(false);
-        navigator.geolocation.getCurrentPosition(
-          ({ coords }) => {
-            const at: LngLat = [coords.longitude, coords.latitude];
-            setLocation(at);
-            if (fly) flyTo(at, 15);
-            resolve(true);
-          },
-          () => {
-            if (fly) setToast("map.locationUnavailable");
-            resolve(false);
-          },
-          { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
-        );
-      }),
-    [flyTo],
+    async (fly = true) => {
+      const at = await findMe();
+      if (at && fly && map) centerOnUser(map, at, padding());
+      if (!at && fly) setToast("map.locationUnavailable");
+      return at !== null;
+    },
+    [findMe, map, padding],
   );
 
   // Location is never stored; if the user already allowed it, ask the browser again (no prompt) for "Next bus near you".
@@ -295,14 +290,7 @@ export function AppShell() {
 
                 {/* On phones the docked marker card takes the top-right corner, so the locate button steps aside. */}
                 {!sheetFull && !(selected && !isWide) && (
-                  <GlassButton
-                    shape="circle"
-                    aria-label={t("map.myLocation")}
-                    onClick={() => void locate(true)}
-                    className={cx("fixed z-10", isWide ? "right-4 bottom-12" : "top-[calc(env(safe-area-inset-top)+68px)] right-3")}
-                  >
-                    <LocateFixed size={20} aria-hidden className={location ? "text-(--system-blue)" : undefined} />
-                  </GlassButton>
+                  <LocateButton className={cx("fixed z-10", isWide ? "right-4 bottom-12" : "top-[calc(env(safe-area-inset-top)+68px)] right-3")} />
                 )}
 
                 <AnimatePresence>

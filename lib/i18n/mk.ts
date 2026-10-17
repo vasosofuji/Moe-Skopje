@@ -50,9 +50,9 @@ export const mk = {
 
   // ── explore
   "explore.today": "Денес во Скопје",
-  "explore.airNow": "Воздух сега",
+  "explore.airNow": "Воздух",
   "explore.weather": "Време",
-  "explore.nextBus": "Следен автобус",
+  "explore.nextBus": "Автобус",
   "explore.layers": "Слоеви",
   "explore.noData": "Нема податоци",
 
@@ -68,12 +68,12 @@ export const mk = {
 
   // ── onboarding
   "onboarding.welcome": "Добредојдовте во Мое Скопје",
-  "onboarding.welcomeBody": "Воздух, прекини, автобуси, паркинг и аптеки, сè на една карта.",
+  "onboarding.welcomeBody": "Воздух, прекини, автобуси, паркинг и аптеки на една карта.",
   "onboarding.language": "Јазик",
-  "onboarding.layersTitle": "Што сакате да следите?",
-  "onboarding.layersBody": "Подоцна можете да го промените ова во Поставки.",
-  "onboarding.locationTitle": "Најдете што има во ваша близина",
-  "onboarding.locationBody": "Локацијата се користи само за приказ на автобуси и аптеки во близина.",
+  "onboarding.layersTitle": "Изберете слоеви",
+  "onboarding.layersBody": "Може да се менуваат во Поставки.",
+  "onboarding.locationTitle": "Што има во близина",
+  "onboarding.locationBody": "Локацијата служи само за автобуси и аптеки во близина.",
   "onboarding.allowLocation": "Дозволи локација",
   "onboarding.skip": "Прескокни",
   "onboarding.start": "Започни",
@@ -82,12 +82,12 @@ export const mk = {
   "settings.title": "Поставки",
   "settings.language": "Јазик",
   "settings.theme": "Тема",
-  "settings.theme.system": "Системска",
+  "settings.theme.system": "Авто",
   "settings.theme.light": "Светла",
   "settings.theme.dark": "Темна",
   "settings.layers": "Стандардни слоеви",
   "settings.health": "Состојба на податоците",
-  "settings.healthBody": "Секој извор, неговата состојба и кога последно е ажуриран.",
+  "settings.healthBody": "Состојба и последно ажурирање на секој извор.",
   "settings.openSource": "Отвори го изворот",
   "settings.about": "За апликацијата",
   "settings.aboutBody":
@@ -99,7 +99,7 @@ export const mk = {
   "assistant.send": "Испрати",
   "assistant.refused": "Не можам да одговорам на ова. Обидете се со друго прашање.",
   "assistant.unavailable": "Асистентот не е поврзан.",
-  "assistant.rateLimited": "Ја достигнавте границата на пораки за овој час. Обидете се подоцна.",
+  "assistant.rateLimited": "Премногу пораки. Обидете се подоцна.",
 
   // --- Task 7: air ---
   "air.cityPm10": "PM10 во градот",
@@ -114,7 +114,7 @@ export const mk = {
 
   // --- Task 12: assistant ---
   "assistant.typing": "Пишува…",
-  "assistant.error": "Асистентот не успеа да одговори. Обидете се повторно.",
+  "assistant.error": "Одговорот не успеа.",
 
   // --- Task 4: shell ---
   "lang.mk": "Македонски",
@@ -131,7 +131,7 @@ export const mk = {
   "explore.distance": "{d} од вас",
   "marker.when": "Кога",
   "onboarding.step": "Чекор {n} од {total}",
-  "onboarding.locationDenied": "Локацијата не е дозволена. Можете да ја вклучите подоцна со копчето на картата.",
+  "onboarding.locationDenied": "Локацијата е исклучена. Вклучете ја подоцна од картата.",
   "settings.healthEmpty": "Сè уште нема поврзани извори.",
   "settings.items": "Записи: {n}",
 
@@ -169,8 +169,8 @@ export const mk = {
   "goOut.title": "За надвор",
   "goOut.score": "Оцена {score} од 100",
   "goOut.verdict.good": "Одличен ден",
-  "goOut.verdict.fair": "Во ред, но внимавајте",
-  "goOut.verdict.poor": "Подобро останете внатре",
+  "goOut.verdict.fair": "Со внимание",
+  "goOut.verdict.poor": "Подобро внатре",
   "goOut.reason.air": "Загаден воздух",
   "goOut.reason.rain": "Врне",
   "goOut.reason.temp": "Екстремна температура",
@@ -183,14 +183,14 @@ export const mk = {
   "buses.inMin": "за {n} мин",
   "buses.now": "сега",
   "buses.toward": "кон {headsign}",
-  "buses.tapDeparture": "Допрете поаѓање за да го видите автобусот на картата.",
-  "buses.unavailable": "Возниот ред моментално не е достапен.",
+  "buses.tapDeparture": "Допрете за да го следите автобусот.",
+  "buses.unavailable": "Возниот ред не е достапен.",
 
   // --- S1 settings ---
   "settings.display": "Приказ",
   "settings.mapLayers": "Слоеви на картата",
-  "settings.showAll": "Прикажи ги сите",
-  "settings.hideAll": "Скриј ги сите",
+  "settings.showAll": "Прикажи сите",
+  "settings.hideAll": "Скриј сите",
   "settings.group.environment": "Животна средина",
   "settings.group.utilities": "Комуналии",
   "settings.group.transport": "Сообраќај",
@@ -226,17 +226,17 @@ export const mk = {
   "route.openGoogle": "Отвори во Google Maps",
   "route.openWaze": "Отвори во Waze",
   "route.wazeNote": "Waze прима само одредиште, па сам ја избира рутата.",
-  "route.error.router": "Рутирањето моментално не е достапно. Обидете се повторно.",
-  "route.error.rate": "Премногу барања. Почекајте малку и обидете се повторно.",
-  "route.error.bbox": "Двете точки мора да бидат во Скопје.",
-  "route.error.noroute": "Не најдовме рута меѓу овие две точки.",
+  "route.error.router": "Рутирањето не е достапно.",
+  "route.error.rate": "Премногу барања. Почекајте малку.",
+  "route.error.bbox": "Точките мора да бидат во Скопје.",
+  "route.error.noroute": "Нема рута меѓу двете точки.",
   "route.attribution": "Рутирање: FOSSGIS Valhalla. Податоци © учесниците на OpenStreetMap",
 
   // --- Wave E2 ---
   "outages.title": "Прекини",
   "outages.days": "Избери ден",
   "outages.today": "Денес",
-  "outages.none": "Нема најавени прекини за овој ден.",
+  "outages.none": "Нема најавени прекини.",
   "outages.count.one": "{n} прекин",
   "outages.count.other": "{n} прекини",
   "outages.type.power": "Струја",
@@ -266,8 +266,25 @@ export const mk = {
   "route.clear": "Избриши ја рутата",
   "route.detour": "Заобиколница: +{distance}",
   "route.error.same": "Изберете две различни точки.",
-  "route.error.network": "Нема врска со серверот. Проверете ја интернет-врската.",
+  "route.error.network": "Нема врска со серверот.",
 
   // --- final fixes UI ---
   "outages.activeNow": "Во тек сега: {n}",
+
+  // --- u5-settings ---
+  "settings.ago": "Пред {age}",
+
+  // --- u3-widgets ---
+  "status.demo": "Демо",
+  "status.ago": "Пред {age}",
+  "unit.min": "мин",
+
+  // --- u4-route-chat ---
+  "route.min": "{min} мин",
+  "route.hour": "{h} ч",
+  "route.hourMin": "{h} ч {min} мин",
+  "route.avoidsOne": "заобиколува 1 затворање",
+  "route.avoidsMany": "заобиколува {n} затворања",
+  "route.noClosures": "без затворања",
+  "assistant.empty": "Прашај за воздух, прекини, автобуси, паркинг, патишта.",
 };

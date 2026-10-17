@@ -2,7 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { IControl, MapGeoJSONFeature, Map as MapLibreMap } from "maplibre-gl";
-import { createContext, useContext, useEffect, useEffectEvent, useRef, useState } from "react";
+import { createContext, memo, useContext, useEffect, useEffectEvent, useRef, useState } from "react";
 import { cx } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import { LAYER_IDS, LAYERS, type LayerId } from "@/lib/layers";
@@ -11,6 +11,7 @@ import { getCachedLayer, useLayer } from "@/lib/useLayer";
 import { localizeLabels, muteStyle, styleUrl } from "./mapStyle";
 import { HIGHLIGHT_LAYERS, hitLayersOf, removeOverlay, renderLayer, setOverlay } from "./renderLayer";
 import { renderRoadworks } from "./roadworksLayer";
+import { showUserLocation } from "./userLocationLayer";
 
 export type LngLat = [number, number];
 export type BBox = [west: number, south: number, east: number, north: number];
@@ -88,18 +89,20 @@ function hitTest(map: MapLibreMap, x: number, y: number): { feature: Feature; la
 
 /** Keeps one layer's data on the map; renders nothing itself. */
 function LayerSource({ map, id, enabled, styleKey }: { map: MapLibreMap; id: LayerId; enabled: boolean; styleKey: number }) {
-  const { data } = useLayer(id, enabled);
+  // The features object only changes when a poll brings different features (useLayer keeps it otherwise), so a 60 s
+  // poll with nothing new never re-tiles the source.
+  const features = useLayer(id, enabled).data?.features;
   useEffect(() => {
     // Roadworks get their own renderer (closures, works and regimes each look different); everything else goes through renderLayer.
     const draw = (fc: GeoJSON.FeatureCollection) =>
       id === "roadworks" ? renderRoadworks(map, id, fc, cssColor(LAYERS[id].color)) : renderLayer(map, id, fc, cssColor);
     try {
-      if (enabled && data) draw(data.features);
+      if (enabled && features) draw(features);
       else if (map.getSource(`src-${id}`)) draw(EMPTY);
     } catch {
       // A theme switch is reloading the style ("Style is not done loading"); its style.load bumps styleKey and re-runs this.
     }
-  }, [map, id, enabled, data, styleKey]);
+  }, [map, id, enabled, features, styleKey]);
   return null;
 }
 
@@ -108,11 +111,11 @@ function LayerSource({ map, id, enabled, styleKey }: { map: MapLibreMap; id: Lay
  * It reads its own layer, so it shows even while that layer is switched off.
  */
 function OutageHighlight({ map, highlight, styleKey }: { map: MapLibreMap; highlight: Highlight | null; styleKey: number }) {
-  const { data } = useLayer(highlight?.layer ?? "outages-power", highlight !== null);
+  const fc = useLayer(highlight?.layer ?? "outages-power", highlight !== null).data?.features;
   useEffect(() => {
     if (!highlight) return;
     const color = cssColor(LAYERS[highlight.layer].color);
-    const features = (data?.features.features ?? [])
+    const features = (fc?.features ?? [])
       .filter((f) => f.properties?.detail?.outage === highlight.id || f.properties?.id === highlight.id)
       .map((f) => ({ ...f, properties: { color } }));
     try {
@@ -127,7 +130,7 @@ function OutageHighlight({ map, highlight, styleKey }: { map: MapLibreMap; highl
         // The map is already gone.
       }
     };
-  }, [map, highlight, data, styleKey]);
+  }, [map, highlight, fc, styleKey]);
   return null;
 }
 
@@ -135,7 +138,7 @@ function OutageHighlight({ map, highlight, styleKey }: { map: MapLibreMap; highl
  * Full-bleed MapLibre map. maplibre-gl is imported inside an effect so the server never loads it.
  * Positron in light mode, Dark in dark mode; a theme change reloads the style and re-adds every data layer.
  */
-export function MapView({
+export const MapView = memo(function MapView({
   layers,
   dark,
   onReady,
@@ -147,7 +150,7 @@ export function MapView({
   onTileError(): void;
 }) {
   const { t, lang } = useT();
-  const { map, select, location, highlight, setHighlight } = useMap();
+  const { map, select, highlight, setHighlight } = useMap();
   const container = useRef<HTMLDivElement>(null);
   const appliedDark = useRef<boolean | null>(null);
   const [styleKey, setStyleKey] = useState(0);
@@ -189,6 +192,10 @@ export function MapView({
         center: CENTER,
         zoom: 12,
         maxBounds: BOUNDS,
+        // Phone budget: no label fade-in on every pan, no pitch, and at most 2x pixels (3x screens triple the fill cost).
+        fadeDuration: 0,
+        maxPitch: 0,
+        pixelRatio: Math.min(devicePixelRatio, 2),
         // Attribution stays on (OSM licence, FOSSGIS terms): see the control added below. globals.css restyles and places it.
         attributionControl: false,
       });
@@ -226,23 +233,10 @@ export function MapView({
     map.setStyle(styleUrl(dark), { diff: false });
   }, [map, dark]);
 
-  // "You are here" dot.
+  // "You are here": a map layer fed straight from the position watch, so a new fix never re-renders anything.
   useEffect(() => {
-    if (!map || !location) return;
-    let marker: { remove(): void } | undefined;
-    let cancelled = false;
-    void import("maplibre-gl").then(({ Marker }) => {
-      if (cancelled) return;
-      const el = document.createElement("div");
-      el.className = "user-dot";
-      el.setAttribute("aria-label", t("map.myLocation"));
-      marker = new Marker({ element: el }).setLngLat(location).addTo(map);
-    });
-    return () => {
-      cancelled = true;
-      marker?.remove();
-    };
-  }, [map, location, t]);
+    if (map && styleKey > 0) return showUserLocation(map, cssColor("var(--system-blue)"));
+  }, [map, styleKey]);
 
   // Attribution: the style's own (OpenFreeMap, OpenMapTiles, OSM contributors) plus the FOSSGIS-required "fix the map" link.
   // Added here, not through the constructor, so the link follows the UI language.
@@ -290,4 +284,7 @@ export function MapView({
       )}
     </div>
   );
-}
+},
+// A sheet snap or tab switch re-renders the shell with a fresh layers array; the map only cares about its contents.
+// The callbacks are read through useEffectEvent, so a new identity needs no re-render.
+(a, b) => a.dark === b.dark && a.layers.join() === b.layers.join());

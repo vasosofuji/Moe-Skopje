@@ -1,21 +1,19 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { motion } from "motion/react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { cx } from "@/lib/cx";
-import { spring } from "@/lib/motion";
 
-// iOS inset grouped list: small-caps section headers, 44 px rows inside a rounded tile, hairlines inset to the text.
-
+// iOS inset grouped list: caption-caps section headers, 44 px rows with 16 px side padding inside a rounded tile,
+// hairlines inset to the text.
 
 /** Focus ring drawn inside the row, where the rounded list cannot clip it. */
-const insetFocus = "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--system-blue) focus-visible:rounded-[10px]";
+export const insetFocus = "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--system-blue) focus-visible:rounded-[10px]";
 
 /** A row that is not a control itself (it holds one, or just shows a value). */
 export const rowStatic = "group flex w-full items-center pl-4 text-left";
-/** A tappable row: press highlight and inset focus ring. */
-export const row = cx(rowStatic, "transition-colors hover:bg-(--label)/4 active:bg-(--label)/8", insetFocus);
+/** A tappable row: it highlights on press (no scale, unlike buttons; the tint appears at once and fades on release) and has an inset focus ring. */
+export const row = cx(rowStatic, "transition-colors hover:bg-(--label)/4 active:bg-(--label)/8 active:shadow-none active:scale-100 active:duration-0", insetFocus);
 
 export function Section({
   title,
@@ -30,12 +28,12 @@ export function Section({
 }) {
   return (
     <section className="flex flex-col">
-      <div className="flex items-end justify-between gap-3 px-4 pb-1.5">
-        <h3 className="t-footnote uppercase text-label-2">{title}</h3>
+      <div className="flex items-end justify-between gap-3 px-4 pb-2">
+        <h3 className="t-caption min-w-0 uppercase tracking-wide text-label-2">{title}</h3>
         {action}
       </div>
-      <div className="flex flex-col gap-3">{children}</div>
-      {footer && <div className="t-footnote px-4 pt-1.5 text-label-2">{footer}</div>}
+      <div className="flex flex-col gap-4">{children}</div>
+      {footer && <div className="t-footnote px-4 pt-2 text-label-2">{footer}</div>}
     </section>
   );
 }
@@ -44,7 +42,7 @@ export function Section({
 export function List({ label, children }: { label?: string; children: ReactNode }) {
   return (
     <div className="flex flex-col">
-      {label && <p className="t-footnote px-4 pb-1 font-medium text-label-2">{label}</p>}
+      {label && <p className="t-footnote px-4 pb-1 text-label-2">{label}</p>}
       <div className="overflow-hidden rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile)">{children}</div>
     </div>
   );
@@ -56,7 +54,7 @@ export function HeaderButton({ onClick, children }: { onClick(): void; children:
     <button
       type="button"
       onClick={onClick}
-      className="t-footnote relative rounded-md text-(--system-blue) before:absolute before:-inset-x-2 before:-inset-y-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--system-blue)"
+      className="t-footnote relative shrink-0 rounded-md whitespace-nowrap text-(--system-blue) before:absolute before:-inset-x-2 before:-inset-y-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--system-blue)"
     >
       {children}
     </button>
@@ -75,16 +73,20 @@ export function RowContent({
   title: ReactNode;
   /** Second line under the title (a source name). */
   sub?: ReactNode;
-  /** Let a wide control drop under the title on narrow screens instead of squeezing it. */
+  /** For a wide control (a `fill` Choice): when it does not fit beside the title it drops to its own line, full width. */
   wrap?: boolean;
   children?: ReactNode;
 }) {
   return (
     <>
-      {Icon && <Icon size={17} aria-hidden className="mr-3 shrink-0 text-label-2" />}
-      <span className="flex min-h-11 min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3 border-b-[0.5px] border-(--label)/12 py-1 pr-4 group-last:border-b-0">
-        <span className={cx("flex flex-col", wrap ? "flex-[1_0_auto]" : "min-w-0 flex-1")}>
-          <span className="t-subhead truncate">{title}</span>
+      {Icon && (
+        <span aria-hidden className="mr-3 flex h-11 shrink-0 items-center self-start text-label-2">
+          <Icon size={17} />
+        </span>
+      )}
+      <span className="flex min-h-11 min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3 border-b-[0.5px] border-(--label)/12 pr-4 group-last:border-b-0">
+        <span className={cx("flex flex-col justify-center", wrap ? "mr-auto min-h-11 flex-none" : "min-w-0 flex-1")}>
+          <span className="t-subhead line-clamp-2 break-words">{title}</span>
           {sub && <span className="t-footnote truncate text-label-2">{sub}</span>}
         </span>
         {children}
@@ -93,14 +95,14 @@ export function RowContent({
   );
 }
 
-/** Visual half of an iOS switch; the row it sits in carries role="switch" and aria-checked. */
+/** Visual half of an iOS switch (51 x 31); the row it sits in carries role="switch" and aria-checked, so it flips on the tap itself. */
 export function SwitchKnob() {
   return (
     <span
       aria-hidden
-      className="relative h-6 w-10 shrink-0 rounded-full bg-(--label)/16 transition-colors group-aria-checked:bg-(--system-green) motion-reduce:transition-none"
+      className="relative h-[31px] w-[51px] shrink-0 rounded-full bg-(--label)/16 transition-colors duration-150 group-aria-checked:bg-(--system-green) motion-reduce:transition-none"
     >
-      <span className="absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-[0_2px_4px_rgb(0_0_0/.2)] transition-transform group-aria-checked:translate-x-4 motion-reduce:transition-none" />
+      <span className="absolute top-0.5 left-0.5 size-[27px] rounded-full bg-white shadow-[0_2px_4px_rgb(0_0_0/.2)] transition-transform duration-150 group-aria-checked:translate-x-5 motion-reduce:transition-none" />
     </span>
   );
 }
@@ -111,68 +113,69 @@ const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -
 
 /**
  * Compact segmented control for a row's trailing edge, as a radio group: one tab stop, arrows move the choice.
- * Segments are 44 px tall for touch; the track and thumb drawn inside are 32 px. `id` names the thumb's layout.
+ * Segments are equal width and 44 px tall for touch; the track and the thumb drawn inside are 32 px, and the thumb
+ * slides between segments with a CSS transform (no layout measuring).
  */
 export function Choice<T extends string>({
-  id,
   label,
   options,
   value,
+  fill,
   onChange,
 }: {
-  id: string;
   label: string;
   options: Option<T>[];
   value: T;
+  /** Grow to the row's free width (and to a full line when the row wraps) instead of hugging the trailing edge. */
+  fill?: boolean;
   onChange(value: T): void;
 }) {
+  const selected = Math.max(0, options.findIndex((o) => o.value === value));
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
     const step = STEP[e.key];
     if (!step) return;
     e.preventDefault();
     const next = (i + step + options.length) % options.length;
     onChange(options[next].value);
-    (e.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
+    (e.currentTarget.parentElement?.children[next + 1] as HTMLElement | undefined)?.focus(); // child 0 is the thumb
   };
   return (
     <div
       role="radiogroup"
       aria-label={label}
-      className="relative ml-auto flex h-11 shrink-0 before:absolute before:inset-x-0 before:inset-y-1.5 before:rounded-full before:bg-(--label)/8"
+      style={{ "--n": options.length, "--i": selected } as CSSProperties}
+      className={cx(
+        "relative grid h-11 auto-cols-fr grid-flow-col before:absolute before:inset-x-0 before:inset-y-1.5 before:rounded-full before:bg-(--label)/8",
+        fill ? "flex-auto" : "ml-auto shrink-0",
+      )}
     >
-      {options.map((o, i) => {
-        const on = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            tabIndex={on ? 0 : -1}
-            lang={o.lang}
-            title={o.title}
-            onClick={() => onChange(o.value)}
-            onKeyDown={(e) => onKeyDown(e, i)}
-            className={cx(
-              "group/seg relative h-11 px-2 t-footnote font-semibold whitespace-nowrap transition-colors outline-none",
-              on ? "text-label" : "text-label-2",
-            )}
-          >
-            {on && (
-              <motion.span
-                layoutId={id}
-                transition={spring}
-                className="absolute inset-x-0.5 inset-y-2 rounded-full bg-(--thumb) shadow-[0_2px_6px_rgb(0_0_0/.12),0_1px_1px_rgb(0_0_0/.06)]"
-              />
-            )}
-            <span
-              aria-hidden
-              className="absolute inset-x-0.5 inset-y-2 rounded-full group-focus-visible/seg:outline-2 group-focus-visible/seg:outline-(--system-blue)"
-            />
-            <span className="relative">{o.label}</span>
-          </button>
-        );
-      })}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-2 left-0 mx-0.5 w-[calc(100%/var(--n)_-_4px)] translate-x-[calc(var(--i)*(100%_+_4px))] rounded-full bg-(--thumb) shadow-[0_2px_6px_rgb(0_0_0/.12),0_1px_1px_rgb(0_0_0/.06)] transition-transform duration-200 ease-out motion-reduce:transition-none"
+      />
+      {options.map((o, i) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={o.value === value}
+          tabIndex={o.value === value ? 0 : -1}
+          lang={o.lang}
+          title={o.title}
+          onClick={() => onChange(o.value)}
+          onKeyDown={(e) => onKeyDown(e, i)}
+          className={cx(
+            "group/seg relative h-11 px-3 t-footnote font-semibold whitespace-nowrap transition-colors outline-none",
+            o.value === value ? "text-label" : "text-label-2",
+          )}
+        >
+          <span
+            aria-hidden
+            className="absolute inset-x-0.5 inset-y-2 rounded-full group-focus-visible/seg:outline-2 group-focus-visible/seg:outline-(--system-blue)"
+          />
+          <span className="relative">{o.label}</span>
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,8 +1,6 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
-import type { CSSProperties } from "react";
-import { age, STATUS_COLOR } from "@/components/glass/StatusBadge";
+import { age } from "@/components/glass/StatusBadge";
 import { useT, type Dict } from "@/lib/i18n";
 import type { TVars } from "@/lib/i18n/core";
 import { isLayerId, LAYERS } from "@/lib/layers";
@@ -34,23 +32,13 @@ export function statusSummary(statuses: Status[], t: (key: keyof Dict, vars?: TV
     .join(" · ");
 }
 
-/** Status dot plus age (live, stale) or a short label (demo, static). */
+/** Plain grey caption: "Live · 3 min", "2 h ago" (stale), "Demo data", "Static". No dot, no pill. */
 function Freshness({ status, updatedAt }: { status: Status; updatedAt: string }) {
   const { t } = useT();
   const ago = status === "live" || status === "stale" ? age(updatedAt) : null;
-  return (
-    <span className="t-footnote flex shrink-0 items-center gap-1.5 text-label-2" style={{ "--dot": STATUS_COLOR[status] } as CSSProperties}>
-      <span aria-hidden className="size-2 rounded-full bg-(--dot)" />
-      {ago ? (
-        <>
-          <span className="sr-only">{t(`status.${status}`)}, </span>
-          {t(`age.${ago.unit}`, { n: ago.n })}
-        </>
-      ) : (
-        t(status === "offline" ? "settings.demo" : "status.static")
-      )}
-    </span>
-  );
+  const since = ago && t(`age.${ago.unit}`, { n: ago.n });
+  const text = since ? (status === "live" ? `${t("status.live")} · ${since}` : t("settings.ago", { age: since })) : t(`status.${status}`);
+  return <span className="t-footnote shrink-0 whitespace-nowrap text-label-2">{text}</span>;
 }
 
 /** Data sources sub-page body: one compact row per source, linking out to it. */
@@ -65,9 +53,8 @@ export function DataHealth({ rows }: { rows: HealthRow[] | null | undefined }) {
       {rows.map((r) => {
         const meta = isLayerId(r.id) ? LAYERS[r.id] : undefined;
         const content = (
-          <RowContent icon={meta?.icon} title={meta ? t(meta.titleKey) : r.source.name} sub={meta && r.source.name}>
+          <RowContent icon={meta?.icon} title={r.source.name} sub={meta && t(meta.titleKey)}>
             <Freshness status={r.status} updatedAt={r.updatedAt} />
-            {r.source.url && <ExternalLink size={15} aria-hidden className="shrink-0 text-label-2" />}
           </RowContent>
         );
         return r.source.url ? (

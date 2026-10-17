@@ -28,3 +28,19 @@ test("a 404 clears the data; a network error keeps the last good copy", async ()
   await refreshLayer("buses", Date.now() + 120_000);
   expect(getCachedLayer("buses")).toBeUndefined();
 });
+
+test("a poll with the same features keeps the old features object, so the map skips setData", async () => {
+  const fc = (n: number) => ({ type: "FeatureCollection", features: [{ type: "Feature", properties: { n }, geometry: null }] });
+  vi.stubGlobal("fetch", vi.fn(async () => ok({ id: "weather", updatedAt: "a", features: fc(1) })));
+  await refreshLayer("weather");
+  const first = getCachedLayer("weather")?.features;
+
+  vi.stubGlobal("fetch", vi.fn(async () => ok({ id: "weather", updatedAt: "b", features: fc(1) })));
+  await refreshLayer("weather", Date.now() + 60_000);
+  expect(getCachedLayer("weather")?.updatedAt).toBe("b");
+  expect(getCachedLayer("weather")?.features).toBe(first);
+
+  vi.stubGlobal("fetch", vi.fn(async () => ok({ id: "weather", updatedAt: "c", features: fc(2) })));
+  await refreshLayer("weather", Date.now() + 120_000);
+  expect(getCachedLayer("weather")?.features).not.toBe(first);
+});

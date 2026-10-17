@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from "react";
-import { z } from "zod";
 import type { Lang } from "@/lib/i18n/core";
 import { HIDDEN_LAYERS, isLayerId, type LayerId } from "@/lib/layers";
 
@@ -20,12 +19,16 @@ export const DEFAULT_PREFS: Prefs = {
 const PREFS_KEY = "moe-skopje:prefs";
 const DEVICE_KEY = "moe-skopje:device";
 
-const StoredPrefs = z.object({
-  lang: z.enum(["mk", "en"]),
-  theme: z.enum(["system", "light", "dark"]),
-  layers: z.array(z.string()),
-  onboarded: z.boolean(),
-});
+/** Hand-checked rather than through zod, which would add ~60 KB to the client bundle for four fields. */
+function parseStored(v: unknown): Prefs | null {
+  const o = v as Partial<Record<keyof Prefs, unknown>> | null;
+  if (typeof o !== "object" || o === null) return null;
+  const { lang, theme, layers, onboarded } = o;
+  if (lang !== "mk" && lang !== "en") return null;
+  if (theme !== "system" && theme !== "light" && theme !== "dark") return null;
+  if (!Array.isArray(layers) || !layers.every((l) => typeof l === "string") || typeof onboarded !== "boolean") return null;
+  return { lang, theme, layers: layers.filter((id): id is LayerId => isLayerId(id) && !HIDDEN_LAYERS.includes(id)), onboarded };
+}
 
 const defaults = (): Prefs => ({ ...DEFAULT_PREFS, layers: [...DEFAULT_PREFS.layers] });
 
@@ -34,9 +37,7 @@ export function loadPrefs(storage?: Storage): Prefs {
   try {
     const raw = (storage ?? localStorage).getItem(PREFS_KEY);
     if (raw === null) return defaults();
-    const parsed = StoredPrefs.safeParse(JSON.parse(raw));
-    if (!parsed.success) return defaults();
-    return { ...parsed.data, layers: parsed.data.layers.filter((id): id is LayerId => isLayerId(id) && !HIDDEN_LAYERS.includes(id)) };
+    return parseStored(JSON.parse(raw)) ?? defaults();
   } catch {
     return defaults();
   }
