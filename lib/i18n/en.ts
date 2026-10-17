@@ -261,4 +261,17 @@ export const en: Dict = {
   "buses.tracking": "Following a bus",
   "buses.locating": "Finding the bus…",
   "buses.stopTracking": "Stop following",
+
+  // --- Route planner ---
+  "route.pickOnMap": "Pick on the map",
+  "route.pickHint": "Tap the map to place the point.",
+  "route.pinOnMap": "Point on the map",
+  "route.searchPlace": "Street or neighbourhood",
+  "route.modeLabel": "How you travel",
+  "route.finding": "Finding a route…",
+  "route.clear": "Clear the route",
+  "route.detour": "Detour: +{distance}",
+  "route.needBoth": "Choose a start and an end.",
+  "route.error.same": "Choose two different points.",
+  "route.error.network": "Can't reach the server. Check your connection.",
 };

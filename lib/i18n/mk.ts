@@ -237,7 +237,6 @@ export const mk = {
   "route.error.bbox": "Двете точки мора да бидат во Скопје.",
   "route.error.noroute": "Не најдовме рута меѓу овие две точки.",
   "route.attribution": "Рутирање: FOSSGIS Valhalla. Податоци © учесниците на OpenStreetMap",
-  "route.fixTheMap": "Пријави грешка на мапата",
 
   // --- Wave E2 ---
   "outages.title": "Прекини",
@@ -261,4 +260,19 @@ export const mk = {
   "buses.tracking": "Следење автобус",
   "buses.locating": "Го бараме автобусот…",
   "buses.stopTracking": "Престани со следење",
+
+  "route.fixTheMap": "Пријави грешка на картата",
+
+  // --- Route planner ---
+  "route.pickOnMap": "Избери на картата",
+  "route.pickHint": "Допрете на картата за да ја поставите точката.",
+  "route.pinOnMap": "Точка на картата",
+  "route.searchPlace": "Улица или населба",
+  "route.modeLabel": "Начин на движење",
+  "route.finding": "Бараме рута…",
+  "route.clear": "Избриши ја рутата",
+  "route.detour": "Заобиколница: +{distance}",
+  "route.needBoth": "Изберете почеток и крај на патот.",
+  "route.error.same": "Изберете две различни точки.",
+  "route.error.network": "Нема врска со серверот. Проверете ја интернет-врската.",
 };

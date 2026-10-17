@@ -1,6 +1,6 @@
 "use client";
 
-import { LocateFixed, LocateOff, WifiOff } from "lucide-react";
+import { LocateFixed, LocateOff, Route as RouteIcon, WifiOff } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
@@ -14,6 +14,7 @@ import { MapContext, MapView, type BBox, type Highlight, type LngLat, type MapAp
 import { MarkerCard } from "@/components/map/MarkerCard";
 import { HIDDEN_LAYERS } from "@/components/onboarding/LayerGrid";
 import { Onboarding } from "@/components/onboarding/Onboarding";
+import { RoutePlanner } from "@/components/route/RoutePlanner";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { cx } from "@/lib/cx";
 import { useT, type Dict } from "@/lib/i18n";
@@ -61,6 +62,7 @@ export function AppShell() {
   const [map, setMap] = useState<MapLibreMap>();
   const [location, setLocation] = useState<LngLat>();
   const [toast, setToast] = useState<keyof Dict | null>(null);
+  const [routeOpen, setRouteOpen] = useState(false);
 
   const panelTab = isDesktop && tab === "ask" ? "explore" : tab; // desktop asks through the bar, not a tab
   const sheetFull = !isWide && snap === SNAPS[SNAPS.length - 1]; // the map is covered: hide what floats over it
@@ -149,6 +151,27 @@ export function AppShell() {
     if (!hit) void refreshLayer(c.layer).then(() => select((prev) => prev ?? find() ?? null));
   };
   const closeCard = useCallback(() => select(null), []);
+  const closeRoute = useCallback(() => setRouteOpen(false), []);
+  // Where the route planner lives: a floating panel above the chat bar on desktop (see below), otherwise the top of the Explore
+  // content, as a "Route" button that unfolds into the planner. A phone sheet drops to its peek while a point is tapped on the map.
+  const routeSlot =
+    !isDesktop && tab === "explore" ? (
+      routeOpen ? (
+        <RoutePlanner
+          variant="inline"
+          insetLeft={insetLeft}
+          onClose={closeRoute}
+          onPicking={(on) => !isWide && setSnap(on ? SNAPS[0] : SNAPS[1])}
+        />
+      ) : (
+        <GlassButton size="sm" onClick={() => setRouteOpen(true)} className="mb-4 w-full">
+          <RouteIcon size={18} aria-hidden />
+          {t("route.title")}
+        </GlassButton>
+      )
+    ) : null;
+  // The chat bar is centred in the map that the sidebar leaves free and is at most 560 px wide (88 px of margin each side).
+  const barLeft = `(${insetLeft}px + (100vw - ${insetLeft}px) / 2 - min(280px, (100vw - ${insetLeft}px - 176px) / 2))`;
   const stopTracking = useCallback(() => track(null), []);
   const api = useMemo<MapApi>(
     () => ({ map, flyTo, showArea, reveal, select, location, locate, highlight, setHighlight, trip, track }),
@@ -178,6 +201,7 @@ export function AppShell() {
                       </>
                     }
                   >
+                    {routeSlot}
                     <Panel tab={panelTab} onCitation={onCitation} />
                   </Sidebar>
                 ) : (
@@ -197,6 +221,7 @@ export function AppShell() {
                       </GlassButton>
                     </div>
                     <BottomSheet snap={snap} onSnap={setSnap} title={t(`tab.${tab}`)}>
+                      {routeSlot}
                       <Panel tab={tab} onCitation={onCitation} />
                     </BottomSheet>
                   </>
@@ -204,6 +229,26 @@ export function AppShell() {
 
                 {!isDesktop && <TabBar variant="floating" tab={tab} onChange={go} />}
                 {isDesktop && <AskBar left={insetLeft} onCitation={onCitation} />}
+                {isDesktop && (
+                  <>
+                    <GlassButton
+                      size="sm"
+                      aria-label={t("route.title")}
+                      aria-pressed={routeOpen}
+                      onClick={() => setRouteOpen((open) => !open)}
+                      style={{ right: `calc(100vw - ${barLeft} + 12px)` }}
+                      className={cx("fixed bottom-[54px] z-20", routeOpen && "text-(--system-blue)")}
+                    >
+                      <RouteIcon size={18} aria-hidden />
+                      <span className="hidden xl:inline">{t("route.title")}</span>
+                    </GlassButton>
+                    {routeOpen && (
+                      <div style={{ left: `calc${barLeft}` }} className="fixed bottom-[116px] z-20">
+                        <RoutePlanner variant="floating" insetLeft={insetLeft} onClose={closeRoute} />
+                      </div>
+                    )}
+                  </>
+                )}
 
                 {!sheetFull && (
                   <GlassButton

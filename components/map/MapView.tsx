@@ -1,7 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { MapGeoJSONFeature, Map as MapLibreMap } from "maplibre-gl";
+import type { IControl, MapGeoJSONFeature, Map as MapLibreMap } from "maplibre-gl";
 import { createContext, useContext, useEffect, useEffectEvent, useRef, useState } from "react";
 import { cx } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
@@ -10,6 +10,7 @@ import type { Feature } from "@/lib/sources/types";
 import { getCachedLayer, useLayer } from "@/lib/useLayer";
 import { muteStyle, styleUrl } from "./mapStyle";
 import { HIGHLIGHT_LAYERS, hitLayersOf, removeOverlay, renderLayer, setOverlay } from "./renderLayer";
+import { renderRoadworks } from "./roadworksLayer";
 
 export type LngLat = [number, number];
 export type BBox = [west: number, south: number, east: number, north: number];
@@ -89,9 +90,12 @@ function hitTest(map: MapLibreMap, x: number, y: number): { feature: Feature; la
 function LayerSource({ map, id, enabled, styleKey }: { map: MapLibreMap; id: LayerId; enabled: boolean; styleKey: number }) {
   const { data } = useLayer(id, enabled);
   useEffect(() => {
+    // Roadworks get their own renderer (closures, works and regimes each look different); everything else goes through renderLayer.
+    const draw = (fc: GeoJSON.FeatureCollection) =>
+      id === "roadworks" ? renderRoadworks(map, id, fc, cssColor(LAYERS[id].color)) : renderLayer(map, id, fc, cssColor);
     try {
-      if (enabled && data) renderLayer(map, id, data.features, cssColor);
-      else if (map.getSource(`src-${id}`)) renderLayer(map, id, EMPTY, cssColor);
+      if (enabled && data) draw(data.features);
+      else if (map.getSource(`src-${id}`)) draw(EMPTY);
     } catch {
       // A theme switch is reloading the style ("Style is not done loading"); its style.load bumps styleKey and re-runs this.
     }
@@ -180,7 +184,8 @@ export function MapView({
         center: CENTER,
         zoom: 12,
         maxBounds: BOUNDS,
-        // Default attribution (bottom-right, compact on small maps) stays on: OSM licence. globals.css restyles and places it.
+        // Attribution stays on (OSM licence, FOSSGIS terms): see the control added below. globals.css restyles and places it.
+        attributionControl: false,
       });
       const map = m;
       map.on("style.load", () => onStyleLoad(map));
@@ -223,6 +228,29 @@ export function MapView({
       marker?.remove();
     };
   }, [map, location, t]);
+
+  // Attribution: the style's own (OpenFreeMap, OpenMapTiles, OSM contributors) plus the FOSSGIS-required "fix the map" link.
+  // Added here, not through the constructor, so the link follows the UI language.
+  useEffect(() => {
+    if (!map) return;
+    let control: IControl | undefined;
+    let cancelled = false;
+    void import("maplibre-gl").then(({ AttributionControl }) => {
+      if (cancelled) return;
+      const link = `<a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">${t("route.fixTheMap")}</a>`;
+      const ctrl = new AttributionControl({ customAttribution: link });
+      map.addControl(ctrl);
+      control = ctrl;
+    });
+    return () => {
+      cancelled = true;
+      try {
+        if (control) map.removeControl(control);
+      } catch {
+        // The map is already being torn down.
+      }
+    };
+  }, [map, t]);
 
   return (
     <div
