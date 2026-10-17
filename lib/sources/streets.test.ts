@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, expect, test } from "vitest";
-import { findStreets, mergeStreets, setStreets, streetKey, type StreetCollection, type StreetFeature } from "./streets";
+import { findStreets, locateStreets, mergeStreets, setStreets, streetKey, type StreetCollection, type StreetFeature } from "./streets";
 import type { MunicipalityCollection } from "./static";
 
 const square = (w: number, s: number, e: number, n: number): GeoJSON.Polygon => ({ type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] });
@@ -154,6 +154,18 @@ test("findStreets also knows a street by its name without the title or the nickn
   expect(names(findStreets("12-та Македонска бригада"))).toEqual(["12-та Македонска бригада/Центар"]);
   expect(findStreets("Македонска бригада")).toEqual([]); // a tail of the name is not the street
   expect(findStreets("ул. Народен херој")).toEqual([]); // nor is the title alone
+});
+
+test("locateStreets takes the notice's own municipality first, a border street when only one other municipality has it, and skips an ambiguous name", () => {
+  setStreets(FIXTURE);
+  // two Партизанска: the notice says Карпош, so that one
+  expect(names(locateStreets("ул. Партизанска бр. 3", "Карпош"))).toEqual(["Партизанска/Карпош"]);
+  expect(names(locateStreets("ул. Партизанска бр. 3", "Karpoš"))).toEqual(["Партизанска/Карпош"]);
+  // 11 Октомври is only in Центар: a notice filed under Карпош still means that street
+  expect(names(locateStreets("ул. 11 Октомври, ул. Борка Талески", "Карпош"))).toEqual(["11 Октомври/Центар", "Борка Талески/Карпош"]);
+  // Партизанска exists in two other municipalities, not in Центар: which one is unknowable
+  expect(locateStreets("ул. Партизанска", "Центар")).toEqual([]);
+  expect(locateStreets("нема улици", "Карпош")).toEqual([]);
 });
 
 test("findStreets is [] for empty text", () => {

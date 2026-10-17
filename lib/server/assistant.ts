@@ -158,7 +158,8 @@ export function makeTools(lang: Lang, cites: Citation[]) {
       "Current data for one city layer of Skopje: its status (live, stale, offline = demo data, static = baked dataset), " +
       "data age, source, and up to 15 features (id | title | value unit | detail). Pass `near` to get the features nearest a point, " +
       "e.g. one returned by find_place. Layers: air (PM10 per station), weather, outages-power, outages-water, outages-heating " +
-      "(planned outages per municipality with startsAt/endsAt), buses (stops and routes), parking, pharmacies (onDuty=1 means on duty), " +
+      "(planned outages, one feature per affected street with startsAt/endsAt and detail.municipality; detail.approx=1 means only the municipality is known), " +
+      "buses (stops and routes), parking, pharmacies (onDuty=1 means on duty), " +
       "earthquakes, schools.",
     inputSchema: z.object({
       id: z.enum(LAYER_IDS as [LayerId, ...LayerId[]]),

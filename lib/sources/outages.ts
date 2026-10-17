@@ -1,21 +1,27 @@
-// Outage layers (spec §5.3): text → municipality polygon, municipality-level precision.
-// ponytail: no per-street geocoding; add Nominatim post-hackathon. No lib/server imports (tsx).
+// Outage layers (spec §5.3, §11.8): notice text → the affected streets (the baked OSM street index), one feature per street.
+// When no street of a notice is known, the municipality polygon stands in, flagged detail.approx = 1. No lib/server imports (tsx).
 import * as cheerio from "cheerio";
 import { matchMunicipality, parseSkopjeTime, skopjeToday } from "./geo";
 import { loadSeed } from "./seed";
-import { municipalities, type MunicipalityCollection } from "./static";
+import { municipalities, toLatin, type MunicipalityCollection } from "./static";
+import { locateStreets, streetKey } from "./streets";
 import type { Adapter, Feature } from "./types";
 
 type OutageId = "outages-power" | "outages-water" | "outages-heating";
 type Municipality = MunicipalityCollection["features"][number];
-type Outage = { name: string; startsAt: string; endsAt: string; streets: string[]; type?: string };
+/** `text` is what the streets are looked up in; `streets` is the raw wording shown when none of them is known. */
+type Outage = { name: string; startsAt: string; endsAt: string; streets: string[]; text: string; cause?: string };
+
+const TYPE = { "outages-power": "power", "outages-water": "water", "outages-heating": "heating" } as const;
 
 const TIMEOUT_MS = 8000;
 const abort = (signal?: AbortSignal) => (signal ? AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]) : AbortSignal.timeout(TIMEOUT_MS));
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; MoeSkopje/1.0)" };
 
 /**
- * One municipality polygon per distinct (municipality, start, end); streets of equal intervals are merged.
+ * Outages of one municipality and interval merge into one group (their texts are searched together). A group becomes one
+ * feature per street found in the street index (its geometry, `detail.streets` listing them all, `detail.outage` the group id),
+ * or, when no street is known, the municipality polygon with `detail.approx = 1`.
  * An outage whose end is already past is dropped: a source keeps listing today's finished work until midnight.
  */
 function toFeatures(id: OutageId, munis: MunicipalityCollection, outages: Outage[], now: number): Feature[] {
@@ -24,26 +30,36 @@ function toFeatures(id: OutageId, munis: MunicipalityCollection, outages: Outage
     if (Date.parse(o.endsAt) < now) continue;
     const key = `${o.name}|${o.startsAt}|${o.endsAt}`;
     const prev = merged.get(key);
-    if (prev) prev.streets.push(...o.streets.filter((s) => !prev.streets.includes(s)));
-    else merged.set(key, { ...o, streets: [...o.streets] });
+    if (prev) {
+      prev.streets.push(...o.streets.filter((s) => !prev.streets.includes(s)));
+      prev.text += `, ${o.text}`;
+    } else merged.set(key, { ...o, streets: [...o.streets] });
   }
   const out: Feature[] = [];
   for (const o of merged.values()) {
     const muni: Municipality | undefined = munis.features.find((m) => m.properties.name_mk === o.name);
     if (!muni) continue;
-    out.push({
-      type: "Feature",
-      geometry: muni.geometry,
-      properties: {
-        id: `${id}:${o.name}:${o.startsAt}`,
-        kind: "outage",
-        title: { mk: muni.properties.name_mk, en: muni.properties.name_en },
-        severity: 2,
-        startsAt: o.startsAt,
-        endsAt: o.endsAt,
-        detail: { streets: o.streets.join("; "), ...(o.type ? { type: o.type } : {}) },
-      },
-    });
+    const group = `${id}:${o.name}:${o.startsAt}:${o.endsAt}`;
+    const base = { kind: "outage", severity: 2 as const, startsAt: o.startsAt, endsAt: o.endsAt };
+    const detail = { municipality: o.name, type: TYPE[id], outage: group, ...(o.cause ? { cause: o.cause } : {}) };
+    const found = locateStreets(o.text, o.name);
+    if (found.length === 0) {
+      out.push({
+        type: "Feature",
+        geometry: muni.geometry,
+        properties: { id: group, title: { mk: muni.properties.name_mk, en: muni.properties.name_en }, ...base, detail: { ...detail, streets: o.streets.join("; "), approx: 1 } },
+      });
+      continue;
+    }
+    const streets = found.map((s) => s.properties.name_mk).join("; ");
+    for (const s of found) {
+      const { name_mk, name_en } = s.properties;
+      out.push({
+        type: "Feature",
+        geometry: s.geometry,
+        properties: { id: `${group}:${streetKey(name_mk)}`, title: { mk: name_mk, en: name_en ?? toLatin(name_mk) }, ...base, detail: { ...detail, streets } },
+      });
+    }
   }
   return out;
 }
@@ -63,7 +79,7 @@ function shiftDays(iso: string, days: number): string {
   return parseSkopjeTime(dd, `${m[4]}:${m[5]}`);
 }
 
-/** Seed outages with every startsAt/endsAt (and the start inside the id) moved so the earliest start falls on today. */
+/** Seed outages with every startsAt/endsAt (and the times inside the id and group id) moved so the earliest start falls on today. */
 export function rebaseOutages(features: Feature[], now = Date.now()): Feature[] {
   const firsts = features.map((f) => f.properties.startsAt).filter((s): s is string => LOCAL.test(s ?? ""));
   if (firsts.length === 0) return features;
@@ -73,14 +89,24 @@ export function rebaseOutages(features: Feature[], now = Date.now()): Feature[] 
   const days = Math.round((Date.UTC(ty, tmo - 1, td) - Date.UTC(y, mo - 1, d)) / 86_400_000);
   if (days === 0) return features;
   return features.map((f) => {
-    const { startsAt, endsAt, id } = f.properties;
+    const { startsAt, endsAt, id, detail } = f.properties;
     const start = startsAt && shiftDays(startsAt, days);
+    const end = endsAt && shiftDays(endsAt, days);
+    // the times are part of the feature id and of the group id (detail.outage), which must stay unique per day;
+    // one pass, so a moved time is never moved again
+    const swap = new Map<string, string>();
+    if (startsAt && start) swap.set(startsAt, start);
+    if (endsAt && end) swap.set(endsAt, end);
+    const pattern = new RegExp([...swap.keys()].map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") || "$^", "g");
+    const moved = (text: string) => text.replace(pattern, (t) => swap.get(t) ?? t);
     return {
       ...f,
       properties: {
         ...f.properties,
-        ...(startsAt && start ? { startsAt: start, id: id.replace(startsAt, start) } : {}),
-        ...(endsAt ? { endsAt: shiftDays(endsAt, days) } : {}),
+        id: moved(id),
+        ...(startsAt && start ? { startsAt: start } : {}),
+        ...(endsAt && end ? { endsAt: end } : {}),
+        ...(typeof detail?.outage === "string" ? { detail: { ...detail, outage: moved(detail.outage) } } : {}),
       },
     };
   });
@@ -113,7 +139,7 @@ function evnTime(s: string): string {
 /** Rows about Skopje; a row without a kecId is kept, since nothing says it is elsewhere. */
 const inSkopje = (r: EvnRow) => r.kecId === undefined || SKOPJE_KEC.has(r.kecId);
 
-/** Skopje rows that name a municipality, as outages. Rows outside the Skopje KECs or without a municipality in the text are dropped. */
+/** Skopje rows that name a municipality, as outages (the street lookup runs over the address). Rows outside the Skopje KECs or without a municipality in the text are dropped. */
 function evnOutages(rows: EvnRow[]): Outage[] {
   const outages: Outage[] = [];
   for (const r of rows) {
@@ -121,12 +147,12 @@ function evnOutages(rows: EvnRow[]): Outage[] {
     const name = matchMunicipality(r.nasMesto ?? "") ?? matchMunicipality(r.adresa ?? "");
     if (!name) continue;
     const street = (r.adresa ?? "").trim().replace(/[\s,;]+$/, "") || (r.nasMesto ?? "").trim();
-    outages.push({ name, startsAt: evnTime(r.pocetok), endsAt: evnTime(r.kraj), streets: street ? [street] : [], type: r.tipPrekin });
+    outages.push({ name, startsAt: evnTime(r.pocetok), endsAt: evnTime(r.kraj), streets: street ? [street] : [], text: r.adresa ?? "", cause: r.tipPrekin });
   }
   return outages;
 }
 
-/** EVN rows → municipality polygons for the outages that have not ended by `now`. */
+/** EVN rows → street-level outages (see toFeatures) for the outages that have not ended by `now`. */
 export function parseEvn(rows: EvnRow[], munis: MunicipalityCollection, id: OutageId = "outages-power", now = Date.now()): Feature[] {
   return toFeatures(id, munis, evnOutages(rows), now);
 }
@@ -156,7 +182,7 @@ const power: Adapter = {
 // name a municipality can be placed; the rest are dropped. "Until completion" ends the same day at 23:59.
 // Announcements dated today or later that all fail to map are a failed fetch (getLayer serves the seed, "Demo data");
 // no announcement for today at all is a real, empty answer, so minFeatures stays 0.
-// ponytail: the gazetteer (data/static/settlements.json) places settlements and neighbourhoods, not individual streets.
+// The municipality comes from a name in the text or from the settlement gazetteer (data/static/settlements.json); the streets from the street index.
 const WATER_URL = "https://www.vodovod-skopje.com.mk/mk-MK/article/INFORMACIIIZAPREKINNAVODOSNABDUVANjEIDEFEKTI_1";
 
 export function parseVodovod(html: string, munis: MunicipalityCollection, now = Date.now()): Feature[] {
@@ -187,6 +213,7 @@ export function parseVodovod(html: string, munis: MunicipalityCollection, now = 
       startsAt: parseSkopjeTime(date, from ? `${from[1]}:${from[2]}` : "00:00"),
       endsAt: parseSkopjeTime(date, to ? `${to[1]}:${to[2]}` : "23:59"),
       streets: [(who ?? text).slice(0, 200)],
+      text,
     });
   }
   if (upcoming.length > 0 && outages.length === 0) throw new Error("vodovod-skopje: announcements for today or later, but none names a municipality or settlement");

@@ -53,5 +53,23 @@ test("outages and pharmacies fall back to a valid seed (offline) when the live s
     expect(layer.features.features.length, id).toBeGreaterThanOrEqual(2);
   }
   const power = await getLayer("outages-power", deps);
-  expect(power.features.features.every((f) => f.properties?.kind === "outage" && /Polygon/.test(f.geometry.type))).toBe(true);
+  expect(power.features.features.every((f) => f.properties?.kind === "outage" && f.geometry.type === "MultiLineString")).toBe(true); // street-level seeds
+});
+
+test("/api/outages with every source down: the seeds are a 7-day schedule of street-level demo outages starting today", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(Date.parse("2026-10-17T08:00:00Z")); // 10:00 in Skopje
+  const { GET } = await import("@/app/api/outages/route");
+  const res = await GET(new Request("http://localhost/api/outages?days=7"));
+  const { days } = (await res.json()) as { days: { date: string; items: { type: string; status: string; streets: string[]; bbox: number[] }[] }[] };
+  expect(days).toHaveLength(7);
+  expect(days[0].date).toBe("2026-10-17");
+  const all = days.flatMap((d) => d.items);
+  expect(new Set(all.map((i) => i.type))).toEqual(new Set(["water", "power", "heating"]));
+  expect(days[0].items.map((i) => i.type).sort()).toEqual(["heating", "power", "water"]); // seeds are rebased so the first outage of each layer is today
+  expect(days.filter((d) => d.items.length > 0).length).toBeGreaterThanOrEqual(5); // spread over the week
+  for (const i of all) {
+    expect(i.status).toBe("offline"); // demo data, honestly flagged
+    expect(i.streets.length).toBeGreaterThan(0);
+    expect(i.bbox[0]).toBeLessThan(i.bbox[2]);
+  }
 });

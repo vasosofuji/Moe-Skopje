@@ -159,3 +159,22 @@ export function findStreets(text: string, municipality?: string, fc: StreetColle
   }
   return found;
 }
+
+/**
+ * The streets a notice means, for a notice that says it is in `municipality`: a street of that name in that municipality;
+ * failing that, the street of that name when exactly one other municipality has one (a border street filed under its
+ * neighbour). A name that several other municipalities have but this one lacks is ambiguous and skipped.
+ */
+export function locateStreets(text: string, municipality: string, fc?: StreetCollection): StreetFeature[] {
+  const muni = normalizeName(municipality);
+  const byName = new Map<string, StreetFeature[]>();
+  for (const f of findStreets(text, undefined, fc)) {
+    const key = streetKey(f.properties.name_mk);
+    byName.set(key, [...(byName.get(key) ?? []), f]);
+  }
+  return [...byName.values()].flatMap((group) => {
+    const here = group.filter((f) => normalizeName(f.properties.municipality_mk) === muni);
+    if (here.length) return here;
+    return new Set(group.map((f) => f.properties.municipality_mk)).size === 1 ? group : [];
+  });
+}
