@@ -70,11 +70,13 @@ function RouteButton({ open, floating, onClick }: { open: boolean; floating: boo
 }
 
 /**
- * The whole app: a full-bleed map with glass chrome floating over it.
- * Phones (<768): search pill and directions glyph on top, vaul bottom sheet, floating tab bar.
+ * The whole app: a full-bleed map with glass chrome floating over it, placed with the tokens in app/layout-tokens.css.
+ * Phones (<768): search pill and directions glyph on top, vaul bottom sheet resting on a solid tab bar.
  * Tablets (768–1023): 360 px sidebar ending above the tab bar.
  * Desktop (≥1024): 380 px sidebar with Explore and Settings as a segmented control; Ask and directions are the
  * Spotlight bar over the map. Language lives in Settings only.
+ * A selected feature's card sits at the top of the panel (sheet or sidebar); the map controls stack on the right above
+ * the sheet's peek, the tab bar or the ask bar; the bus tracker and toasts sit at the top of the free map area.
  * Owns the tab, the selected feature and the camera, and shares them through MapContext (`useMap()`).
  */
 export function AppShell() {
@@ -102,7 +104,8 @@ export function AppShell() {
 
   const panelTab = isDesktop && tab === "ask" ? "explore" : tab; // desktop asks through the bar, not a tab
   const sheetFull = !isWide && snap === 2; // the map is covered: hide what floats over it
-  const insetLeft = isDesktop ? 412 : isWide ? 392 : 0; // sidebar width plus its 16 px margins
+  const overMap = isWide || snap === 0; // a raised phone sheet would cover the controls and the tracker: they step aside
+  const insetLeft = isDesktop ? 420 : isWide ? 392 : 0; // --map-l: the sidebar, its margin and a gutter
   const planner = routeOpen && !isDesktop;
 
   // The part of the map that is not under a panel.
@@ -190,12 +193,32 @@ export function AppShell() {
     select(hit ?? null);
     if (!hit) void refreshLayer(c.layer).then(() => select((prev) => prev ?? find() ?? null));
   };
-  const closeCard = useCallback(() => select(null), []);
+  // A tapped feature's card opens at the top of the panel; on phones the sheet rises to its middle detent to show it,
+  // and closing the card lowers it back to the map.
+  const choose = useCallback(
+    (f: Feature | null) => {
+      select(f);
+      if (f && !isWide) setSnap(1);
+    },
+    [isWide],
+  );
+  const closeCard = useCallback(() => {
+    select(null);
+    if (!isWide) setSnap(0);
+  }, [isWide]);
   const closeRoute = useCallback(() => setRouteOpen(false), []);
   const stopTracking = useCallback(() => track(null), []);
+  // Following a bus is about the map: a phone sheet drops to its peek, so the tracker and the bus show.
+  const follow = useCallback(
+    (next: Trip | null) => {
+      track(next);
+      if (next && !isWide) setSnap(0);
+    },
+    [isWide],
+  );
   const api = useMemo<MapApi>(
-    () => ({ map, flyTo, showArea, reveal, select, location, locate, highlight, setHighlight, trip, track }),
-    [map, flyTo, showArea, reveal, location, locate, highlight, trip],
+    () => ({ map, flyTo, showArea, reveal, select: choose, location, locate, highlight, setHighlight, trip, track: follow }),
+    [map, flyTo, showArea, reveal, choose, location, locate, highlight, trip, follow],
   );
 
   // Phones and tablets: the planner takes the panel's place while it is open (the sheet sits at its middle detent).
@@ -212,12 +235,18 @@ export function AppShell() {
     <Panel tab={isWide ? panelTab : tab} onCitation={onCitation} />
   );
 
+  const card = (
+    <AnimatePresence>
+      {map && selected && <MarkerCard key={selected.properties.id} feature={selected} map={map} docked onClose={closeCard} />}
+    </AnimatePresence>
+  );
+
   const onboarding = hydrated && !prefs.onboarded;
 
   return (
     <MapContext value={api}>
       <MotionConfig reducedMotion="user">
-        <main className="shell fixed inset-0 overflow-hidden">
+        <main data-raised={!overMap || undefined} className="shell fixed inset-0 overflow-hidden">
           <div inert={onboarding} className="contents">
             <MapView
               layers={mapLayers.filter((id) => !HIDDEN_LAYERS.includes(id))}
@@ -231,7 +260,6 @@ export function AppShell() {
               <>
                 {isWide ? (
                   <Sidebar
-                    desktop={isDesktop}
                     header={
                       <>
                         <div className="flex gap-2">
@@ -242,14 +270,17 @@ export function AppShell() {
                       </>
                     }
                   >
+                    {card}
                     {content}
                   </Sidebar>
                 ) : (
                   <>
                     <div
                       inert={sheetFull}
+                      // Typing a search lowers the sheet, so the results unfold over open map.
+                      onFocus={(e) => e.target instanceof HTMLInputElement && setSnap(0)}
                       className={cx(
-                        "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-20 flex gap-2 transition-opacity duration-150",
+                        "fixed top-(--search-t) right-(--map-r) left-(--map-l) z-(--z-bar) flex items-start gap-2 transition-opacity duration-150",
                         sheetFull && "opacity-0",
                       )}
                     >
@@ -257,55 +288,62 @@ export function AppShell() {
                       <RouteButton open={routeOpen} floating onClick={toggleRoute} />
                     </div>
                     <BottomSheet snap={snap} onSnap={setSnap} title={planner ? t("route.title") : t(`tab.${tab}`)}>
+                      {card}
                       {content}
                     </BottomSheet>
                   </>
                 )}
 
-                {!isDesktop && <TabBar variant="floating" tab={tab} onChange={go} />}
+                {!isDesktop && <TabBar variant="bar" tab={tab} onChange={go} />}
                 {isDesktop && <AskBar left={insetLeft} onCitation={onCitation} />}
 
-                {/* On phones the docked marker card takes the top-right corner, so the locate button steps aside. */}
-                {!sheetFull && !(selected && !isWide) && (
-                  <LocateButton className={cx("fixed z-10", isWide ? "right-4 bottom-12" : "top-[calc(env(safe-area-inset-top)+68px)] right-3")} />
-                )}
-
-                <AnimatePresence>
-                  {map && trip && !sheetFull && (
-                    <BusTracker key={trip.tripId} trip={trip} map={map} floating={isWide} insetLeft={insetLeft} onClose={stopTracking} />
+                {/* Map controls: one stack on the right (8 px gaps), above the sheet's peek, the tab bar or the ask bar. */}
+                <div
+                  inert={!overMap}
+                  className={cx(
+                    "fixed right-(--map-r) bottom-(--controls-b) z-(--z-chrome) flex flex-col gap-2 transition-opacity duration-150",
+                    !overMap && "opacity-0",
                   )}
-                </AnimatePresence>
+                >
+                  <LocateButton />
+                </div>
 
-                <AnimatePresence>
-                  {map && selected && !sheetFull && (
-                    <MarkerCard key={selected.properties.id} feature={selected} map={map} docked={!isDesktop} insetLeft={insetLeft} onClose={closeCard} />
+                {/* Top of the free map area (under the search row on phones): a slot for the toast, then the bus tracker. */}
+                <div
+                  inert={!overMap}
+                  className={cx(
+                    "pointer-events-none fixed top-(--map-t) right-(--map-r) left-(--map-l) z-(--z-cards) flex flex-col items-center gap-2 transition-opacity duration-150",
+                    !overMap && "opacity-0",
                   )}
-                </AnimatePresence>
+                >
+                  {toast && <div aria-hidden className="h-11 shrink-0" />}
+                  <AnimatePresence>
+                    {map && trip && <BusTracker key={trip.tripId} trip={trip} map={map} onClose={stopTracking} />}
+                  </AnimatePresence>
+                </div>
 
-                <AnimatePresence>
-                  {toast && (
-                    <motion.div
-                      key={toast}
-                      role="status"
-                      initial={{ opacity: 0, y: -12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -12 }}
-                      transition={spring}
-                      style={{ left: `calc(${insetLeft}px + (100vw - ${insetLeft}px) / 2)`, maxWidth: `calc((100vw - ${insetLeft}px) * 0.9)` }}
-                      className={cx(
-                        "glass glass-pill fixed z-30 w-max -translate-x-1/2 font-medium whitespace-nowrap",
-                        isWide ? "t-subhead top-4" : "t-footnote top-[calc(env(safe-area-inset-top)+68px)] px-3.5",
-                      )}
-                    >
-                      {toast === "map.tilesUnavailable" ? (
-                        <WifiOff size={16} aria-hidden className="shrink-0 text-(--system-orange)" />
-                      ) : (
-                        <LocateOff size={16} aria-hidden className="shrink-0 text-(--system-orange)" />
-                      )}
-                      <span className="min-w-0 truncate">{t(toast)}</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="pointer-events-none fixed top-(--map-t) right-(--map-r) left-(--map-l) z-(--z-toast) flex justify-center">
+                  <AnimatePresence>
+                    {toast && (
+                      <motion.div
+                        key={toast}
+                        role="status"
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -12 }}
+                        transition={spring}
+                        className={cx("glass glass-pill h-11 max-w-full font-medium whitespace-nowrap", isWide ? "t-subhead" : "t-footnote px-3.5")}
+                      >
+                        {toast === "map.tilesUnavailable" ? (
+                          <WifiOff size={16} aria-hidden className="shrink-0 text-(--system-orange)" />
+                        ) : (
+                          <LocateOff size={16} aria-hidden className="shrink-0 text-(--system-orange)" />
+                        )}
+                        <span className="min-w-0 truncate">{t(toast)}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </>
             )}
           </div>

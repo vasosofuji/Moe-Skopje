@@ -1,14 +1,10 @@
 "use client";
 
 import { Compass, MessageCircle, Settings, type LucideIcon } from "lucide-react";
-import { motion } from "motion/react";
-import { GlassPill } from "@/components/glass/GlassPill";
 import { Segmented } from "@/components/glass/Segmented";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import type { Tab } from "./AppShell";
-import { spring } from "@/lib/motion";
-
 
 export const TAB_ICONS: Record<Tab, LucideIcon> = {
   explore: Compass,
@@ -18,10 +14,11 @@ export const TAB_ICONS: Record<Tab, LucideIcon> = {
 const TABS = Object.keys(TAB_ICONS) as Tab[];
 
 /**
- * The tabs. `floating`: the glass capsule at the bottom of phones and tablets, safe-area aware.
+ * The tabs. `bar`: the solid iOS tab bar along the bottom of phones and tablets, 49 px plus the home-indicator inset
+ * (--tabbar-h); the phone sheet rests on top of it. Three equal tabs, glyph over label, the current one in system blue.
  * `segmented`: a segmented control for the top of the desktop sidebar, without Ask (the chat bar over the map has it).
  */
-export function TabBar({ tab, onChange, variant }: { tab: Tab; onChange(tab: Tab): void; variant: "floating" | "segmented" }) {
+export function TabBar({ tab, onChange, variant }: { tab: Tab; onChange(tab: Tab): void; variant: "bar" | "segmented" }) {
   const { t } = useT();
 
   if (variant === "segmented") {
@@ -34,10 +31,9 @@ export function TabBar({ tab, onChange, variant }: { tab: Tab; onChange(tab: Tab
   }
 
   return (
-    <GlassPill
-      as="nav"
+    <nav
       aria-label={t("shell.tabs")}
-      className="fixed bottom-[calc(env(safe-area-inset-bottom)+8px)] left-1/2 z-20 h-[62px] w-[min(320px,calc(100vw-24px))] -translate-x-1/2 gap-0 px-1"
+      className="fixed inset-x-0 bottom-0 z-(--z-bar) flex h-(--tabbar-h) border-t-[0.5px] border-(--bar-hairline) bg-(--bar-bg) pr-(--safe-r) pb-(--safe-b) pl-(--safe-l)"
     >
       {TABS.map((id) => {
         const Icon = TAB_ICONS[id];
@@ -48,20 +44,18 @@ export function TabBar({ tab, onChange, variant }: { tab: Tab; onChange(tab: Tab
             type="button"
             aria-current={on ? "page" : undefined}
             onClick={() => onChange(id)}
+            // Press feedback: the tab dims at once, as on iOS (no scale or tint on a full-height bar segment).
             className={cx(
-              "relative flex h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors",
+              "flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-[7px] active:scale-100 active:opacity-50 active:shadow-none",
               focusRing,
-              on ? "text-(--system-blue)" : "text-label",
+              on ? "text-(--system-blue)" : "text-(--system-gray)",
             )}
           >
-            {on && (
-              <motion.span layoutId="tab-highlight" transition={spring} className="absolute inset-0 rounded-full bg-(--label)/8" />
-            )}
-            <Icon size={22} strokeWidth={on ? 2.25 : 1.75} aria-hidden className="relative" />
-            <span className="relative max-w-full truncate px-1 text-[10px] font-semibold leading-3">{t(`tab.${id}`)}</span>
+            <Icon size={24} strokeWidth={on ? 2.25 : 1.75} aria-hidden />
+            <span className="max-w-full truncate px-1 text-[10px] leading-3 font-medium">{t(`tab.${id}`)}</span>
           </button>
         );
       })}
-    </GlassPill>
+    </nav>
   );
 }
