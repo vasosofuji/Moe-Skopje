@@ -4,7 +4,7 @@ import nextConfig from "../../next.config";
 
 // Next's file tracer follows `readFile(join(<variable>, ...))` by tracing the whole project ("Dynamic filesystem access").
 // So every server-side read of data/ must be spelled join(process.cwd(), "data", "static" | "seed", ...) at the read site.
-const READERS = ["static.ts", "seed.ts", "parking.ts"];
+const READERS = ["static.ts", "seed.ts", "streets.ts"];
 
 test.each(READERS)("%s only builds data paths as join(process.cwd(), 'data', 'static' | 'seed', ...)", (file) => {
   const src = readFileSync(new URL(`./${file}`, import.meta.url), "utf8");

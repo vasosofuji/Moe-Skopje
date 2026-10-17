@@ -4,6 +4,7 @@ import { join } from "node:path";
 import osmtogeojson from "osmtogeojson";
 import { normalizeName } from "../lib/sources/geo";
 import { municipalityAt, toLatin, type MunicipalityCollection } from "../lib/sources/static";
+import { mergeStreets, type Way } from "../lib/sources/streets";
 
 const ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
@@ -12,7 +13,7 @@ const ENDPOINTS = [
 ];
 const BBOX = "41.90,21.25,42.10,21.60"; // S,W,N,E, Overpass order
 const OUT_DIR = join(process.cwd(), "data", "static");
-const DEADLINE = Date.now() + 15 * 60_000; // whole bake is time-boxed
+const DEFAULT_MINUTES = 15; // each dataset is time-boxed
 const MUNI = "^(Општина )?(Центар|Карпош|Аеродром|Кисела Вода|Гази Баба|Чаир|Бутел|Шуто Оризари|Ѓорче Петров|Сарај)$";
 const MUNI_NAMES = 10;
 
@@ -26,6 +27,10 @@ type Dataset = {
   query: string;
   /** Keeps the wanted features and reduces their properties. */
   pick: (f: GeoJSON.Feature<GeoJSON.Geometry, Props>) => GeoJSON.Feature | null;
+  /** Overpass time-box in minutes (default 15). */
+  minutes?: number;
+  /** Turns raw Overpass elements into features itself, for datasets too big to run through osmtogeojson. */
+  raw?: (elements: unknown[]) => GeoJSON.Feature<GeoJSON.Geometry, Props>[];
   /** Serialises the picked features when the file is not a FeatureCollection. */
   format?: (features: GeoJSON.Feature[]) => Promise<{ body: string; count: number }>;
 };
@@ -80,6 +85,44 @@ async function settlementRows(features: GeoJSON.Feature[]): Promise<{ body: stri
   return { body: `[\n${jsonLines(rows)}\n]\n`, count: rows.length };
 }
 
+// Roads people can name in an outage notice. Footpaths, steps, tracks and the like are left out to keep the file small.
+const NOT_ROADS = "^(footway|path|steps|cycleway|bridleway|track|corridor|elevator|platform|proposed|construction|raceway)$";
+// Wider than BBOX: Сарај reaches west to 21.15, Бутел north to 42.16 and Гази Баба east to 21.59, outside the Skopje view box.
+const STREET_BBOX = "41.89,21.14,42.16,21.60";
+const street = (key: string) => `way["highway"]["highway"!~"${NOT_ROADS}"]["${key}"](${STREET_BBOX});`;
+
+type OverpassWay = { type?: string; id?: number; tags?: Record<string, string>; geometry?: { lat: number; lon: number }[] };
+
+/** `out geom` ways → LineString features carrying only the names. */
+function streetWays(elements: unknown[]): GeoJSON.Feature<GeoJSON.Geometry, Props>[] {
+  return (elements as OverpassWay[]).flatMap((w) => {
+    const name = w.tags?.["name:mk"] ?? w.tags?.name ?? w.tags?.["name:en"];
+    if (w.type !== "way" || !name || !w.geometry || w.geometry.length < 2) return [];
+    return [
+      {
+        type: "Feature" as const,
+        geometry: { type: "LineString" as const, coordinates: w.geometry.map((p) => [p.lon, p.lat]) },
+        properties: { name_mk: name, ...(w.tags?.["name:en"] ? { name_en: w.tags["name:en"] } : {}) } as Props,
+      },
+    ];
+  });
+}
+
+/** Street index: ways merged per street and municipality, simplified (lib/sources/streets.ts mergeStreets). */
+async function streetRows(features: GeoJSON.Feature[]): Promise<{ body: string; count: number }> {
+  const munis = JSON.parse(await readFile(join(OUT_DIR, "municipalities.geojson"), "utf8")) as MunicipalityCollection;
+  const ways: Way[] = features.map((f) => {
+    const p = f.properties as { name_mk: string; name_en?: string };
+    return { name_mk: p.name_mk, name_en: p.name_en, coords: (f.geometry as GeoJSON.LineString).coordinates };
+  });
+  const streets = mergeStreets(ways, munis);
+  console.log(`  ${ways.length} named ways → ${streets.length} streets in ${new Set(streets.map((s) => s.properties.municipality_mk)).size} municipalities`);
+  return { body: `{"type":"FeatureCollection","features":[
+${jsonLines(streets)}
+]}
+`, count: streets.length };
+}
+
 const DATASETS: Record<string, Dataset> = {
   municipalities: {
     file: "municipalities.geojson",
@@ -126,6 +169,15 @@ const DATASETS: Record<string, Dataset> = {
     pick: point(["name:mk"]),
     format: settlementRows,
   },
+  streets: {
+    file: "streets.geojson",
+    minutes: 10,
+    // out geom: ways carry their coordinates, so no node lookups; name:mk / name:en only matter when `name` is missing
+    query: q(street("name") + street("name:mk") + street("name:en"), "out geom;"),
+    raw: streetWays,
+    pick: (f) => f,
+    format: streetRows,
+  },
   schools: {
     file: "schools.geojson",
     query: q(`nwr["amenity"~"^(school|kindergarten)$"](${BBOX});`, "out center;"),
@@ -134,9 +186,10 @@ const DATASETS: Record<string, Dataset> = {
 };
 
 /** POSTs to the first endpoint that answers 200 with a usable body; retries all endpoints with backoff until the deadline. */
-async function overpass(query: string): Promise<{ elements: unknown[] }> {
+async function overpass(query: string, minutes: number): Promise<{ elements: unknown[] }> {
+  const deadline = Date.now() + minutes * 60_000;
   const errors: string[] = [];
-  for (let round = 0; Date.now() < DEADLINE; round++) {
+  for (let round = 0; Date.now() < deadline; round++) {
     for (const url of ENDPOINTS) {
       try {
         const res = await fetch(url, {
@@ -158,13 +211,13 @@ async function overpass(query: string): Promise<{ elements: unknown[] }> {
     }
     await sleep(Math.min(5_000 * 2 ** round, 60_000));
   }
-  throw new Error(`All Overpass endpoints failed within 15 min:\n${errors.slice(-9).join("\n")}`);
+  throw new Error(`All Overpass endpoints failed within ${minutes} min:\n${errors.slice(-9).join("\n")}`);
 }
 
 async function bake(name: string, ds: Dataset) {
   console.log(`${name}: querying Overpass`);
-  const json = await overpass(ds.query);
-  const all = osmtogeojson(json, { flatProperties: true }).features as GeoJSON.Feature<GeoJSON.Geometry, Props>[];
+  const json = await overpass(ds.query, ds.minutes ?? DEFAULT_MINUTES);
+  const all = ds.raw ? ds.raw(json.elements) : (osmtogeojson(json, { flatProperties: true }).features as GeoJSON.Feature<GeoJSON.Geometry, Props>[]);
   let features = all.map(ds.pick).filter((f): f is GeoJSON.Feature => f !== null);
 
   if (name === "municipalities") {
