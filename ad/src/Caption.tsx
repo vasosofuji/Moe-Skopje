@@ -14,7 +14,7 @@ export const Caption = ({ text, in: start, out, ink = false, side }: { text: str
   if (side)
     return (
       <div style={{ position: "absolute", top: "50%", ...SIDE[side], transform: `translate(${(1 - enter) * (side === "left" ? -14 : 14)}px, -50%)`,
-        whiteSpace: "pre-line", fontFamily: theme.font, fontWeight: 600, fontSize: 64, letterSpacing: "-0.025em", lineHeight: 1.08,
+        whiteSpace: "pre-line", fontFamily: theme.font, fontWeight: 800, fontSize: 68, letterSpacing: "-0.03em", lineHeight: 1.08,
         color: ink ? theme.ink : "#fff", opacity: enter * exit, filter: `blur(${(1 - enter) * 4}px)` }}>
         {text}
       </div>

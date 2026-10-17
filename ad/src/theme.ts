@@ -2,7 +2,7 @@
 import { Easing } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 
-const { fontFamily } = loadFont("normal", { weights: ["400", "500", "600", "700"], subsets: ["latin", "cyrillic"] });
+const { fontFamily } = loadFont("normal", { weights: ["400", "500", "600", "700", "800"], subsets: ["latin", "cyrillic"] });
 
 const light = {
   bg: "#f2f2f7",
