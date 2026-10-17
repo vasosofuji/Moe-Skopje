@@ -21,6 +21,12 @@
   --glass-rim: rgb(255 255 255 / .9);
   --label: #000;
   --label-2: rgb(60 60 67 / .6);
+  --tile: rgb(255 255 255 / .55); /* widget tiles and grouped lists inside glass panels */
+  --thumb: #fff; /* selected segment of a segmented control */
+  --map-icon-filter: none; /* MapLibre's dark control glyphs */
+
+  /* Floating tab bar (62 px) plus its 8 px gap above the safe area and 8 px above it. */
+  --tab-zone: calc(78px + env(safe-area-inset-bottom));
 
   /* iOS system colours */
   --system-red: #ff3b30;
@@ -60,6 +66,9 @@
     --glass-rim: rgb(255 255 255 / .3);
     --label: #fff;
     --label-2: rgb(235 235 245 / .6);
+    --tile: rgb(255 255 255 / .06);
+    --thumb: rgb(255 255 255 / .22);
+    --map-icon-filter: invert(1);
 
     --system-red: #ff453a;
     --system-orange: #ff9f0a;
@@ -86,6 +95,9 @@
   --glass-rim: rgb(255 255 255 / .3);
   --label: #fff;
   --label-2: rgb(235 235 245 / .6);
+  --tile: rgb(255 255 255 / .06);
+  --thumb: rgb(255 255 255 / .22);
+  --map-icon-filter: invert(1);
 
   --system-red: #ff453a;
   --system-orange: #ff9f0a;
@@ -105,6 +117,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none; /* the map shell never scrolls; stops the iOS rubber band */
 }
 
 /* Component layer, so Tailwind utilities on a glass element always win. */
@@ -190,4 +203,64 @@ body {
   .t-subhead { font-size: 15px; line-height: 20px; font-weight: 400; }
   .t-footnote { font-size: 13px; line-height: 18px; font-weight: 400; }
   .t-caption { font-size: 12px; line-height: 16px; font-weight: 500; }
+
+  /* Loading placeholder: a soft shimmer sweeping across a label-tinted bar. */
+  .skeleton {
+    border-radius: 6px;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--label) 6%, transparent) 30%,
+      color-mix(in srgb, var(--label) 13%, transparent) 50%,
+      color-mix(in srgb, var(--label) 6%, transparent) 70%);
+    background-size: 300% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  /* "You are here" dot on the map, with a slow sonar pulse. */
+  .user-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--system-blue);
+    border: 3px solid #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / .3);
+    animation: sonar 2.4s ease-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton, .user-dot { animation: none; }
+  }
 }
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+@keyframes sonar {
+  from { box-shadow: 0 1px 4px rgb(0 0 0 / .3), 0 0 0 0 color-mix(in srgb, var(--system-blue) 45%, transparent); }
+  to { box-shadow: 0 1px 4px rgb(0 0 0 / .3), 0 0 0 18px transparent; }
+}
+
+/* MapLibre's stylesheet is unlayered, so these overrides must be too: any layered rule loses to it. */
+.maplibregl-map { font: inherit; }
+.shell .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  margin: 10px;
+  border-radius: 12px;
+  color: var(--label-2);
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 0 0 .5px var(--glass-stroke), 0 4px 16px rgb(0 0 0 / .1);
+}
+.shell .maplibregl-ctrl-attrib:not(.maplibregl-compact) { padding: 2px 8px; }
+.shell .maplibregl-ctrl-attrib a { color: inherit; }
+.shell .maplibregl-ctrl-attrib-button { filter: var(--map-icon-filter); }
+@media (prefers-reduced-transparency: reduce) {
+  .shell .maplibregl-ctrl.maplibregl-ctrl-attrib { background: var(--glass-bg-solid); backdrop-filter: none; }
+}
+/* Phones: the bottom edge belongs to the sheet and tab bar, so attribution moves under the locate button. */
+@media (max-width: 767px) {
+  .shell .maplibregl-ctrl-bottom-right { top: calc(env(safe-area-inset-top) + 116px); bottom: auto; }
+}
+/* Desktop with the assistant panel open: keep attribution clear of it. */
+.shell[data-ask] .maplibregl-ctrl-bottom-right { right: 416px; }
+
