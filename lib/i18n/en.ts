@@ -174,4 +174,17 @@ export const en: Dict = {
   "onboarding.locationDenied": "Location wasn't allowed. You can turn it on later with the button on the map.",
   "settings.healthEmpty": "No sources connected yet.",
   "settings.items": "Items: {n}",
+
+  // --- Task 13: tier 2 ---
+  "goOut.title": "Good to go out?",
+  "goOut.score": "Score {score} out of 100",
+  "goOut.verdict.good": "A great day to be outside",
+  "goOut.verdict.fair": "Fine, with some care",
+  "goOut.verdict.poor": "Better to stay in",
+  "goOut.reason.air": "Polluted air",
+  "goOut.reason.rain": "Rain",
+  "goOut.reason.temp": "Extreme temperature",
+  "eservices.title": "e-Services",
+  "eservices.hint": "Common tasks you can sort out online.",
+  "eservices.opensNew": "opens in a new tab",
 };
