@@ -99,7 +99,7 @@ export const en: Dict = {
   "assistant.send": "Send",
   "assistant.refused": "I can't help with that. Try a different question.",
   "assistant.unavailable": "The assistant isn't connected.",
-  "assistant.rateLimited": "You've reached the message limit for this hour. Please try again later.",
+  "assistant.rateLimited": "Too many messages. Try again later.",
 
   // --- Task 7: air ---
   "air.cityPm10": "City PM10",
@@ -114,7 +114,7 @@ export const en: Dict = {
 
   // --- Task 12: assistant ---
   "assistant.typing": "Typing…",
-  "assistant.error": "The assistant couldn't answer. Please try again.",
+  "assistant.error": "Couldn't get an answer.",
 
   // --- Task 4: shell ---
   "lang.mk": "Македонски",
@@ -226,10 +226,10 @@ export const en: Dict = {
   "route.openGoogle": "Open in Google Maps",
   "route.openWaze": "Open in Waze",
   "route.wazeNote": "Waze only takes a destination, so it picks its own route.",
-  "route.error.router": "Routing isn't available right now. Please try again.",
-  "route.error.rate": "Too many requests. Wait a moment and try again.",
+  "route.error.router": "Routing isn't available.",
+  "route.error.rate": "Too many requests. Wait a moment.",
   "route.error.bbox": "Both points must be in Skopje.",
-  "route.error.noroute": "We couldn't find a route between these two points.",
+  "route.error.noroute": "No route between these points.",
   "route.attribution": "Routing: FOSSGIS Valhalla. Data © OpenStreetMap contributors",
   "route.fixTheMap": "Report a map error",
 
@@ -265,7 +265,7 @@ export const en: Dict = {
   "route.clear": "Clear the route",
   "route.detour": "Detour: +{distance}",
   "route.error.same": "Choose two different points.",
-  "route.error.network": "Can't reach the server. Check your connection.",
+  "route.error.network": "Can't reach the server.",
 
   // --- final fixes UI ---
   "outages.activeNow": "Under way now: {n}",
@@ -277,4 +277,13 @@ export const en: Dict = {
   "status.demo": "Demo",
   "status.ago": "{age} ago",
   "unit.min": "min",
+
+  // --- u4-route-chat ---
+  "route.min": "{min} min",
+  "route.hour": "{h} h",
+  "route.hourMin": "{h} h {min} min",
+  "route.avoidsOne": "avoids 1 closure",
+  "route.avoidsMany": "avoids {n} closures",
+  "route.noClosures": "no closures",
+  "assistant.empty": "Ask about air, outages, buses, parking, roads.",
 };
