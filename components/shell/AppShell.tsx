@@ -9,7 +9,8 @@ import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import type { Citation } from "@/components/assistant/Citation";
 import { ExplorePanel } from "@/components/explore/ExplorePanel";
 import { GlassButton } from "@/components/glass/GlassButton";
-import { MapContext, MapView, type LngLat, type MapApi } from "@/components/map/MapView";
+import { BusTracker } from "@/components/map/BusTracker";
+import { MapContext, MapView, type BBox, type Highlight, type LngLat, type MapApi, type Trip } from "@/components/map/MapView";
 import { MarkerCard } from "@/components/map/MarkerCard";
 import { HIDDEN_LAYERS } from "@/components/onboarding/LayerGrid";
 import { Onboarding } from "@/components/onboarding/Onboarding";
@@ -55,6 +56,8 @@ export function AppShell() {
   const [tab, setTab] = useState<Tab>("explore");
   const [snap, setSnap] = useState<Snap>(SNAPS[0]);
   const [selected, select] = useState<Feature | null>(null);
+  const [highlight, setHighlight] = useState<Highlight | null>(null);
+  const [trip, track] = useState<Trip | null>(null);
   const [map, setMap] = useState<MapLibreMap>();
   const [location, setLocation] = useState<LngLat>();
   const [toast, setToast] = useState<keyof Dict | null>(null);
@@ -63,19 +66,32 @@ export function AppShell() {
   const sheetFull = !isWide && snap === SNAPS[SNAPS.length - 1]; // the map is covered: hide what floats over it
   const insetLeft = isDesktop ? 412 : isWide ? 392 : 0; // sidebar width plus its 16 px margins
 
+  // The part of the map that is not under a panel.
+  const padding = useCallback(
+    (extra = 0) =>
+      isWide
+        ? { left: insetLeft + extra, right: extra, top: extra, bottom: (isDesktop ? 104 : 0) + extra } // desktop: above the chat bar
+        : { left: extra, right: extra, top: 120 + extra, bottom: Math.round(innerHeight * 0.35) + extra },
+    [isWide, isDesktop, insetLeft],
+  );
+
   const flyTo = useCallback(
     (center: LngLat, zoom?: number) => {
-      map?.flyTo({
-        center,
-        zoom: zoom ?? Math.max(map.getZoom(), 14),
-        // Centre the target in the part of the map that is not under a panel.
-        padding: isWide
-          ? { left: insetLeft, right: 0, top: 0, bottom: isDesktop ? 104 : 0 } // desktop: above the chat bar
-          : { left: 0, right: 0, top: 120, bottom: Math.round(innerHeight * 0.35) },
-      });
+      map?.flyTo({ center, zoom: zoom ?? Math.max(map.getZoom(), 14), padding: padding() });
     },
-    [map, isWide, isDesktop, insetLeft],
+    [map, padding],
   );
+
+  const showArea = useCallback(
+    ([w, s, e, n]: BBox) => {
+      map?.fitBounds([[w, s], [e, n]], { padding: padding(40), maxZoom: 16 });
+    },
+    [map, padding],
+  );
+
+  const reveal = useCallback(() => {
+    if (!isWide) setSnap(SNAPS[0]);
+  }, [isWide]);
 
   const locate = useCallback(
     (fly = true) =>
@@ -133,7 +149,11 @@ export function AppShell() {
     if (!hit) void refreshLayer(c.layer).then(() => select((prev) => prev ?? find() ?? null));
   };
   const closeCard = useCallback(() => select(null), []);
-  const api = useMemo<MapApi>(() => ({ map, flyTo, select, location, locate }), [map, flyTo, location, locate]);
+  const stopTracking = useCallback(() => track(null), []);
+  const api = useMemo<MapApi>(
+    () => ({ map, flyTo, showArea, reveal, select, location, locate, highlight, setHighlight, trip, track }),
+    [map, flyTo, showArea, reveal, location, locate, highlight, trip],
+  );
 
   const onboarding = hydrated && !prefs.onboarded;
   const other = lang === "mk" ? "en" : "mk";
@@ -198,6 +218,12 @@ export function AppShell() {
                     <LocateFixed size={20} aria-hidden className={location ? "text-(--system-blue)" : undefined} />
                   </GlassButton>
                 )}
+
+                <AnimatePresence>
+                  {map && trip && !sheetFull && (
+                    <BusTracker key={trip.tripId} trip={trip} map={map} floating={isWide} insetLeft={insetLeft} onClose={stopTracking} />
+                  )}
+                </AnimatePresence>
 
                 <AnimatePresence>
                   {map && selected && !sheetFull && (

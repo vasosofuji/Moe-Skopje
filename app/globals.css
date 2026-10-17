@@ -227,6 +227,34 @@ body {
     animation: sonar 2.4s ease-out infinite;
   }
 
+  /* Followed bus on the map: a glass capsule with its line number, ringed in the bus colour. */
+  .bus-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding-inline: 8px;
+    border-radius: 999px;
+    border: 2px solid var(--c-bus);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 2px 8px rgb(0 0 0 / .25);
+    color: var(--c-bus);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  :root[data-theme="dark"] .bus-marker { color: #fff; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .bus-marker { color: #fff; }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .bus-marker { background: var(--glass-bg-solid); backdrop-filter: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .skeleton, .user-dot { animation: none; }
   }

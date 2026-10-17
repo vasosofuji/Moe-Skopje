@@ -17,7 +17,6 @@ export const en: Dict = {
 
   // ── tabs
   "tab.explore": "Explore",
-  "tab.report": "Report",
   "tab.ask": "Ask",
   "tab.settings": "Settings",
 
@@ -53,7 +52,6 @@ export const en: Dict = {
   "explore.today": "Today in Skopje",
   "explore.airNow": "Air now",
   "explore.weather": "Weather",
-  "explore.outages": "Active outages",
   "explore.nextBus": "Next bus near you",
   "explore.layers": "Layers",
   "explore.noData": "No data",
@@ -95,9 +93,6 @@ export const en: Dict = {
   "settings.aboutBody":
     "Moe Skopje brings the city's public data together in one place. It comes from public sources and can be late or missing; how fresh it is is always shown.",
 
-  // kept until the UI agent drops the report tab: AppShell.tsx still reads report.title, TabBar/AppShell the tab.report label
-  "report.title": "Report an issue",
-
   // ── assistant
   "assistant.title": "City assistant",
   "assistant.placeholder": "Ask anything about Skopje…",
@@ -119,8 +114,6 @@ export const en: Dict = {
   "buses.next": "Next departures",
   "buses.line": "Line {line}",
   "buses.none": "No more departures today.",
-  "buses.noTimetable": "No timetable for the lines at this stop.",
-  "buses.approximate": "Approximate timetable, not official.",
 
   // --- Task 12: assistant ---
   "assistant.intro": "Ask me about the air, outages, buses or pharmacies. I answer from the city's live data.",
@@ -138,7 +131,6 @@ export const en: Dict = {
   "shell.noResults": "No results",
   "map.region": "Map of Skopje",
   "map.locationUnavailable": "We couldn't find your location",
-  "explore.allClear": "No outages right now",
   "explore.nearCentre": "Nearest to the centre",
   "explore.distance": "{d} away",
   "marker.when": "When",
@@ -159,7 +151,6 @@ export const en: Dict = {
   "detail.precipitation": "Precipitation",
   "detail.wind": "Wind",
   "detail.depth": "Depth",
-  "detail.type": "Type",
   "detail.streets": "Streets",
   "detail.lines": "Lines",
   "detail.municipality": "Municipality",
@@ -168,8 +159,6 @@ export const en: Dict = {
   "detail.phone": "Phone",
   "detail.website": "Website",
   "detail.operator": "Operator",
-  "detail.zone": "Zone",
-  "detail.price": "Price",
   "detail.capacity": "Parking spaces",
   "detail.fee": "Paid",
   "detail.yes": "Yes",
@@ -195,7 +184,7 @@ export const en: Dict = {
 
   // --- Wave E1b ---
   "buses.live": "Live",
-  "buses.estimated": "Estimated position (timetable)",
+  "buses.estimated": "Estimated position",
   "buses.inMin": "in {n} min",
   "buses.now": "now",
   "buses.toward": "to {headsign}",
@@ -249,4 +238,27 @@ export const en: Dict = {
   "route.error.noroute": "We couldn't find a route between these two points.",
   "route.attribution": "Routing: FOSSGIS Valhalla. Data © OpenStreetMap contributors",
   "route.fixTheMap": "Report a map error",
+
+  // --- Wave E2 ---
+  "outages.title": "Outages",
+  "outages.days": "Pick a day",
+  "outages.today": "Today",
+  "outages.none": "No planned outages on this day.",
+  "outages.count.one": "{n} outage",
+  "outages.count.other": "{n} outages",
+  "outages.type.power": "Power",
+  "outages.type.water": "Water",
+  "outages.type.heating": "Heating",
+  "detail.cause": "Cause",
+  "weather.clear": "Clear",
+  "weather.partly": "Partly cloudy",
+  "weather.cloudy": "Cloudy",
+  "weather.fog": "Fog",
+  "weather.drizzle": "Drizzle",
+  "weather.rain": "Rain",
+  "weather.snow": "Snow",
+  "weather.storm": "Thunderstorms",
+  "buses.tracking": "Following a bus",
+  "buses.locating": "Finding the bus…",
+  "buses.stopTracking": "Stop following",
 };

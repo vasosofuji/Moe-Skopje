@@ -1,7 +1,7 @@
 // Air quality from pulse.eco. It already merges the official MOEPP stations (numeric sensorIds like "1000")
 // with sensor.community sensors (`sensor_dev_*` and uuids), so it is the only air source we need.
 import { z } from "zod";
-import { pm10Severity } from "@/lib/aqi";
+import { pm10Severity, pm25Severity } from "@/lib/aqi";
 import { fetchJson } from "./fetch-json";
 import { loadSeed } from "./seed";
 import type { Adapter, Feature } from "./types";
@@ -20,9 +20,6 @@ export type PulseReading = z.infer<typeof Reading>;
 const EXTRA = { no2: "no2", o3: "o3", noise_dba: "noise", temperature: "temperature" } as const;
 
 const num = (s: string) => Number.parseFloat(s);
-
-/** Same 0 to 3 scale as pm10Severity, from the PM2.5 bands: <=10 green, <=20 yellow-green, <=25 yellow, <=50 orange, <=75 red, above purple. */
-const pm25Severity = (v: number): 0 | 1 | 2 | 3 => (v <= 20 ? 0 : v <= 25 ? 1 : v <= 50 ? 2 : 3);
 
 /** Pure: latest reading per sensor and type (≤3 h old, numeric) → one air-station point per sensor with pm10 or pm25. */
 export function parseAir(readings: PulseReading[], names: ReadonlyMap<string, string>, now = Date.now()): Feature[] {

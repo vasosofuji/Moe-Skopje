@@ -3,37 +3,22 @@
 import { ChevronLeft } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState, type ReactNode } from "react";
+import { LineBadge, tidyName, useDepartures } from "@/components/map/BusDepartures";
 import { CENTER, useMap, type LngLat } from "@/components/map/MapView";
 import { featureCenter } from "@/components/map/renderLayer";
+import { AQI_COLORS, aqiColor, aqiPosition, pm10Severity } from "@/lib/aqi";
 import { cx, focusRing } from "@/lib/cx";
-import { pick, useT } from "@/lib/i18n";
+import { pick, useT, type Dict } from "@/lib/i18n";
 import { formatDate, formatDistance } from "@/lib/i18n/format";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
 import { useLayer } from "@/lib/useLayer";
 import { AirDetail, cityPm10, stationsOf } from "./AirDetail";
-
-// PM10 (µg/m³) thresholds and colours, spec §6.4: ≤20 green, ≤40 yellow-green, ≤50 yellow, ≤100 orange, ≤150 red, >150 purple.
-const AQI_MAX = [20, 40, 50, 100, 150];
-const AQI_COLOR = [
-  "var(--system-green)",
-  "color-mix(in srgb, var(--system-green), var(--system-yellow))",
-  "var(--system-yellow)",
-  "var(--system-orange)",
-  "var(--system-red)",
-  "var(--system-purple)",
-];
-const AQI_LEVEL = [0, 0, 1, 2, 3, 3] as const; // which air.level.* copy each band uses
-
-/** Colour band and copy level for a PM10 reading. */
-export function aqi(pm10: number): { color: string; level: 0 | 1 | 2 | 3 } {
-  const band = AQI_MAX.findIndex((max) => pm10 <= max);
-  const i = band === -1 ? AQI_MAX.length : band;
-  return { color: AQI_COLOR[i], level: AQI_LEVEL[i] };
-}
+import { EServices } from "./EServices";
+import { GoOutCard } from "./GoOutCard";
+import { OutagesWidget } from "./OutagesWidget";
 
 const featuresOf = (data?: LayerResponse) => (data?.features.features ?? []) as Feature[];
-const isActive = (f: Feature, now = Date.now()) => !f.properties.endsAt || Date.parse(f.properties.endsAt) > now;
 
 /** Metres between two points; an equirectangular approximation is plenty inside one city. */
 function metres([lng1, lat1]: LngLat, [lng2, lat2]: LngLat): number {
@@ -43,9 +28,21 @@ function metres([lng1, lat1]: LngLat, [lng2, lat2]: LngLat): number {
   return Math.hypot(x, y) * 6_371_000;
 }
 
+/** WMO weather code (Open-Meteo) → condition copy. */
+export function condition(code: number): keyof Dict {
+  if (code === 0) return "weather.clear";
+  if (code <= 2) return "weather.partly";
+  if (code === 3) return "weather.cloudy";
+  if (code <= 48) return "weather.fog";
+  if (code <= 57) return "weather.drizzle";
+  if (code <= 67 || (code >= 80 && code <= 82)) return "weather.rain";
+  if (code <= 77 || code === 85 || code === 86) return "weather.snow";
+  return "weather.storm";
+}
+
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
-/** A "Today" tile. With `onOpen` a button stretched over the whole tile opens the layer's detail. */
+/** A "Today" tile. With `onOpen` a button stretched over the whole tile opens more. */
 function Card({
   id,
   title,
@@ -118,21 +115,34 @@ function Empty() {
   );
 }
 
+/** The AQI scale as a bar with a dot at the reading: the legend of the heat map, which uses the same colours and spots. */
+function AqiBar({ pm10 }: { pm10: number }) {
+  const stops = AQI_COLORS.map((c, i) => `${c} ${(((i + 0.5) / 6) * 100).toFixed(1)}%`).join(", ");
+  return (
+    <span aria-hidden className="relative mt-2 block h-1.5 rounded-full" style={{ background: `linear-gradient(90deg, ${stops})` }}>
+      <span
+        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_1.5px_rgb(0_0_0/.35)]"
+        style={{ left: `${aqiPosition("pm10", pm10) * 100}%` }}
+      />
+    </span>
+  );
+}
+
 /** Same number as the air detail: the median over the PM10 stations. */
 function AirCard({ onOpen }: { onOpen(): void }) {
   const { t } = useT();
   const { data, loading } = useLayer("air", true);
   const city = data ? cityPm10(stationsOf(data)) : null;
-  const band = city === null ? null : aqi(city);
   return (
     <Card id="air" title={t("explore.airNow")} loading={loading} onOpen={onOpen} openLabel={t("air.details")}>
-      {band ? (
+      {city !== null ? (
         <>
           <Big value={city} unit="µg/m³" />
           <p className="t-footnote flex min-w-0 items-center gap-1.5 font-medium">
-            <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: band.color }} />
-            <span className="truncate">{t(`air.level.${band.level}`)}</span>
+            <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: aqiColor(city) }} />
+            <span className="truncate">{t(`air.level.${pm10Severity(city)}`)}</span>
           </p>
+          <AqiBar pm10={city} />
         </>
       ) : (
         <Empty />
@@ -142,15 +152,16 @@ function AirCard({ onOpen }: { onOpen(): void }) {
 }
 
 function WeatherCard() {
-  const { t, lang } = useT();
+  const { t } = useT();
   const { data, loading } = useLayer("weather", true);
   const now = featuresOf(data).find((f) => typeof f.properties.value === "number");
+  const code = now?.properties.detail?.weatherCode;
   return (
     <Card id="weather" title={t("explore.weather")} loading={loading}>
       {now ? (
         <>
-          <Big value={Math.round(now.properties.value!)} unit={now.properties.unit} />
-          <Caption>{pick(now.properties.title, lang)}</Caption>
+          <Big value={`${Math.round(now.properties.value!)}°`} />
+          {typeof code === "number" && <Caption>{t(condition(code))}</Caption>}
         </>
       ) : (
         <Empty />
@@ -159,50 +170,65 @@ function WeatherCard() {
   );
 }
 
-function OutagesCard() {
-  const { t, lang } = useT();
-  const { data, loading } = useLayer("outages-power", true);
-  const active = featuresOf(data).filter((f) => isActive(f));
-  // Demo data with nothing in it says nothing about the grid, so only a real response may claim "all clear".
-  const known = data && (active.length > 0 || data.status !== "offline");
+/** "Good to go out?" from the same city PM10 as the air tile and the current weather. */
+function GoOut() {
+  const air = useLayer("air", true).data;
+  const weather = featuresOf(useLayer("weather", true).data).find((f) => typeof f.properties.value === "number");
+  const precip = weather?.properties.detail?.precipitation;
   return (
-    <Card id="outages-power" title={t("explore.outages")} loading={loading}>
-      {known ? (
-        <>
-          <Big value={active.length} />
-          <Caption>{active.length ? pick(active[0].properties.title, lang) : t("explore.allClear")}</Caption>
-        </>
-      ) : (
-        <Empty />
-      )}
-    </Card>
+    <GoOutCard
+      pm10={air ? cityPm10(stationsOf(air)) : null}
+      tempC={weather?.properties.value ?? null}
+      precipMm={typeof precip === "number" ? precip : null}
+    />
   );
 }
 
+/** The next departure at the nearest stop with a timetable; tapping it opens that stop on the map. */
 function BusCard() {
   const { t, lang } = useT();
-  const { location } = useMap();
+  const { location, flyTo, select, reveal } = useMap();
   const { data, loading } = useLayer("buses", true);
   const from = location ?? CENTER;
   const nearest = featuresOf(data)
+    .filter((f) => f.geometry.type === "Point" && f.properties.detail?.lines)
     .map((f) => ({ f, m: metres(from, featureCenter(f.geometry)) }))
     .sort((a, b) => a.m - b.m)[0];
+  const stopId = nearest?.f.properties.detail?.stopId;
+  const list = useDepartures(typeof stopId === "string" ? stopId : undefined);
+  // The tile is narrow: "4 мин" rather than "за 4 мин".
+  const when = (d: { inMin: number; at: string }) => (d.inMin <= 0 ? t("buses.now") : d.inMin < 60 ? t("age.min", { n: d.inMin }) : d.at);
   const where = location && nearest ? t("explore.distance", { d: formatDistance(nearest.m, lang) }) : t("explore.nearCentre");
-  const p = nearest?.f.properties;
+  const next = list?.[0];
+
   return (
-    <Card id="buses" title={t("explore.nextBus")} loading={loading}>
-      {p ? (
-        typeof p.value === "number" ? (
-          <>
-            <Big value={p.value} unit={p.unit} />
-            <Caption>{pick(p.title, lang)}</Caption>
-          </>
-        ) : (
-          <>
-            <p className="t-headline truncate">{pick(p.title, lang)}</p>
-            <Caption>{where}</Caption>
-          </>
-        )
+    <Card
+      id="buses"
+      title={t("explore.nextBus")}
+      loading={loading || (typeof stopId === "string" && list === undefined)}
+      onOpen={
+        nearest &&
+        (() => {
+          flyTo(featureCenter(nearest.f.geometry), 16);
+          select(nearest.f);
+          reveal();
+        })
+      }
+      openLabel={nearest && tidyName(pick(nearest.f.properties.title, lang))}
+    >
+      {nearest ? (
+        <>
+          {next ? (
+            <p className="flex min-w-0 items-center gap-2">
+              <LineBadge route={next.route} className="t-footnote h-6 min-w-7" />
+              <span className="t-title2 truncate tabular-nums">{when(next)}</span>
+            </p>
+          ) : (
+            <p className="t-subhead text-label-2">{t(list === null ? "buses.unavailable" : "buses.none")}</p>
+          )}
+          <Caption>{tidyName(pick(nearest.f.properties.title, lang))}</Caption>
+          <Caption>{where}</Caption>
+        </>
       ) : (
         <Empty />
       )}
@@ -240,8 +266,8 @@ function AirView({ onBack }: { onBack(): void }) {
 function ExploreList({ onOpenAir }: { onOpenAir(): void }) {
   const { t, lang } = useT();
   return (
-    <div className="flex flex-col gap-6">
-      <header className="px-1">
+    <div className="flex flex-col gap-3">
+      <header className="mb-3 px-1">
         <p className="t-footnote font-semibold uppercase tracking-wide text-label-2">{formatDate(new Date(), lang, { weekday: true })}</p>
         <h2 className="t-large-title text-balance">{t("explore.today")}</h2>
       </header>
@@ -249,16 +275,18 @@ function ExploreList({ onOpenAir }: { onOpenAir(): void }) {
       <div className="grid grid-cols-2 gap-2.5">
         <AirCard onOpen={onOpenAir} />
         <WeatherCard />
-        <OutagesCard />
+        <GoOut />
         <BusCard />
       </div>
+      <OutagesWidget />
+      <EServices />
     </div>
   );
 }
 
 /**
- * Explore tab: information only, the "Today in Skopje" widgets (layer switches live in Settings).
- * The air widget pushes the air detail; Back returns focus to it.
+ * Explore tab: information widgets only (layer switches live in Settings): Today tiles, the 7-day outage schedule and
+ * the e-services. The air tile pushes the air detail; Back returns focus to it.
  */
 export function ExplorePanel() {
   const [view, setView] = useState<"list" | "air">("list");

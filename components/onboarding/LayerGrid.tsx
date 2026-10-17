@@ -7,8 +7,8 @@ import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import { LAYER_IDS, LAYERS, type LayerId } from "@/lib/layers";
 
-/** Layers the UI never offers or draws. Citizen reports left the UI; their lib/ and API code is removed separately. */
-export const HIDDEN_LAYERS: readonly string[] = ["reports"];
+/** Layers the UI never offers or draws. Waste collection has no real schedule source, and a made-up one would mislead. */
+export const HIDDEN_LAYERS: readonly string[] = ["waste"];
 
 /** The must-demo layers (spec §2), in display order. */
 export const TIER1 = LAYER_IDS.filter((id) => LAYERS[id].tier === 1 && !HIDDEN_LAYERS.includes(id));

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { formatDate, formatDistance, formatWhen } from "./format";
+import { formatDate, formatDistance, formatWhen, skopjeTime, weekdayShort } from "./format";
 
 const now = new Date("2026-10-17T10:00:00Z");
 
@@ -21,4 +21,10 @@ test("distances use Cyrillic units and a decimal comma in Macedonian", () => {
   expect(formatDistance(347, "mk")).toBe("350 м");
   expect(formatDistance(1234, "mk")).toBe("1,2 км");
   expect(formatDistance(1234, "en")).toBe("1.2 km");
+});
+
+test("short weekdays and the Skopje clock for the outage strip", () => {
+  expect(weekdayShort("2026-10-17", "mk")).toBe("Саб");
+  expect(weekdayShort("2026-10-19", "en")).toBe("Mon");
+  expect(skopjeTime(new Date("2026-10-17T22:30:00Z"))).toBe("00:30");
 });

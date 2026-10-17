@@ -9,22 +9,45 @@ import { LAYER_IDS, LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature } from "@/lib/sources/types";
 import { getCachedLayer, useLayer } from "@/lib/useLayer";
 import { muteStyle, styleUrl } from "./mapStyle";
-import { renderLayer } from "./renderLayer";
+import { HIGHLIGHT_LAYERS, hitLayersOf, removeOverlay, renderLayer, setOverlay } from "./renderLayer";
 
 export type LngLat = [number, number];
+export type BBox = [west: number, south: number, east: number, north: number];
+/** An outage picked in the Explore widget: its group id (`detail.outage` of its street features) and its layer. */
+export type Highlight = { id: string; layer: LayerId };
+/** A departure picked in a stop card, followed on the map by BusTracker. */
+export type Trip = { tripId: string; route: string; headsign: string };
 
 /** What the shell exposes to everything drawn over the map. */
 export type MapApi = {
   flyTo(lngLat: LngLat, zoom?: number): void;
+  /** Fits the camera to a box, clear of the panels. */
+  showArea(bbox: BBox): void;
+  /** Lowers the phone sheet to its peek so the map shows; a no-op on wider screens. */
+  reveal(): void;
   select(feature: Feature | null): void;
   map?: MapLibreMap;
   /** The user's position, once they allowed location. */
   location?: LngLat;
   /** Asks for the user's position (and flies there when `fly`); resolves false when denied or unavailable. */
   locate(fly?: boolean): Promise<boolean>;
+  highlight: Highlight | null;
+  setHighlight(h: Highlight | null): void;
+  trip: Trip | null;
+  track(trip: Trip | null): void;
 };
 
-export const MapContext = createContext<MapApi>({ flyTo() {}, select() {}, locate: async () => false });
+export const MapContext = createContext<MapApi>({
+  flyTo() {},
+  showArea() {},
+  reveal() {},
+  select() {},
+  locate: async () => false,
+  highlight: null,
+  setHighlight() {},
+  trip: null,
+  track() {},
+});
 export const useMap = () => useContext(MapContext);
 
 export const CENTER: LngLat = [21.4254, 41.9981];
@@ -34,18 +57,18 @@ const BOUNDS: [LngLat, LngLat] = [
 ];
 /** Copied there by scripts/copy-maplibre-worker.mjs: the bundle can't serve it from next to maplibre's own chunk. */
 const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
-const HIT_LAYERS =LAYER_IDS.flatMap((id) => [`${id}-circle`, `${id}-fill`]);
+const HIT_LAYERS = LAYER_IDS.flatMap(hitLayersOf);
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** MapLibre cannot read CSS variables, so `var(--c-air)` is resolved against the current theme first. */
-function cssColor(expr: string): string {
+export function cssColor(expr: string): string {
   const name = /^var\((--[\w-]+)\)$/.exec(expr)?.[1];
   if (!name) return expr;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#8e8e93";
 }
 
 /** Top feature from our layers within a finger-sized box around a screen point, looked up in the layer data. */
-function hitTest(map: MapLibreMap, x: number, y: number): Feature | null {
+function hitTest(map: MapLibreMap, x: number, y: number): { feature: Feature; layer: LayerId } | null {
   const layers = HIT_LAYERS.filter((l) => map.getLayer(l));
   if (!layers.length) return null;
   const hit: MapGeoJSONFeature | undefined = map.queryRenderedFeatures(
@@ -57,23 +80,50 @@ function hitTest(map: MapLibreMap, x: number, y: number): Feature | null {
   )[0];
   if (!hit) return null;
   // Rendered features carry nested properties (title, detail) as JSON strings, so return the original instead.
-  const id = hit.layer.id.replace(/-(circle|fill)$/, "") as LayerId;
-  const found = getCachedLayer(id)?.features.features.find((f) => f.properties?.id === hit.properties.id);
-  return (found as Feature | undefined) ?? null;
+  const layer = hit.layer.id.replace(/-(circle|fill|line|area)$/, "") as LayerId;
+  const found = getCachedLayer(layer)?.features.features.find((f) => f.properties?.id === hit.properties.id);
+  return found ? { feature: found as Feature, layer } : null;
 }
 
 /** Keeps one layer's data on the map; renders nothing itself. */
 function LayerSource({ map, id, enabled, styleKey }: { map: MapLibreMap; id: LayerId; enabled: boolean; styleKey: number }) {
   const { data } = useLayer(id, enabled);
   useEffect(() => {
-    const color = cssColor(LAYERS[id].color);
     try {
-      if (enabled && data) renderLayer(map, id, data.features, color);
-      else if (map.getSource(`src-${id}`)) renderLayer(map, id, EMPTY, color);
+      if (enabled && data) renderLayer(map, id, data.features, cssColor);
+      else if (map.getSource(`src-${id}`)) renderLayer(map, id, EMPTY, cssColor);
     } catch {
       // A theme switch is reloading the style ("Style is not done loading"); its style.load bumps styleKey and re-runs this.
     }
   }, [map, id, enabled, data, styleKey]);
+  return null;
+}
+
+/**
+ * The outage picked in the Explore widget (or tapped on the map), drawn over everything in its type's colour.
+ * It reads its own layer, so it shows even while that layer is switched off.
+ */
+function OutageHighlight({ map, highlight, styleKey }: { map: MapLibreMap; highlight: Highlight | null; styleKey: number }) {
+  const { data } = useLayer(highlight?.layer ?? "outages-power", highlight !== null);
+  useEffect(() => {
+    if (!highlight) return;
+    const color = cssColor(LAYERS[highlight.layer].color);
+    const features = (data?.features.features ?? [])
+      .filter((f) => f.properties?.detail?.outage === highlight.id || f.properties?.id === highlight.id)
+      .map((f) => ({ ...f, properties: { color } }));
+    try {
+      setOverlay(map, "src-highlight", { type: "FeatureCollection", features }, HIGHLIGHT_LAYERS);
+    } catch {
+      // A theme switch is reloading the style; styleKey re-runs this.
+    }
+    return () => {
+      try {
+        removeOverlay(map, "src-highlight", HIGHLIGHT_LAYERS);
+      } catch {
+        // The map is already gone.
+      }
+    };
+  }, [map, highlight, data, styleKey]);
   return null;
 }
 
@@ -93,7 +143,7 @@ export function MapView({
   onTileError(): void;
 }) {
   const { t } = useT();
-  const { map, select, location } = useMap();
+  const { map, select, location, highlight, setHighlight } = useMap();
   const container = useRef<HTMLDivElement>(null);
   const appliedDark = useRef<boolean | null>(null);
   const [styleKey, setStyleKey] = useState(0);
@@ -103,7 +153,14 @@ export function MapView({
     muteStyle(m, appliedDark.current ?? false);
     setStyleKey((k) => k + 1);
   });
-  const onClick = useEffectEvent((m: MapLibreMap, x: number, y: number) => select(hitTest(m, x, y)));
+  const onClick = useEffectEvent((m: MapLibreMap, x: number, y: number) => {
+    const hit = hitTest(m, x, y);
+    select(hit?.feature ?? null);
+    // A tapped outage street lights up its whole outage; a tap on empty map clears the highlight.
+    const outage = hit?.feature.properties.detail?.outage;
+    if (!hit) setHighlight(null);
+    else if (typeof outage === "string") setHighlight({ id: outage, layer: hit.layer });
+  });
   const onError = useEffectEvent((sourceId?: string) => {
     if (!sourceId?.startsWith("src-")) onTileError(); // our GeoJSON sources never come from the tile server
   });
@@ -175,11 +232,14 @@ export function MapView({
     >
       {/* MapLibre puts an unlayered position: relative on its container, so this inner div only sizes it. */}
       <div ref={container} className="h-full w-full" />
-      {map &&
-        styleKey > 0 &&
-        LAYER_IDS.map((id) => (
-          <LayerSource key={id} map={map} id={id} enabled={layers.includes(id)} styleKey={styleKey} />
-        ))}
+      {map && styleKey > 0 && (
+        <>
+          {LAYER_IDS.map((id) => (
+            <LayerSource key={id} map={map} id={id} enabled={layers.includes(id)} styleKey={styleKey} />
+          ))}
+          <OutageHighlight map={map} highlight={highlight} styleKey={styleKey} />
+        </>
+      )}
     </div>
   );
 }
