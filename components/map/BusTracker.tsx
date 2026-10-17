@@ -163,11 +163,10 @@ export function BusTracker({
           <span className="t-subhead w-full truncate font-semibold">{t("buses.toward", { headsign: tidyName(trip.headsign) })}</span>
           {fix ? (
             <span
-              className="t-caption mt-0.5 inline-flex h-5 max-w-full items-center gap-1.5 rounded-full bg-(--badge)/15 px-2"
-              style={{ "--badge": live ? "var(--system-green)" : "var(--system-gray)" } as CSSProperties}
+              className="t-caption mt-0.5 block max-w-full truncate text-(--badge)"
+              style={{ "--badge": live ? "var(--system-green)" : "var(--label-2)" } as CSSProperties}
             >
-              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-(--badge)" />
-              <span className="truncate">{t(live ? "buses.live" : "buses.estimated")}</span>
+              {t(live ? "buses.live" : "buses.estimated")}
             </span>
           ) : (
             <span className="t-caption text-label-2">{t("buses.locating")}</span>
