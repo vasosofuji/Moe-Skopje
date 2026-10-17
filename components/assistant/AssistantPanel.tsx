@@ -110,8 +110,9 @@ export function Conversation({ chat, onCitation, className }: { chat: Assistant;
 
 /**
  * Ask tab on phones and tablets (inside the sheet or sidebar, which own the glass surface): the conversation and the
- * input as one surface, the field being the panel's bottom edge under a hairline. The log scrolls itself so the field
- * stays in view. Desktop uses AskBar instead.
+ * input as one surface, the field being the panel's bottom edge under a hairline. The panel fills its container (the
+ * sheet's visible area, which pins it to the bottom there, or the sidebar), the log takes the room above the field and
+ * scrolls itself with the newest lines at the bottom, so the field never moves. Desktop uses AskBar instead.
  */
 export function AssistantPanel({ onCitation }: { onCitation(c: Citation): void }) {
   const { t } = useT();
@@ -129,13 +130,14 @@ export function AssistantPanel({ onCitation }: { onCitation(c: Citation): void }
   if (chat.disabled) return <p className="t-subhead px-1 py-2 text-label-2">{t("assistant.unavailable")}</p>;
 
   return (
-    <div className="flex flex-col">
+    <div data-sheet-pin className="flex h-(--sheet-pin-h,100%) flex-col">
       {talking ? (
-        <Conversation chat={chat} onCitation={onCitation} className="max-h-[min(56dvh,560px)] px-1 pb-3" />
+        // The first line's auto margin keeps a short conversation down by the field.
+        <Conversation chat={chat} onCitation={onCitation} className="flex-1 px-1 pb-3 [&>:first-child>:first-child]:mt-auto" />
       ) : (
-        <p className="t-footnote px-1 pb-3 text-label-2">{t("assistant.empty")}</p>
+        <p className="t-footnote mt-auto px-1 pb-3 text-label-2">{t("assistant.empty")}</p>
       )}
-      <form onSubmit={submit} className={cx(talking && "border-t-[0.5px] border-(--label)/10 pt-3")}>
+      <form onSubmit={submit} className={cx("shrink-0", talking && "border-t-[0.5px] border-(--label)/10 pt-3")}>
         <ChatField value={input} onChange={setInput} canSend={!chat.busy && !!input.trim()} />
       </form>
     </div>
