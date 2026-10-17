@@ -136,4 +136,10 @@ export const en: Dict = {
   "assistant.refused": "I can't help with that. Try a different question.",
   "assistant.unavailable": "Assistant unavailable",
   "assistant.rateLimited": "You've reached the message limit for this hour. Please try again later.",
+
+  // --- Task 7: air ---
+  "air.cityPm10": "City PM10",
+  "air.stations": "Stations ({n})",
+  "air.official": "Official",
+  "air.trend": "PM10, last 7 days (daily average)",
 };
