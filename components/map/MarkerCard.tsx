@@ -155,6 +155,9 @@ export function MarkerCard({
         transform: `translate(-50%, ${below ? `${GAP}px` : `calc(-100% - ${GAP}px)`})`,
       };
   const origin = docked ? `${point.x - 12}px 0px` : `${point.x - x + half}px ${below ? "0%" : "100%"}`;
+  // A floating card never runs off the screen: it gets the room between the point and the edge, and scrolls inside.
+  const room = Math.round((below ? box.height - point.y : point.y) - GAP - 16);
+  const maxHeight = docked ? undefined : `min(60dvh, ${Math.max(160, room)}px)`;
 
   return (
     <div
@@ -170,7 +173,7 @@ export function MarkerCard({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.6 }}
         transition={spring}
-        style={{ transformOrigin: origin }}
+        style={{ transformOrigin: origin, maxHeight }}
         className="glass glass-card flex max-h-[60dvh] flex-col gap-3 overflow-y-auto"
       >
         <header className="flex items-start gap-3">

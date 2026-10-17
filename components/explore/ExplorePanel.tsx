@@ -3,7 +3,7 @@
 import { ChevronLeft } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState, type ReactNode } from "react";
-import { LineBadge, tidyName, useDepartures, useWhen } from "@/components/map/BusDepartures";
+import { LineBadge, tidyName, useDepartures } from "@/components/map/BusDepartures";
 import { CENTER, useMap, type LngLat } from "@/components/map/MapView";
 import { featureCenter } from "@/components/map/renderLayer";
 import { AQI_COLORS, aqiColor, aqiPosition, pm10Severity } from "@/lib/aqi";
@@ -196,7 +196,8 @@ function BusCard() {
     .sort((a, b) => a.m - b.m)[0];
   const stopId = nearest?.f.properties.detail?.stopId;
   const list = useDepartures(typeof stopId === "string" ? stopId : undefined);
-  const when = useWhen();
+  // The tile is narrow: "4 мин" rather than "за 4 мин".
+  const when = (d: { inMin: number; at: string }) => (d.inMin <= 0 ? t("buses.now") : d.inMin < 60 ? t("age.min", { n: d.inMin }) : d.at);
   const where = location && nearest ? t("explore.distance", { d: formatDistance(nearest.m, lang) }) : t("explore.nearCentre");
   const next = list?.[0];
 

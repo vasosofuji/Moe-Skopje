@@ -85,7 +85,9 @@ export function OutagesWidget() {
                     on && "bg-(--thumb) shadow-[0_3px_8px_rgb(0_0_0/.12),0_1px_1px_rgb(0_0_0/.06)]",
                   )}
                 >
-                  <span className={cx("t-caption max-w-full truncate px-0.5", on ? "text-label" : "text-label-2")}>{label}</span>
+                  <span className={cx("max-w-full truncate text-[11px] leading-4 font-medium tracking-[-0.2px]", on ? "text-label" : "text-label-2")}>
+                    {label}
+                  </span>
                   <span className={cx("t-headline tabular-nums", !n && "text-label-2")}>{n || "–"}</span>
                   {/* the day's outages by type, as a split bar */}
                   <span aria-hidden className="flex h-1 w-6 overflow-hidden rounded-full">
