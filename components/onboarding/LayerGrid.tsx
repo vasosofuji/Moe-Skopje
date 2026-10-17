@@ -18,7 +18,7 @@ export const toggleLayer = (ids: LayerId[], id: LayerId) => (ids.includes(id) ? 
 
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
-/** Tiles to pick layers: icon, name and a check. Shared by onboarding and settings. */
+/** Onboarding tiles to pick layers: icon, name and a check. Settings edits the same prefs.layers as switch rows. */
 export function LayerGrid({ value, onChange }: { value: LayerId[]; onChange(ids: LayerId[]): void }) {
   const { t } = useT();
   return (
