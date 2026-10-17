@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@source not "../docs";
+
+/* Design tokens: spec §6.2–6.5. Tailwind sees label colours (text-label, text-label-2) and radii (rounded-sheet, rounded-card). */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-inter), system-ui, sans-serif;
+  --color-label: var(--label);
+  --color-label-2: var(--label-2);
+  --radius-sheet: 22px;
+  --radius-card: 14px;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f2f2f7;
+
+  --glass-bg: rgb(255 255 255 / .55);
+  --glass-bg-solid: rgb(255 255 255 / .95);
+  --glass-stroke: rgb(255 255 255 / .6);
+  --glass-highlight: rgb(255 255 255 / .7);
+  --glass-rim: rgb(255 255 255 / .9);
+  --label: #000;
+  --label-2: rgb(60 60 67 / .6);
+
+  /* iOS system colours */
+  --system-red: #ff3b30;
+  --system-orange: #ff9500;
+  --system-yellow: #ffcc00;
+  --system-green: #34c759;
+  --system-teal: #30b0c7;
+  --system-blue: #007aff;
+  --system-indigo: #5856d6;
+  --system-purple: #af52de;
+  --system-pink: #ff2d55;
+  --system-brown: #a2845e;
+  --system-gray: #8e8e93;
+
+  /* One colour per layer (spec §6.4); follows the theme through the system colours. */
+  --c-air: var(--system-green);
+  --c-weather: var(--system-teal);
+  --c-power: var(--system-yellow);
+  --c-water: var(--system-blue);
+  --c-heating: var(--system-orange);
+  --c-bus: var(--system-indigo);
+  --c-parking: var(--system-purple);
+  --c-pharmacy: var(--system-red);
+  --c-quake: var(--system-brown);
+  --c-report: var(--system-pink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #000;
+
+    --glass-bg: rgb(28 28 30 / .50);
+    --glass-bg-solid: rgb(28 28 30 / .95);
+    --glass-stroke: rgb(255 255 255 / .12);
+    --glass-highlight: rgb(255 255 255 / .15);
+    --glass-rim: rgb(255 255 255 / .3);
+    --label: #fff;
+    --label-2: rgb(235 235 245 / .6);
+
+    --system-red: #ff453a;
+    --system-orange: #ff9f0a;
+    --system-yellow: #ffd60a;
+    --system-green: #30d158;
+    --system-teal: #40c8e0;
+    --system-blue: #0a84ff;
+    --system-indigo: #5e5ce6;
+    --system-purple: #bf5af2;
+    --system-pink: #ff375f;
+    --system-brown: #ac8e68;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000;
+
+  --glass-bg: rgb(28 28 30 / .50);
+  --glass-bg-solid: rgb(28 28 30 / .95);
+  --glass-stroke: rgb(255 255 255 / .12);
+  --glass-highlight: rgb(255 255 255 / .15);
+  --glass-rim: rgb(255 255 255 / .3);
+  --label: #fff;
+  --label-2: rgb(235 235 245 / .6);
+
+  --system-red: #ff453a;
+  --system-orange: #ff9f0a;
+  --system-yellow: #ffd60a;
+  --system-green: #30d158;
+  --system-teal: #40c8e0;
+  --system-blue: #0a84ff;
+  --system-indigo: #5e5ce6;
+  --system-purple: #bf5af2;
+  --system-pink: #ff375f;
+  --system-brown: #ac8e68;
+}
+
+body {
+  background: var(--bg);
+  color: var(--label);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Component layer, so Tailwind utilities on a glass element always win. */
+@layer components {
+  /* Liquid Glass material, spec §6.2 */
+  .glass {
+    position: relative;
+    border-radius: var(--radius-sheet);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 0.5px solid var(--glass-stroke);
+    box-shadow: inset 0 1px 0 var(--glass-highlight),
+                0 1px 2px rgb(0 0 0 / .06), 0 8px 32px rgb(0 0 0 / .12);
+    background-image: linear-gradient(180deg, rgb(255 255 255 / .18), transparent 40%);
+  }
+
+  /* Specular rim: light catches the top-left edge and, fainter, the bottom-right. */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--glass-rim), transparent 32%, transparent 68%,
+                color-mix(in srgb, var(--glass-rim) 45%, transparent));
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+  }
+
+  /* Large panels (sheet, sidebar, onboarding): heavier blur, plus edge refraction where supported. */
+  .glass-strong {
+    backdrop-filter: blur(40px) saturate(180%);
+  }
+
+  .glass-card {
+    border-radius: var(--radius-card);
+    padding: 16px;
+  }
+
+  .glass-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-inline: 16px;
+    border-radius: 999px;
+  }
+
+  .glass-button {
+    transition: background-color .2s;
+  }
+  @media (hover: hover) {
+    .glass-button:hover {
+      background-color: color-mix(in srgb, var(--glass-bg), var(--label) 6%);
+    }
+  }
+
+  /* RefractionFilter sets data-refraction on <html> only in Chromium. */
+  @media (prefers-reduced-transparency: no-preference) {
+    :root[data-refraction] .glass-strong {
+      backdrop-filter: blur(40px) saturate(180%) url(#glass-refraction);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass {
+      --glass-bg: var(--glass-bg-solid);
+      backdrop-filter: none;
+    }
+  }
+
+  /* Continuous corners; capsules stay true semicircles. */
+  @supports (corner-shape: squircle) {
+    .glass, .glass::before { corner-shape: squircle; }
+    .glass-pill, .glass-pill::before { corner-shape: round; }
+  }
+
+  /* Type scale, spec §6.3 */
+  .t-large-title { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.4px; }
+  .t-title2 { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.26px; }
+  .t-headline { font-size: 17px; line-height: 22px; font-weight: 600; }
+  .t-body { font-size: 17px; line-height: 22px; font-weight: 400; }
+  .t-subhead { font-size: 15px; line-height: 20px; font-weight: 400; }
+  .t-footnote { font-size: 13px; line-height: 18px; font-weight: 400; }
+  .t-caption { font-size: 12px; line-height: 16px; font-weight: 500; }
+}
