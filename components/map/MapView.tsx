@@ -32,7 +32,9 @@ const BOUNDS: [LngLat, LngLat] = [
   [21.25, 41.9],
   [21.6, 42.1],
 ];
-const HIT_LAYERS = LAYER_IDS.flatMap((id) => [`${id}-circle`, `${id}-fill`]);
+/** Copied there by scripts/copy-maplibre-worker.mjs: the bundle can't serve it from next to maplibre's own chunk. */
+const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
+const HIT_LAYERS =LAYER_IDS.flatMap((id) => [`${id}-circle`, `${id}-fill`]);
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** MapLibre cannot read CSS variables, so `var(--c-air)` is resolved against the current theme first. */
@@ -111,8 +113,9 @@ export function MapView({
   useEffect(() => {
     let m: MapLibreMap | undefined;
     let cancelled = false;
-    void import("maplibre-gl").then(({ Map: MapLibre }) => {
+    void import("maplibre-gl").then(({ Map: MapLibre, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
+      setWorkerUrl(WORKER_URL);
       appliedDark.current = initialDark();
       m = new MapLibre({
         container: container.current,

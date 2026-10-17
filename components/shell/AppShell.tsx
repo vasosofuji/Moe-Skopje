@@ -1,92 +1,51 @@
 "use client";
 
-import { LocateFixed, LocateOff, WifiOff, X } from "lucide-react";
+import { LocateFixed, LocateOff, WifiOff } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { AskBar } from "@/components/assistant/AskBar";
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import type { Citation } from "@/components/assistant/Citation";
 import { ExplorePanel } from "@/components/explore/ExplorePanel";
 import { GlassButton } from "@/components/glass/GlassButton";
 import { MapContext, MapView, type LngLat, type MapApi } from "@/components/map/MapView";
 import { MarkerCard } from "@/components/map/MarkerCard";
+import { HIDDEN_LAYERS } from "@/components/onboarding/LayerGrid";
 import { Onboarding } from "@/components/onboarding/Onboarding";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
-import { cx, focusRing } from "@/lib/cx";
+import { cx } from "@/lib/cx";
 import { useT, type Dict } from "@/lib/i18n";
 import { usePrefs } from "@/lib/prefs";
 import type { Feature } from "@/lib/sources/types";
+import { getCachedLayer, refreshLayer } from "@/lib/useLayer";
 import { useHydrated, useIsDesktop, useMedia } from "@/lib/useMedia";
 import { BottomSheet, SNAPS, type Snap } from "./BottomSheet";
-import { LayerChips } from "./LayerChips";
 import { SearchPill } from "./SearchPill";
 import { Sidebar } from "./Sidebar";
-import { TAB_ICONS, TabBar } from "./TabBar";
+import { TabBar } from "./TabBar";
 
-export type Tab = "explore" | "report" | "ask" | "settings";
-type PanelTab = Exclude<Tab, "ask">;
+export type Tab = "explore" | "ask" | "settings";
 
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const TOAST_MS = 6000;
 
-/** Report and Ask until their own tasks land. */
-function ComingSoon({ tab }: { tab: "report" | "ask" }) {
-  const { t } = useT();
-  const Icon = TAB_ICONS[tab];
-  return (
-    <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
-      <span className="flex size-16 items-center justify-center rounded-full bg-(--system-blue)/12 text-(--system-blue)">
-        <Icon size={30} aria-hidden />
-      </span>
-      <h2 className="t-title2">{t(tab === "ask" ? "assistant.title" : "report.title")}</h2>
-      <p className="t-subhead max-w-[280px] text-label-2">{t("shell.comingSoon")}</p>
-    </div>
-  );
-}
-
-function Panel({ tab }: { tab: Tab }) {
+function Panel({ tab, onCitation }: { tab: Tab; onCitation(c: Citation): void }) {
   if (tab === "explore") return <ExplorePanel />;
   if (tab === "settings") return <SettingsPanel />;
-  return <ComingSoon tab={tab} />;
-}
-
-/** Desktop slot for the assistant: a floating 400 px glass panel on the right. */
-function AskPanel({ onClose }: { onClose(): void }) {
-  const { t } = useT();
-  return (
-    <motion.aside
-      aria-label={t("tab.ask")}
-      initial={{ opacity: 0, x: 40 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 40 }}
-      transition={spring}
-      className="glass glass-strong fixed top-4 right-4 bottom-4 z-10 flex w-[400px] flex-col"
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t("common.close")}
-        className={cx("absolute top-2 right-2 flex size-11 items-center justify-center rounded-full", focusRing)}
-      >
-        <span className="flex size-7 items-center justify-center rounded-full bg-(--label)/8 text-label-2">
-          <X size={15} strokeWidth={2.5} aria-hidden />
-        </span>
-      </button>
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <ComingSoon tab="ask" />
-      </div>
-    </motion.aside>
-  );
+  return <AssistantPanel onCitation={onCitation} />;
 }
 
 /**
  * The whole app: a full-bleed map with glass chrome floating over it.
  * Phones (<768): search pill on top, vaul bottom sheet, floating tab bar.
  * Tablets (768–1023): 360 px sidebar ending above the tab bar.
- * Desktop (≥1024): 380 px sidebar with the tabs as a segmented control, layer chips top-centre, Ask on the right.
+ * Desktop (≥1024): 380 px sidebar with Explore and Settings as a segmented control; Ask is the chat bar over the map.
  * Owns the tab, the selected feature and the camera, and shares them through MapContext (`useMap()`).
  */
 export function AppShell() {
   const { t, lang, setLang } = useT();
-  const [prefs] = usePrefs();
+  const [prefs, setPrefs] = usePrefs();
   const hydrated = useHydrated();
   const isDesktop = useIsDesktop();
   const isWide = useMedia("(min-width: 768px)");
@@ -94,17 +53,15 @@ export function AppShell() {
   const dark = prefs.theme === "dark" || (prefs.theme === "system" && systemDark);
 
   const [tab, setTab] = useState<Tab>("explore");
-  const [lastPanel, setLastPanel] = useState<PanelTab>("explore"); // what the desktop sidebar keeps showing while Ask is open
   const [snap, setSnap] = useState<Snap>(SNAPS[0]);
   const [selected, select] = useState<Feature | null>(null);
   const [map, setMap] = useState<MapLibreMap>();
   const [location, setLocation] = useState<LngLat>();
   const [toast, setToast] = useState<keyof Dict | null>(null);
 
-  const askFloating = isDesktop && tab === "ask";
+  const panelTab = isDesktop && tab === "ask" ? "explore" : tab; // desktop asks through the bar, not a tab
   const sheetFull = !isWide && snap === SNAPS[SNAPS.length - 1]; // the map is covered: hide what floats over it
   const insetLeft = isDesktop ? 412 : isWide ? 392 : 0; // sidebar width plus its 16 px margins
-  const insetRight = askFloating ? 432 : 0;
 
   const flyTo = useCallback(
     (center: LngLat, zoom?: number) => {
@@ -113,11 +70,11 @@ export function AppShell() {
         zoom: zoom ?? Math.max(map.getZoom(), 14),
         // Centre the target in the part of the map that is not under a panel.
         padding: isWide
-          ? { left: insetLeft, right: insetRight, top: 0, bottom: 0 }
+          ? { left: insetLeft, right: 0, top: 0, bottom: isDesktop ? 104 : 0 } // desktop: above the chat bar
           : { left: 0, right: 0, top: 120, bottom: Math.round(innerHeight * 0.35) },
       });
     },
-    [map, isWide, insetLeft, insetRight],
+    [map, isWide, isDesktop, insetLeft],
   );
 
   const locate = useCallback(
@@ -158,8 +115,22 @@ export function AppShell() {
 
   const go = (next: Tab) => {
     setTab(next);
-    if (next !== "ask") setLastPanel(next);
-    if (!isWide && snap === SNAPS[0]) setSnap(SNAPS[1]);
+    if (isWide) return;
+    if (next === "ask") setSnap(SNAPS[SNAPS.length - 1]); // the chat's input sits at the bottom of the panel
+    else if (snap === SNAPS[0]) setSnap(SNAPS[1]);
+  };
+
+  // A citation chip flies to the feature and opens its card. A cited layer that is off is switched on first,
+  // so the chip never lands on an empty spot; a feature not loaded yet is selected once its layer arrives.
+  const onCitation = (c: Citation) => {
+    flyTo([c.lng, c.lat], 15);
+    if (!isWide) setSnap(SNAPS[0]); // lower the chat to its peek so the map and the card show; drag up to go on
+    if (HIDDEN_LAYERS.includes(c.layer)) return select(null);
+    if (!prefs.layers.includes(c.layer)) setPrefs({ layers: [...prefs.layers, c.layer] });
+    const find = () => getCachedLayer(c.layer)?.features.features.find((f) => f.properties?.id === c.featureId) as Feature | undefined;
+    const hit = find();
+    select(hit ?? null);
+    if (!hit) void refreshLayer(c.layer).then(() => select((prev) => prev ?? find() ?? null));
   };
   const closeCard = useCallback(() => select(null), []);
   const api = useMemo<MapApi>(() => ({ map, flyTo, select, location, locate }), [map, flyTo, location, locate]);
@@ -170,9 +141,9 @@ export function AppShell() {
   return (
     <MapContext value={api}>
       <MotionConfig reducedMotion="user">
-        <main className="shell fixed inset-0 overflow-hidden" data-ask={askFloating ? "" : undefined}>
+        <main className="shell fixed inset-0 overflow-hidden">
           <div inert={onboarding} className="contents">
-            <MapView layers={prefs.layers} dark={dark} onReady={setMap} onTileError={() => setToast("map.tilesUnavailable")} />
+            <MapView layers={prefs.layers.filter((id) => !HIDDEN_LAYERS.includes(id))} dark={dark} onReady={setMap} onTileError={() => setToast("map.tilesUnavailable")} />
 
             {/* Layout depends on the viewport and saved prefs, which only the client knows. */}
             {hydrated && (
@@ -183,11 +154,11 @@ export function AppShell() {
                     header={
                       <>
                         <SearchPill />
-                        {isDesktop && <TabBar variant="segmented" tab={tab} onChange={go} />}
+                        {isDesktop && <TabBar variant="segmented" tab={panelTab} onChange={go} />}
                       </>
                     }
                   >
-                    <Panel tab={askFloating ? lastPanel : tab} />
+                    <Panel tab={panelTab} onCitation={onCitation} />
                   </Sidebar>
                 ) : (
                   <>
@@ -206,14 +177,13 @@ export function AppShell() {
                       </GlassButton>
                     </div>
                     <BottomSheet snap={snap} onSnap={setSnap} title={t(`tab.${tab}`)}>
-                      <Panel tab={tab} />
+                      <Panel tab={tab} onCitation={onCitation} />
                     </BottomSheet>
                   </>
                 )}
 
                 {!isDesktop && <TabBar variant="floating" tab={tab} onChange={go} />}
-                {isDesktop && <LayerChips askOpen={askFloating} />}
-                <AnimatePresence>{askFloating && <AskPanel key="ask" onClose={() => go(lastPanel)} />}</AnimatePresence>
+                {isDesktop && <AskBar left={insetLeft} onCitation={onCitation} />}
 
                 {!sheetFull && (
                   <GlassButton
@@ -222,7 +192,7 @@ export function AppShell() {
                     onClick={() => void locate(true)}
                     className={cx(
                       "fixed z-10",
-                      isWide ? cx("bottom-12", askFloating ? "right-[432px]" : "right-4") : "top-[calc(env(safe-area-inset-top)+68px)] right-3",
+                      isWide ? "right-4 bottom-12" : "top-[calc(env(safe-area-inset-top)+68px)] right-3",
                     )}
                   >
                     <LocateFixed size={20} aria-hidden className={location ? "text-(--system-blue)" : undefined} />
@@ -237,7 +207,6 @@ export function AppShell() {
                       map={map}
                       docked={!isDesktop}
                       insetLeft={insetLeft}
-                      insetRight={insetRight}
                       onClose={closeCard}
                     />
                   )}
@@ -252,9 +221,10 @@ export function AppShell() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -12 }}
                       transition={spring}
+                      style={{ left: `calc(${insetLeft}px + (100vw - ${insetLeft}px) / 2)`, maxWidth: `calc((100vw - ${insetLeft}px) * 0.9)` }}
                       className={cx(
-                        "glass glass-pill t-subhead fixed left-1/2 z-30 max-w-[calc(100vw-24px)] -translate-x-1/2 font-medium",
-                        isWide ? "top-[72px]" : "top-[calc(env(safe-area-inset-top)+68px)]",
+                        "glass glass-pill fixed z-30 w-max -translate-x-1/2 font-medium whitespace-nowrap",
+                        isWide ? "t-subhead top-4" : "t-footnote top-[calc(env(safe-area-inset-top)+68px)] px-3.5",
                       )}
                     >
                       {toast === "map.tilesUnavailable" ? (
@@ -262,7 +232,7 @@ export function AppShell() {
                       ) : (
                         <LocateOff size={16} aria-hidden className="shrink-0 text-(--system-orange)" />
                       )}
-                      {t(toast)}
+                      <span className="min-w-0 truncate">{t(toast)}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>

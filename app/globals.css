@@ -261,6 +261,3 @@ body {
 @media (max-width: 767px) {
   .shell .maplibregl-ctrl-bottom-right { top: calc(env(safe-area-inset-top) + 116px); bottom: auto; }
 }
-/* Desktop with the assistant panel open: keep attribution clear of it. */
-.shell[data-ask] .maplibregl-ctrl-bottom-right { right: 416px; }
-

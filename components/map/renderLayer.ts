@@ -5,11 +5,14 @@ import type { LayerId } from "@/lib/layers";
 // ponytail: light-mode hexes in both themes; MapLibre cannot read the CSS variables, resolve them if dark needs its own.
 export const SEVERITY_COLORS = ["#34c759", "#ffcc00", "#ff9500", "#ff3b30"] as const;
 
+/** A value interpolated over zoom: `byZoom(zoomA, valueA, zoomB, valueB, ...)`. */
+const byZoom = (...stops: number[]): unknown => ["interpolate", ["linear"], ["zoom"], ...stops];
+
 const isType = (...types: string[]) => ["in", ["geometry-type"], ["literal", types]] as ["in", unknown, unknown];
 
 /**
  * Adds or updates source `src-${id}` and its three layers: `${id}-fill` (polygons at .25 opacity), `${id}-line`
- * (lines and polygon outlines) and `${id}-circle` (points, radius 7, white 2 px stroke).
+ * (lines and polygon outlines) and `${id}-circle` (points with a white stroke, growing with zoom to radius 7).
  * Features are coloured by `severity` when present, otherwise by `color`, which must be a resolved CSS colour.
  * An update only swaps the data; after a style switch the source is gone and everything is added again.
  */
@@ -46,7 +49,13 @@ export function renderLayer(map: MapLibreMap, id: LayerId, fc: GeoJSON.FeatureCo
     type: "circle",
     source: src,
     filter: isType("Point", "MultiPoint"),
-    paint: { "circle-radius": 7, "circle-color": paint, "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 },
+    // Small dots across the whole city (hundreds of bus stops), full-size markers from street level.
+    paint: {
+      "circle-radius": byZoom(11, 3, 14, 6, 16, 7),
+      "circle-color": paint,
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": byZoom(11, 1, 14, 2),
+    },
   } as Layer);
 }
 

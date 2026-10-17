@@ -4,7 +4,6 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { Segmented } from "@/components/glass/Segmented";
 import { LayerGrid } from "@/components/onboarding/LayerGrid";
-import { AppMark } from "@/components/shell/Sidebar";
 import { useT, type Lang } from "@/lib/i18n";
 import { usePrefs, type Prefs } from "@/lib/prefs";
 import { DataHealth } from "./DataHealth";
@@ -65,12 +64,9 @@ export function SettingsPanel() {
       </Section>
 
       <Section title={t("settings.about")}>
-        <div className="flex gap-3 rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-3">
-          <AppMark size={40} />
-          <div className="min-w-0">
-            <p className="t-headline">{t("app.name")}</p>
-            <p className="t-footnote text-label-2">{t("settings.aboutBody")}</p>
-          </div>
+        <div className="rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-3">
+          <p className="t-headline">{t("app.name")}</p>
+          <p className="t-footnote text-label-2">{t("settings.aboutBody")}</p>
         </div>
       </Section>
     </div>
