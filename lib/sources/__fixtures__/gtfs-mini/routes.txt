@@ -1,0 +1,4 @@
+route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_color,route_text_color
+123,2,5,ЛИНИЈА 5,5 ЛИНИЈА 5,3,,
+125,2,7,ЛИНИЈА 7,7 ЛИНИЈА 7,3,,
+139,2,25,ЛИНИЈА 25,25 ЛИНИЈА 25,3,,
