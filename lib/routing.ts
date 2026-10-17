@@ -13,7 +13,8 @@ export const SKOPJE_BBOX = [21.25, 41.9, 21.6, 42.1] as const;
 const MIN_TRIP_M = 25;
 const M_PER_DEG = 111_320;
 
-const inBox = ([lng, lat]: number[]) => lng >= SKOPJE_BBOX[0] && lng <= SKOPJE_BBOX[2] && lat >= SKOPJE_BBOX[1] && lat <= SKOPJE_BBOX[3];
+/** Is the point [lng, lat] inside SKOPJE_BBOX? */
+export const inBox = ([lng, lat]: number[]) => lng >= SKOPJE_BBOX[0] && lng <= SKOPJE_BBOX[2] && lat >= SKOPJE_BBOX[1] && lat <= SKOPJE_BBOX[3];
 
 /** Straight-line distance in metres on a local plane (fine at city scale). */
 export function distanceM(a: number[], b: number[]): number {

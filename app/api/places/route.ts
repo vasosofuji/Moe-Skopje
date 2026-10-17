@@ -1,10 +1,11 @@
-import { PlacesQuery, searchPlaces } from "@/lib/server/places";
+import { handlePlaces } from "@/lib/server/places";
 
-/** GET /api/places?q= (1 to 60 characters) → up to 8 `{ name, nameEn?, kind, area?, lng, lat }`, Latin or Cyrillic. 400 `{ code: "input" }` for a bad `q`. */
-export async function GET(req: Request) {
-  const q = PlacesQuery.safeParse({ q: new URL(req.url).searchParams.get("q") ?? "" });
-  if (!q.success) return Response.json({ code: "input" }, { status: 400 });
-  return Response.json(await searchPlaces(q.data.q), {
-    headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=86400" },
-  });
-}
+export const maxDuration = 15; // Photon (3 s), then Nominatim after its queue (up to ~4 s of waiting, 4 s to answer)
+
+/**
+ * GET /api/places?q=&lang=mk|en&near=lng,lat → up to 8 `{ id, name, nameEn?, kind: "poi" | "address" | "street" | "area",
+ * category?, address?, area?, lng, lat }`: shops, cafes, schools, hospitals, malls, monuments, addresses, streets and
+ * neighbourhoods from OpenStreetMap (Photon, then Nominatim), merged with the baked streets and municipalities.
+ * `q` is 2 to 80 characters, `lang` defaults to mk, `near` is optional. See lib/server/places.ts.
+ */
+export const GET = (req: Request) => handlePlaces(req);
