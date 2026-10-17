@@ -1,5 +1,8 @@
 import type { LayerId } from "@/lib/layers";
+import { reportsAdapter } from "./reports";
 import type { Adapter } from "./types";
 
-/** id → adapter. Starts empty; each source task registers its adapter here. */
-export const registry: Partial<Record<LayerId, Adapter>> = {};
+/** id → adapter. Each source task registers its adapter here. */
+export const registry: Partial<Record<LayerId, Adapter>> = {
+  reports: reportsAdapter,
+};

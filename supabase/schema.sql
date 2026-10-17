@@ -48,3 +48,23 @@ create policy "reports are publicly readable"
 insert into storage.buckets (id, name, public)
 values ('report-photos', 'report-photos', true)
 on conflict do nothing;
+
+-- Upvote: one vote per device per report, counted atomically (called from POST /api/reports/[id]/vote).
+-- A repeat vote violates the report_votes primary key (SQLSTATE 23505), an unknown report violates the
+-- foreign key (23503). Both abort the transaction, so upvotes only moves when the vote row is inserted.
+create or replace function public.vote_report(p_report_id uuid, p_device_hash text)
+returns int
+language plpgsql
+as $$
+declare
+  n int;
+begin
+  insert into public.report_votes (report_id, device_hash) values (p_report_id, p_device_hash);
+  update public.reports set upvotes = upvotes + 1 where id = p_report_id returning upvotes into n;
+  return n;
+end;
+$$;
+
+-- Only the service role may vote; anon/authenticated could otherwise call it over PostgREST with any device_hash.
+revoke execute on function public.vote_report(uuid, text) from public, anon, authenticated;
+grant execute on function public.vote_report(uuid, text) to service_role;
