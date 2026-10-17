@@ -50,6 +50,23 @@ export function savePrefs(p: Prefs, storage?: Storage): void {
   }
 }
 
+/**
+ * A v4 UUID that never throws. crypto.randomUUID only exists in secure contexts (https, localhost), so over
+ * http://<LAN-ip> (phone testing) fall back to getRandomValues, and to Math.random if there is no crypto at all.
+ * The id is a rate-limit pseudonym, not a secret.
+ */
+function randomId(): string {
+  const c = globalThis.crypto as Crypto | undefined;
+  if (typeof c?.randomUUID === "function") return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (typeof c?.getRandomValues === "function") c.getRandomValues(b);
+  else for (let i = 0; i < b.length; i++) b[i] = Math.floor(Math.random() * 256);
+  b[6] = (b[6] & 0x0f) | 0x40; // version 4
+  b[8] = (b[8] & 0x3f) | 0x80; // RFC 4122 variant
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 let memoryDeviceId: string | undefined;
 
 /** Anonymous random id for this browser; the server hashes it with the user agent (spec §5.4). */
@@ -58,13 +75,13 @@ export function getDeviceId(storage?: Storage): string {
     const s = storage ?? localStorage;
     let id = s.getItem(DEVICE_KEY);
     if (!id) {
-      id = crypto.randomUUID();
+      id = randomId();
       s.setItem(DEVICE_KEY, id);
     }
     return id;
   } catch {
     // Storage blocked: keep one id for the page's lifetime so rate limits still apply to it.
-    return (memoryDeviceId ??= crypto.randomUUID());
+    return (memoryDeviceId ??= randomId());
   }
 }
 

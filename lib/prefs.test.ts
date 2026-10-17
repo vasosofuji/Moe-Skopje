@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { DEFAULT_PREFS, getDeviceId, loadPrefs } from "./prefs";
 
 /** Minimal in-memory Storage: just what prefs.ts touches. */
@@ -37,4 +37,29 @@ test("loadPrefs drops unknown layer ids and keeps valid ones", () => {
 test("getDeviceId is stable across calls", () => {
   const s = memStorage({});
   expect(getDeviceId(s)).toBe(getDeviceId(s));
+});
+
+// crypto.randomUUID only exists in secure contexts, so http://<LAN-ip> (phone testing) has no randomUUID.
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+afterEach(() => vi.unstubAllGlobals());
+
+test("getDeviceId works without crypto.randomUUID and stays stable", () => {
+  vi.stubGlobal("crypto", { getRandomValues: globalThis.crypto.getRandomValues.bind(globalThis.crypto) });
+  const s = memStorage({});
+  const id = getDeviceId(s);
+  expect(id).toMatch(UUID_V4);
+  expect(getDeviceId(s)).toBe(id);
+});
+
+test("getDeviceId never throws, even with no crypto and blocked storage", () => {
+  vi.stubGlobal("crypto", undefined);
+  const blocked = {
+    getItem: () => {
+      throw new Error("denied");
+    },
+  } as unknown as Storage;
+  const id = getDeviceId(blocked);
+  expect(id).toMatch(UUID_V4);
+  expect(getDeviceId(blocked)).toBe(id);
 });
