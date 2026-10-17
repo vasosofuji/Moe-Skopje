@@ -47,6 +47,15 @@ export function formatWhen(startsAt: string | undefined, endsAt: string | undefi
   return a ? stamp(a) : b ? `– ${stamp(b)}` : null;
 }
 
+/** "14:05" on the Skopje clock. */
+export const skopjeTime = (d: Date): string => skopje(d).time;
+
+/** "Пон" / "Mon" for a calendar date "YYYY-MM-DD". */
+export function weekdayShort(date: string, lang: Lang): string {
+  const name = NAMES[lang].days[new Date(`${date}T00:00:00Z`).getUTCDay()];
+  return name[0].toUpperCase() + name.slice(1, 3);
+}
+
 /** "350 м" / "1,2 км" in Macedonian, "350 m" / "1.2 km" in English; metres round to 10. */
 export function formatDistance(m: number, lang: Lang): string {
   const km = m >= 1000;

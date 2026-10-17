@@ -17,7 +17,6 @@ export const mk = {
 
   // ── tabs
   "tab.explore": "Истражи",
-  "tab.report": "Пријави",
   "tab.ask": "Прашај",
   "tab.settings": "Поставки",
 
@@ -53,8 +52,7 @@ export const mk = {
   "explore.today": "Денес во Скопје",
   "explore.airNow": "Воздух сега",
   "explore.weather": "Време",
-  "explore.outages": "Активни прекини",
-  "explore.nextBus": "Следен автобус во близина",
+  "explore.nextBus": "Следен автобус",
   "explore.layers": "Слоеви",
   "explore.noData": "Нема податоци",
 
@@ -95,9 +93,6 @@ export const mk = {
   "settings.aboutBody":
     "Мое Скопје ги собира јавните податоци на градот на едно место. Податоците доаѓаат од јавни извори и може да каснат или да недостасуваат; секогаш е означено колку се свежи.",
 
-  // kept until the UI agent drops the report tab: AppShell.tsx still reads report.title, TabBar/AppShell the tab.report label
-  "report.title": "Пријавете проблем",
-
   // ── assistant
   "assistant.title": "Асистент за градот",
   "assistant.placeholder": "Прашајте нешто за Скопје…",
@@ -119,8 +114,6 @@ export const mk = {
   "buses.next": "Следни поаѓања",
   "buses.line": "Линија {line}",
   "buses.none": "Нема повеќе поаѓања денес.",
-  "buses.noTimetable": "Нема распоред за линиите на оваа постојка.",
-  "buses.approximate": "Приближен распоред, не е официјален.",
 
   // --- Task 12: assistant ---
   "assistant.intro": "Прашајте ме за воздухот, прекините, автобусите или аптеките. Одговарам според живите податоци за градот.",
@@ -138,7 +131,6 @@ export const mk = {
   "shell.noResults": "Нема резултати",
   "map.region": "Карта на Скопје",
   "map.locationUnavailable": "Не можевме да ја најдеме вашата локација",
-  "explore.allClear": "Моментално нема прекини",
   "explore.nearCentre": "Најблиску до центарот",
   "explore.distance": "{d} од вас",
   "marker.when": "Кога",
@@ -159,7 +151,6 @@ export const mk = {
   "detail.precipitation": "Врнежи",
   "detail.wind": "Ветер",
   "detail.depth": "Длабочина",
-  "detail.type": "Вид",
   "detail.streets": "Улици",
   "detail.lines": "Линии",
   "detail.municipality": "Општина",
@@ -168,8 +159,6 @@ export const mk = {
   "detail.phone": "Телефон",
   "detail.website": "Веб-страница",
   "detail.operator": "Оператор",
-  "detail.zone": "Зона",
-  "detail.price": "Цена",
   "detail.capacity": "Паркинг места",
   "detail.fee": "Со наплата",
   "detail.yes": "Да",
@@ -195,10 +184,33 @@ export const mk = {
 
   // --- Wave E1b ---
   "buses.live": "Во живо",
-  "buses.estimated": "Проценета позиција (возен ред)",
+  "buses.estimated": "Проценета позиција",
   "buses.inMin": "за {n} мин",
   "buses.now": "сега",
   "buses.toward": "кон {headsign}",
   "buses.tapDeparture": "Допрете поаѓање за да го видите автобусот на картата.",
   "buses.unavailable": "Возниот ред моментално не е достапен.",
+
+  // --- Wave E2 ---
+  "outages.title": "Прекини",
+  "outages.days": "Избери ден",
+  "outages.today": "Денес",
+  "outages.none": "Нема најавени прекини за овој ден.",
+  "outages.count.one": "{n} прекин",
+  "outages.count.other": "{n} прекини",
+  "outages.type.power": "Струја",
+  "outages.type.water": "Вода",
+  "outages.type.heating": "Греење",
+  "detail.cause": "Причина",
+  "weather.clear": "Ведро",
+  "weather.partly": "Делумно облачно",
+  "weather.cloudy": "Облачно",
+  "weather.fog": "Магла",
+  "weather.drizzle": "Ситен дожд",
+  "weather.rain": "Дожд",
+  "weather.snow": "Снег",
+  "weather.storm": "Грмежи",
+  "buses.tracking": "Следење автобус",
+  "buses.locating": "Го бараме автобусот…",
+  "buses.stopTracking": "Престани со следење",
 };

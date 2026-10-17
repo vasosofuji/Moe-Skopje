@@ -11,7 +11,8 @@ import { formatWhen } from "@/lib/i18n/format";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature } from "@/lib/sources/types";
 import { cachedLayers } from "@/lib/useLayer";
-import { BusDepartures } from "./BusDepartures";
+import { colorFor, metricOf } from "@/lib/aqi";
+import { BusDepartures, tidyName } from "./BusDepartures";
 import { featureCenter, SEVERITY_COLORS } from "./renderLayer";
 
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
@@ -43,8 +44,8 @@ const FIELDS: [key: string, label: keyof Dict, unit?: Unit][] = [
   ["precipitation", "detail.precipitation", u("мм", "mm")],
   ["wind", "detail.wind", u("км/ч", "km/h")],
   ["depthKm", "detail.depth", u("км", "km")],
-  ["type", "detail.type"],
   ["streets", "detail.streets"],
+  ["cause", "detail.cause"],
   ["lines", "detail.lines"],
   ["municipality", "detail.municipality"],
   ["addr_street", "detail.address"],
@@ -52,11 +53,21 @@ const FIELDS: [key: string, label: keyof Dict, unit?: Unit][] = [
   ["phone", "detail.phone"],
   ["website", "detail.website"],
   ["operator", "detail.operator"],
-  ["zone", "detail.zone"],
-  ["zonePrice", "detail.price", u("ден./ч", "MKD/h")],
   ["capacity", "detail.capacity"],
   ["fee", "detail.fee"],
 ];
+
+/** Units adapters write in Macedonian, in the reader's language. */
+const UNITS: Record<string, Unit> = { "МКД/час": u("ден./час", "MKD/h") };
+
+/** The card's accent: the air band, the parking zone's own colour, the outage type, otherwise severity or the layer colour. */
+function accentOf(p: Feature["properties"], layerColor?: string): string {
+  const d = p.detail ?? {};
+  if (p.kind === "air-station" && typeof p.value === "number") return colorFor(metricOf(d), p.value);
+  if (p.kind === "parking-zone" && typeof d.color === "string") return d.color;
+  if (p.kind === "outage" && layerColor) return layerColor;
+  return p.severity !== undefined ? SEVERITY_COLORS[p.severity] : (layerColor ?? "var(--system-blue)");
+}
 
 const httpUrl = (v: string) => {
   try {
@@ -121,7 +132,10 @@ export function MarkerCard({
   const layer = layerOf(feature);
   const meta = layer && LAYERS[layer.id as LayerId];
   const p = feature.properties;
-  const accent = p.severity !== undefined ? SEVERITY_COLORS[p.severity] : (meta?.color ?? "var(--system-blue)");
+  const accent = accentOf(p, meta?.color);
+  const whiteAccent = accent.toUpperCase() === "#FFFFFF"; // parking zone D
+  const title = p.kind === "bus-stop" ? tidyName(pick(p.title, lang)) : pick(p.title, lang);
+  const unit = p.unit && (UNITS[p.unit]?.[lang] ?? p.unit);
   const Icon = meta?.icon;
   const d = p.detail ?? {};
   const time = formatWhen(p.startsAt, p.endsAt, lang);
@@ -161,13 +175,16 @@ export function MarkerCard({
       >
         <header className="flex items-start gap-3">
           <span
-            className="flex size-9 shrink-0 items-center justify-center rounded-full text-white"
+            className={cx(
+              "flex size-9 shrink-0 items-center justify-center rounded-full",
+              whiteAccent ? "text-black/70 ring-[0.5px] ring-black/20" : "text-white",
+            )}
             style={{ background: accent }}
           >
             {Icon && <Icon size={18} aria-hidden />}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="t-headline">{pick(p.title, lang)}</h2>
+            <h2 className="t-headline">{title}</h2>
             {meta && <p className="t-footnote text-label-2">{t(meta.titleKey)}</p>}
             {d.onDuty === 1 && (
               <span className="t-caption mt-1 inline-flex h-6 items-center rounded-full bg-(--system-green)/15 px-2 text-(--system-green)">
@@ -189,8 +206,8 @@ export function MarkerCard({
 
         {p.value !== undefined && (
           <p className="t-title2 tabular-nums">
-            {p.value}
-            {p.unit && <span className="t-subhead ml-1 font-medium text-label-2">{p.unit}</span>}
+            {lang === "mk" ? String(p.value).replace(".", ",") : p.value}
+            {unit && <span className="t-subhead ml-1 font-medium text-label-2">{unit}</span>}
           </p>
         )}
 
@@ -218,7 +235,7 @@ export function MarkerCard({
         {d.approx === 1 && <p className="t-footnote text-label-2">{t("marker.approx")}</p>}
 
         {p.kind === "bus-stop" && (
-          <BusDepartures stopId={p.id} lines={String(p.detail?.lines ?? "").split(",").filter(Boolean)} />
+          <BusDepartures stopId={typeof d.stopId === "string" ? d.stopId : undefined} />
         )}
 
         {layer && (

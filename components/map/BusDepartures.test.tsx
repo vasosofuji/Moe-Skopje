@@ -1,29 +1,19 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 import { translate } from "@/lib/i18n/core";
-import { BusDepartures } from "./BusDepartures";
+import { BusDepartures, tidyName } from "./BusDepartures";
 
-beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-07-15T04:00:00+02:00"));
+test("tidyName turns all-caps GTFS names into names, keeping small words lower case", () => {
+  expect(tidyName("ДОМ НА ПЕЧАТ")).toBe("Дом на Печат");
+  expect(tidyName("ЦЕНТАР РЕКОРД-КОН ЗАПАД")).toBe("Центар Рекорд-кон Запад");
+  expect(tidyName("КАРПОШ 4")).toBe("Карпош 4");
+  expect(tidyName("NA ZAPAD")).toBe("Na Zapad"); // a small word that starts the name is capitalised
+  expect(tidyName("Ѓорче Петров")).toBe("Ѓорче Петров"); // mixed case is left alone
 });
-afterEach(() => vi.useRealTimers());
 
-const render = (lines: string[]) => renderToStaticMarkup(<BusDepartures stopId="bus-stop:x" lines={lines} />);
-
-test("BusDepartures shows the next three departures with the approximate-timetable note", () => {
-  const html = render(["5", "2"]);
+test("BusDepartures waits for the timetable, and shows nothing for a stop without a GTFS id", () => {
+  const html = renderToStaticMarkup(<BusDepartures stopId="1513" />);
   expect(html).toContain(translate("mk", "buses.next"));
-  expect(html.match(/<li/g)).toHaveLength(3);
-  expect([...html.matchAll(/tabular-nums">(\d\d:\d\d)</g)].map((m) => m[1])).toEqual(["05:00", "05:00", "05:08"]);
-  expect(html).toContain(translate("mk", "buses.line", { line: "5" }));
-  expect(html).toContain(translate("mk", "buses.approximate"));
-});
-
-test("BusDepartures says so when service is over, and when no line has a timetable", () => {
-  vi.setSystemTime(new Date("2026-07-15T23:30:00+02:00"));
-  expect(render(["2"])).toContain(translate("mk", "buses.none"));
-  const html = render(["999"]);
-  expect(html).toContain(translate("mk", "buses.noTimetable"));
-  expect(html).not.toContain("<li");
+  expect(html).toContain('aria-busy="true"');
+  expect(renderToStaticMarkup(<BusDepartures />)).toBe("");
 });
