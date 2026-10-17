@@ -1,0 +1,21 @@
+{
+  "name": "moe-skopje-ad",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts MoeSkopjeAd out/moe-skopje-ad.mp4 --codec=h264 --crf=16 --audio-bitrate=320k",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "@remotion/google-fonts": "4.0.536",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.536"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

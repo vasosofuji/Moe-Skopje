@@ -40,3 +40,8 @@ next-env.d.ts
 
 # maplibre worker, copied from node_modules by scripts/copy-maplibre-worker.mjs (predev/prebuild)
 /public/maplibre/
+
+# ad film: generated media, renders, deps
+/ad/public/
+/ad/out/
+/ad/node_modules/
