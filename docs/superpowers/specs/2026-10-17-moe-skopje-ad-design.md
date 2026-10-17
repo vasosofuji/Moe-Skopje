@@ -107,8 +107,8 @@ All from Storyblocks. Each download licenses the item on the user's account; the
 
 | Gate | Generates | Est. credits | User approves |
 |---|---|---|---|
-| 1 Look and cast | 4 cast variants (one call, count 4) + 2 window frames (`H2` start candidates) | ~12 | Face, wardrobe, grade |
-| 2 Keyframes | All remaining start/end stills from §4 plus `P1`/`P2`; 2 variants only for match-cut frames (`H1` end, `H2` start, `H3` start, `H6` start) | ~65 | One contact sheet |
+| 1 Look and cast | 4 cast variants (one call, count 4) + 2 window plates (location and grade, no person) | ~12 | Face, wardrobe, grade |
+| 2 Keyframes | All remaining start/end stills from §4 plus `P1`/`P2`; 2 variants only for match-cut frames (`H1` end, `H2` start, `H3` start, `H6` start); `H2` start uses the cast and window plate as references | ~65 | One contact sheet |
 | 3 Video | 12 Kling clips, 1 take each (`H10` at 10 s) | ~130 | Rough cut with clips in place |
 | Retakes | Only clips that fail review, one at a time | ≤200 | Each retake |
 | Buffer | Untouched without asking | ~50 | — |
