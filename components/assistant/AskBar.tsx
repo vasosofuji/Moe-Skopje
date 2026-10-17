@@ -1,33 +1,39 @@
 "use client";
 
-import { ArrowUp, ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
+import { ArrowUp, ChevronDown, ChevronUp, CornerUpRight, MessageCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { GlassButton } from "@/components/glass/GlassButton";
+import { RoutePlanner } from "@/components/route/RoutePlanner";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
-import { Conversation, Suggestions, useAssistant } from "./AssistantPanel";
+import { spring } from "@/lib/motion";
+import { Conversation, useAssistant } from "./AssistantPanel";
 import type { Citation } from "./Citation";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
-const rise = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 12 }, transition: spring };
+const hidden = { opacity: 0, y: 12 };
+const shown = { opacity: 1, y: 0 };
+const panel = "glass glass-strong absolute inset-x-0 bottom-full mb-2 flex max-h-[60vh] flex-col";
+const iconButton = cx("flex size-11 shrink-0 items-center justify-center rounded-full text-label-2", focusRing);
 
 /**
- * Desktop assistant: a Spotlight-style glass bar docked at the bottom centre of the map, always there.
- * ⌘K / Ctrl+K focuses it; focused and empty it offers suggestions; asking unfolds the conversation above it
- * (max 60vh). Esc or a click outside folds it away; a citation folds it and shows the feature on the map.
- * `left` is the screen width the sidebar covers, so the bar centres in the visible map.
+ * Desktop Spotlight bar, docked at the bottom centre of the map: ask the assistant, or open directions with the glyph at
+ * its trailing edge. Both unfold in the same glass panel above the bar (max 60vh). ⌘K / Ctrl+K focuses the input.
+ * Esc folds the panel; a click outside folds the chat (not the planner, whose points are picked on the map). A folded
+ * planner keeps its route on the map until its X clears it. `left` is the screen width the sidebar covers.
  */
 export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citation): void }) {
   const { t } = useT();
   const chat = useAssistant();
   const [input, setInput] = useState("");
-  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"chat" | "route" | null>(null);
+  const [routing, setRouting] = useState(false); // the planner is mounted (it may be folded away)
   const [focused, setFocused] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const mac = /Mac|iPhone|iPad/.test(navigator.userAgent);
   const hasChat = chat.messages.length > 0 || chat.disabled;
+  const chatOpen = view === "chat" && hasChat;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -41,27 +47,29 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (view !== "chat") return;
     const onDown = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) setOpen(false);
+      if (!root.current?.contains(e.target as Node)) setView(null);
     };
     document.addEventListener("pointerdown", onDown);
     return () => document.removeEventListener("pointerdown", onDown);
-  }, [open]);
+  }, [view]);
 
-  const ask = (q: string) => {
-    if (!q.trim() || chat.busy) return;
-    void chat.send(q);
-    setInput("");
-    setOpen(true);
-  };
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    ask(input);
+    if (!input.trim() || chat.busy) return;
+    void chat.send(input);
+    setInput("");
+    setView("chat");
   };
   const cite = (c: Citation) => {
-    setOpen(false);
+    setView(null);
     onCitation(c);
+  };
+  const toggleRoute = () => {
+    if (view === "route") return setView(null);
+    setRouting(true);
+    setView("route");
   };
 
   return (
@@ -71,54 +79,56 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
       onKeyDown={(e) => {
         if (e.key !== "Escape") return;
         e.stopPropagation(); // Esc here is the bar's, not the marker card's
-        if (open) setOpen(false);
+        if (view) setView(null);
         else field.current?.blur();
       }}
       className="pointer-events-none fixed right-0 bottom-12 z-20 flex justify-center px-[88px]"
     >
       <div className="pointer-events-auto relative w-full max-w-[560px]">
         <AnimatePresence>
-          {open && hasChat && (
-            <motion.section
-              key="chat"
-              {...rise}
-              aria-label={t("assistant.title")}
-              className="glass glass-strong absolute inset-x-0 bottom-full mb-2 flex max-h-[60vh] flex-col"
-            >
-              <header className="flex shrink-0 items-center justify-between pt-1 pr-1 pl-4">
-                <h2 className="t-footnote font-semibold text-label-2">{t("assistant.title")}</h2>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label={t("assistant.collapse")}
-                  className={cx("flex size-11 items-center justify-center rounded-full text-label-2", focusRing)}
-                >
-                  <ChevronDown size={20} aria-hidden />
-                </button>
-              </header>
+          {chatOpen && (
+            <motion.section key="chat" initial={hidden} animate={shown} exit={hidden} transition={spring} aria-label={t("assistant.title")} className={panel}>
               {chat.disabled ? (
-                <p className="t-subhead px-4 pb-4 text-label-2">{t("assistant.unavailable")}</p>
+                <p className="t-subhead p-4 text-label-2">{t("assistant.unavailable")}</p>
               ) : (
-                <Conversation chat={chat} onCitation={cite} className="px-4 pb-4" />
+                <Conversation chat={chat} onCitation={cite} className="p-4" />
               )}
             </motion.section>
           )}
-          {focused && !input && !hasChat && (
-            <motion.div key="suggest" {...rise} className="absolute inset-x-0 bottom-full mb-3">
-              <Suggestions compact onPick={ask} />
-            </motion.div>
-          )}
         </AnimatePresence>
 
-        <form onSubmit={submit} className="glass glass-pill h-14 w-full gap-3 pr-1.5 pl-5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--system-blue)">
-          <MessageCircle size={19} aria-hidden className="shrink-0 text-label-2" />
+        {routing && (
+          // Folded, not unmounted, so the route stays on the map and the fields keep their places.
+          <motion.div
+            initial={hidden}
+            animate={view === "route" ? shown : hidden}
+            transition={spring}
+            inert={view !== "route"}
+            className={cx(panel, "overflow-y-auto overscroll-contain p-4", view !== "route" && "pointer-events-none")}
+          >
+            <RoutePlanner
+              variant="bar"
+              insetLeft={left}
+              onClose={() => {
+                setRouting(false);
+                setView(null);
+              }}
+            />
+          </motion.div>
+        )}
+
+        <form
+          onSubmit={submit}
+          className="glass glass-pill h-14 w-full gap-2 pr-1.5 pl-5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--system-blue)"
+        >
+          <MessageCircle size={19} aria-hidden className="mr-1 shrink-0 text-label-2" />
           <input
             ref={field}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onFocus={() => {
               setFocused(true);
-              if (hasChat) setOpen(true);
+              if (hasChat && view === null) setView("chat");
             }}
             onBlur={() => setFocused(false)}
             placeholder={t("assistant.barPlaceholder")}
@@ -133,22 +143,32 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
             <GlassButton size="sm" shape="circle" type="submit" aria-label={t("assistant.send")} disabled={chat.busy} className="shrink-0 bg-(--system-blue) text-white">
               <ArrowUp aria-hidden className="size-5" />
             </GlassButton>
-          ) : hasChat && !open ? (
+          ) : hasChat ? (
             <button
               type="button"
-              onClick={() => setOpen(true)}
-              aria-label={t("assistant.expand")}
-              className={cx("flex size-11 shrink-0 items-center justify-center rounded-full text-label-2", focusRing)}
+              onClick={() => setView(chatOpen ? null : "chat")}
+              aria-label={t(chatOpen ? "assistant.collapse" : "assistant.expand")}
+              aria-expanded={chatOpen}
+              className={iconButton}
             >
-              <ChevronUp size={20} aria-hidden />
+              {chatOpen ? <ChevronDown size={20} aria-hidden /> : <ChevronUp size={20} aria-hidden />}
             </button>
           ) : (
             !focused && (
-              <kbd aria-hidden className="t-caption mr-2.5 shrink-0 rounded-md bg-(--label)/6 px-1.5 py-0.5 font-sans text-label-2">
+              <kbd aria-hidden className="t-caption shrink-0 rounded-md bg-(--label)/6 px-1.5 py-0.5 font-sans text-label-2">
                 {mac ? "⌘K" : "Ctrl K"}
               </kbd>
             )
           )}
+          <button
+            type="button"
+            onClick={toggleRoute}
+            aria-label={t("route.title")}
+            aria-pressed={view === "route"}
+            className={cx(iconButton, routing && "text-(--system-blue)", view === "route" && "bg-(--system-blue)/12")}
+          >
+            <CornerUpRight size={20} aria-hidden />
+          </button>
         </form>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { LayerBadge, StatusBadge, worstOf } from "@/components/glass/StatusBadge";
 import { useMap } from "@/components/map/MapView";
 import { cx, focusRing } from "@/lib/cx";
@@ -8,31 +8,21 @@ import { useT, type Lang } from "@/lib/i18n";
 import { formatDate, formatWhen, skopjeTime, weekdayShort } from "@/lib/i18n/format";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import type { OutageDay, OutageItem, OutageType } from "@/lib/server/outages";
+import { useFetched } from "@/lib/useFetched";
 import { activeNow } from "./activeNow";
 
 const REFRESH_MS = 5 * 60_000;
 const TYPES: OutageType[] = ["power", "water", "heating"];
 const LAYER: Record<OutageType, LayerId> = { power: "outages-power", water: "outages-water", heating: "outages-heating" };
 
-/** GET /api/outages?days=7, re-read every 5 minutes. `undefined` while loading, `null` when it failed. */
-function useOutageDays(): OutageDay[] | null | undefined {
-  const [days, setDays] = useState<OutageDay[] | null>();
-  useEffect(() => {
-    const ac = new AbortController();
-    const load = () =>
-      fetch("/api/outages?days=7", { signal: ac.signal })
-        .then((r) => (r.ok ? (r.json() as Promise<{ days: OutageDay[] }>) : Promise.reject(new Error(String(r.status)))))
-        .then((body) => setDays(Array.isArray(body.days) ? body.days : null))
-        .catch(() => !ac.signal.aborted && setDays((d) => d ?? null));
-    void load();
-    const id = setInterval(load, REFRESH_MS);
-    return () => {
-      ac.abort();
-      clearInterval(id);
-    };
-  }, []);
-  return days;
+async function readDays(r: Response): Promise<OutageDay[]> {
+  const body = (r.ok ? await r.json() : null) as { days?: unknown } | null;
+  if (!Array.isArray(body?.days)) throw new Error(String(r.status));
+  return body.days as OutageDay[];
 }
+
+/** GET /api/outages?days=7, cached and re-read every 5 minutes. `undefined` while loading, `null` when it failed. */
+const useOutageDays = () => useFetched("/api/outages?days=7", readDays, REFRESH_MS);
 
 /** "14:00–23:00" for an outage inside one day, the full span otherwise. */
 function span(item: OutageItem, lang: Lang): string {
@@ -117,7 +107,7 @@ export function OutagesWidget() {
               {day?.items.map((item) => {
                 const on = highlight?.id === item.id;
                 return (
-                  <li key={item.id} className="border-t-[0.5px] border-(--label)/10 first:border-t-0">
+                  <li key={item.id} className="border-t-[0.5px] border-(--label)/10 [contain-intrinsic-size:auto_64px] [content-visibility:auto] first:border-t-0">
                     <button
                       type="button"
                       aria-pressed={on}

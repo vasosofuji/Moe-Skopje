@@ -3,8 +3,8 @@
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { cx, focusRing } from "@/lib/cx";
+import { spring } from "@/lib/motion";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 type Option<T extends string> = { value: T; label: string; icon?: LucideIcon };
 

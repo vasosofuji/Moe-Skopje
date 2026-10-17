@@ -97,11 +97,8 @@ export const en: Dict = {
   "assistant.title": "City assistant",
   "assistant.placeholder": "Ask anything about Skopje…",
   "assistant.send": "Send",
-  "assistant.suggest.1": "How is the air in Aerodrom?",
-  "assistant.suggest.2": "Will there be power in Karpoš tomorrow?",
-  "assistant.suggest.3": "Which pharmacy is on duty near me?",
   "assistant.refused": "I can't help with that. Try a different question.",
-  "assistant.unavailable": "Assistant unavailable",
+  "assistant.unavailable": "The assistant isn't connected.",
   "assistant.rateLimited": "You've reached the message limit for this hour. Please try again later.",
 
   // --- Task 7: air ---
@@ -116,8 +113,7 @@ export const en: Dict = {
   "buses.none": "No more departures today.",
 
   // --- Task 12: assistant ---
-  "assistant.intro": "Ask me about the air, outages, buses or pharmacies. I answer from the city's live data.",
-  "assistant.typing": "The assistant is typing…",
+  "assistant.typing": "Typing…",
   "assistant.error": "The assistant couldn't answer. Please try again.",
 
   // --- Task 4: shell ---
@@ -179,7 +175,6 @@ export const en: Dict = {
   "goOut.reason.rain": "Rain",
   "goOut.reason.temp": "Extreme temperature",
   "eservices.title": "e-Services",
-  "eservices.hint": "Common tasks you can sort out online.",
   "eservices.opensNew": "opens in a new tab",
 
   // --- Wave E1b ---
@@ -224,7 +219,6 @@ export const en: Dict = {
   "route.mode.auto": "Car",
   "route.mode.bicycle": "Bicycle",
   "route.mode.pedestrian": "On foot",
-  "route.go": "Find route",
   "route.summary": "{km} km · {min} min",
   "route.avoided": "Avoids closed streets: {n}",
   "route.noneAvoided": "No closed streets on the way.",
@@ -264,14 +258,12 @@ export const en: Dict = {
 
   // --- Route planner ---
   "route.pickOnMap": "Pick on the map",
-  "route.pickHint": "Tap the map to place the point.",
-  "route.pinOnMap": "Point on the map",
-  "route.searchPlace": "Street or neighbourhood",
+  "route.pickHint": "Tap the map.",
+  "route.swap": "Swap start and end",
+  "route.searchPlace": "Place or address",
   "route.modeLabel": "How you travel",
-  "route.finding": "Finding a route…",
   "route.clear": "Clear the route",
   "route.detour": "Detour: +{distance}",
-  "route.needBoth": "Choose a start and an end.",
   "route.error.same": "Choose two different points.",
   "route.error.network": "Can't reach the server. Check your connection.",
 

@@ -1,18 +1,17 @@
 "use client";
 
 import { ArrowUp } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { GlassButton } from "@/components/glass/GlassButton";
 import { GlassPill } from "@/components/glass/GlassPill";
 import { cx } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import { getDeviceId } from "@/lib/prefs";
-import { CitationChip, PRESS, parseReply, type Citation } from "./Citation";
+import { CitationChip, parseReply, type Citation } from "./Citation";
 
 type Message = { role: "user" | "assistant"; text: string; citations?: Citation[]; error?: boolean; pending?: boolean };
 export type Assistant = ReturnType<typeof useAssistant>;
 
-const SUGGESTIONS = ["assistant.suggest.1", "assistant.suggest.2", "assistant.suggest.3"] as const;
 const HISTORY = 20; // the server accepts at most 20 turns
 
 /** The conversation and the streamed call to POST /api/assistant. `disabled` turns true when the server has no assistant (503). */
@@ -67,7 +66,7 @@ export function useAssistant() {
   return { messages, busy, disabled, send };
 }
 
-/** Three dots; they only bounce when the user allows motion. */
+/** Three dots, the only sign that an answer is on its way; they only bounce when the user allows motion. */
 function Typing({ label }: { label: string }) {
   return (
     <span role="status" aria-label={label} className="inline-flex h-5 items-center gap-1">
@@ -115,70 +114,25 @@ export function Conversation({ chat, onCitation, className }: { chat: Assistant;
 }
 
 /**
- * Suggested questions. `compact` is the row of small text chips over the desktop chat bar; it keeps the input focused
- * (pointerdown would blur it and unmount the chips before the click lands).
- */
-export function Suggestions({ onPick, compact }: { onPick(q: string): void; compact?: boolean }) {
-  const { t } = useT();
-  return (
-    <div className={cx("flex gap-2", compact ? "flex-wrap justify-center" : "flex-col items-start")}>
-      {SUGGESTIONS.map((k) => (
-        <GlassPill
-          key={k}
-          as="button"
-          type="button"
-          onPointerDown={(e: PointerEvent) => {
-            if (compact) e.preventDefault();
-          }}
-          onClick={() => onPick(t(k))}
-          className={cx("glass-button text-left", compact ? "t-footnote min-h-9 px-3 py-1.5" : "t-subhead py-2", PRESS)}
-        >
-          {t(k)}
-        </GlassPill>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Ask tab on phones and tablets (inside the sheet or sidebar, which own the glass surface): title, conversation or
- * suggestions, and the input. Desktop uses AskBar instead. Citation chips call `onCitation`.
+ * Ask tab on phones and tablets (inside the sheet or sidebar, which own the glass surface): the conversation and the
+ * input, nothing else. The log scrolls itself so the input stays in view. Desktop uses AskBar instead.
  */
 export function AssistantPanel({ onCitation }: { onCitation(c: Citation): void }) {
   const { t } = useT();
   const chat = useAssistant();
   const [input, setInput] = useState("");
 
-  const ask = (q: string) => {
-    void chat.send(q);
-    setInput("");
-  };
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
-    ask(input);
+    void chat.send(input);
+    setInput("");
   };
 
-  if (chat.disabled) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-        <p className="t-headline">{t("assistant.unavailable")}</p>
-      </div>
-    );
-  }
+  if (chat.disabled) return <p className="t-subhead px-1 py-2 text-label-2">{t("assistant.unavailable")}</p>;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
-      <h2 className="t-title2 px-1">{t("assistant.title")}</h2>
-
-      {chat.messages.length === 0 ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-3 px-1">
-          <p className="t-subhead text-label-2">{t("assistant.intro")}</p>
-          <Suggestions onPick={ask} />
-        </div>
-      ) : (
-        <Conversation chat={chat} onCitation={onCitation} className="flex-1 px-1 pb-1" />
-      )}
-
+    <div className="flex flex-col gap-3">
+      {chat.messages.length > 0 && <Conversation chat={chat} onCitation={onCitation} className="max-h-[min(56dvh,560px)] px-1 pb-1" />}
       <form onSubmit={submit}>
         <GlassPill className="w-full pr-1 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--system-blue)">
           <input
@@ -193,8 +147,8 @@ export function AssistantPanel({ onCitation }: { onCitation(c: Citation): void }
           <GlassButton
             size="sm"
             shape="circle"
+            type="submit"
             aria-label={t("assistant.send")}
-            onClick={() => submit()}
             disabled={chat.busy || !input.trim()}
             className="shrink-0 bg-(--system-blue) text-white"
           >

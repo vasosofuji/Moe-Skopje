@@ -1,29 +1,25 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import { useEffect, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { age, STATUS_COLOR } from "@/components/glass/StatusBadge";
 import { useT, type Dict } from "@/lib/i18n";
 import type { TVars } from "@/lib/i18n/core";
 import { isLayerId, LAYERS } from "@/lib/layers";
 import type { Status } from "@/lib/sources/types";
+import { useFetched } from "@/lib/useFetched";
 import { List, row, RowContent, rowStatic } from "./Grouped";
 
 export type HealthRow = { id: string; status: Status; updatedAt: string; featureCount: number; source: { name: string; url: string } };
 
-/** GET /api/health once: undefined while loading, null when the request failed. */
-export function useHealth() {
-  const [rows, setRows] = useState<HealthRow[] | null>();
-  useEffect(() => {
-    const ac = new AbortController();
-    fetch("/api/health", { signal: ac.signal })
-      .then((r) => (r.ok ? (r.json() as Promise<HealthRow[]>) : Promise.reject(new Error(String(r.status)))))
-      .then(setRows)
-      .catch(() => !ac.signal.aborted && setRows(null));
-    return () => ac.abort();
-  }, []);
-  return rows;
+async function readHealth(r: Response): Promise<HealthRow[]> {
+  const rows: unknown = r.ok ? await r.json() : null;
+  if (!Array.isArray(rows)) throw new Error(String(r.status));
+  return rows as HealthRow[];
 }
+
+/** GET /api/health, cached: the last answer at once when Settings reopens, refreshed behind it. undefined while loading, null when it failed. */
+export const useHealth = () => useFetched("/api/health", readHealth);
 
 const ORDER = ["live", "stale", "offline"] as const;
 

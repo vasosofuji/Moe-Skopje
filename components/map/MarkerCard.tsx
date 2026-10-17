@@ -14,8 +14,8 @@ import { cachedLayers } from "@/lib/useLayer";
 import { colorFor, metricOf } from "@/lib/aqi";
 import { BusDepartures, tidyName } from "./BusDepartures";
 import { featureCenter, SEVERITY_COLORS } from "./renderLayer";
+import { spring } from "@/lib/motion";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const WIDTH = 320;
 const GAP = 16; // between the card and the point it describes
 
