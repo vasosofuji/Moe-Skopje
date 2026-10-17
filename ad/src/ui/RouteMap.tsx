@@ -12,7 +12,7 @@ export const RouteMap = ({ p, h }: { p: Palette; h: number }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const closure = spring({ frame, fps, config: theme.spring.ui });
-  const draw = interpolate(frame, [7, 25], [0, 1], { easing: theme.ease.inOut, extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const draw = interpolate(frame, [5, 18], [0, 1], { easing: theme.ease.inOut, extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const card = spring({ frame: frame - 3, fps, config: theme.spring.ui });
 
   return (

@@ -9,11 +9,14 @@
   "dependencies": {
     "@remotion/cli": "4.0.536",
     "@remotion/google-fonts": "4.0.536",
+    "lucide-react": "^1.59.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "remotion": "4.0.536"
   },
   "devDependencies": {
+    "@remotion/bundler": "^4.0.536",
+    "@remotion/renderer": "^4.0.536",
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "typescript": "^5"

@@ -78,3 +78,9 @@ H5a and H6 were first answered with a preset suggestion (no job, no charge) and 
 | 3 | be2ba512-6cd8-49db-bcf3-5c31538ee002 | H10 | 15 | 159.5 |
 
 Balance after Gate 3: 5298.07 (159.5 spent of 457).
+
+## Retake (approved 7.5 cr)
+
+| 3r | bd9b080a-c371-4cc4-b476-454e0e8f1110 | H6 v2 (start frame only) | 7.5 | 167 |
+
+H6 v1 kept as clips/H6_v1.mp4. Storyblocks refused music 346786972 (not on plan); nothing licensed.

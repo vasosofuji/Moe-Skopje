@@ -11,11 +11,11 @@ export const MapBackdrop = ({ p, children }: { p: Palette; children?: React.Reac
     <path d="M-20 610 C 90 560, 170 640, 260 600 S 380 520, 420 540 L 420 600 C 360 590, 300 660, 240 660 S 90 620, -20 680 Z"
       fill={p.map.water} />
     <path d="M30 120 h110 v90 h-110Z M250 720 h120 v110 h-120Z" fill={p.map.park} rx="12" />
-    <g stroke={p.map.minor} strokeWidth="7" strokeLinecap="round">
+    <g stroke={p.map.minor} strokeWidth="7" strokeLinecap="round" fill="none">
       {[90, 170, 250, 330].map((x) => <path key={x} d={`M${x} -10 L${x - 30} 910`} />)}
       {[60, 230, 330, 470, 760, 850].map((y) => <path key={y} d={`M-10 ${y} L400 ${y - 25}`} />)}
     </g>
-    <g stroke={p.map.road} strokeWidth="13" strokeLinecap="round">
+    <g stroke={p.map.road} strokeWidth="13" strokeLinecap="round" fill="none">
       <path d="M-10 410 L400 370" />
       <path d="M205 -10 L170 910" />
       <path d="M-10 540 C 120 500, 260 520, 400 470" />

@@ -1,11 +1,12 @@
 // The film: SHOTS from timeline.ts, each rendered by its id, captions and grain on top.
-import { AbsoluteFill, Img, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
-import { CAPTIONS, END, SHOTS, type Shot } from "./timeline";
+import { AbsoluteFill, Audio, Img, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { CAPTIONS, END, MUSIC, SFX, SHOTS, TOTAL, type Shot } from "./timeline";
 import { theme } from "./theme";
 import { Caption } from "./Caption";
 import { EndFrame } from "./EndFrame";
 import { AppScreen, MapBackdrop } from "./ui/AppScreen";
-import { AirCard, PharmacyCard, WEATHER_GLYPH, WeatherCard } from "./ui/Cards";
+import { AirMap } from "./ui/AirMap";
+import { PharmacyCard, WEATHER_GLYPH, WeatherCard } from "./ui/Cards";
 import { Reveal, WeatherScreen } from "./ui/Reveal";
 import { RouteMap } from "./ui/RouteMap";
 import { Screen, screenHeight } from "./ui/Screen";
@@ -21,10 +22,17 @@ const Clip = ({ shot }: { shot: Shot }) => {
   );
 };
 
-// Shot 1: the screen wakes with the weather card while the phone lies still.
-const H1Wake = () => {
+// Slow push on every footage shot, for energy between the cuts.
+const Push = ({ len, children }: { len: number; children: React.ReactNode }) => {
   const frame = useCurrentFrame();
-  const wake = interpolate(frame, [30, 44], [0, 1], { easing: theme.ease.out, ...clamp });
+  const s = interpolate(frame, [0, len], [1, 1.05], { easing: theme.ease.inOut, ...clamp });
+  return <AbsoluteFill style={{ transform: `scale(${s})` }}>{children}</AbsoluteFill>;
+};
+
+// Shot 1: the screen wakes with the weather card while the phone lies still.
+export const H1Wake = () => {
+  const frame = useCurrentFrame();
+  const wake = interpolate(frame, [18, 30], [0, 1], { easing: theme.ease.out, ...clamp });
   return (
     <Screen at="H1" opacity={wake}>
       <WeatherScreen p={theme.light} h={screenHeight("H1")} />
@@ -37,9 +45,9 @@ const ARC = { x: WEATHER_GLYPH.x + 12.1 * (WEATHER_GLYPH.size / 24), y: WEATHER_
 const CROOK = { x: 931, y: 215, scale: (95 / 6) / (WEATHER_GLYPH.size / 24) }; // crook centreline radius 95 px vs arc radius 6 units
 const CARD = { w: 366, h: 224 };
 
-const WeatherInsert = () => {
+const WeatherInsert = ({ len }: { len: number }) => {
   const frame = useCurrentFrame();
-  const t = interpolate(frame, [0, 23], [0, 1], { easing: theme.ease.inOut, ...clamp });
+  const t = interpolate(frame, [0, len - 1], [0, 1], { easing: theme.ease.inOut, ...clamp });
   const s0 = 2.6;
   const start = { x: 960 - (CARD.w / 2) * s0 + ARC.x * s0, y: 540 - (CARD.h / 2) * s0 + ARC.y * s0 };
   const s = s0 * Math.pow(CROOK.scale / s0, t);
@@ -69,7 +77,7 @@ const Hero = ({ zoom, dusk = false, children }: { zoom: number; dusk?: boolean; 
 
 const RevealShot = () => {
   const frame = useCurrentFrame();
-  const zoom = interpolate(frame, [0, 144], [1, 1.04], { easing: theme.ease.inOut, ...clamp });
+  const zoom = interpolate(frame, [0, 110], [1, 1.04], { easing: theme.ease.inOut, ...clamp });
   const fromWhite = interpolate(frame, [0, 12], [1, 0], { easing: theme.ease.out, ...clamp });
   return (
     <>
@@ -88,16 +96,11 @@ const Rising = ({ children }: { children: React.ReactNode }) => {
 const UiShot = ({ id }: { id: string }) => {
   const frame = useCurrentFrame();
   const h = screenHeight("P1");
-  const zoom = interpolate(frame, [0, 30], [1.32, 1.36], { easing: theme.ease.inOut, ...clamp });
+  // Route and pharmacy push in close on the screen; air stays full-size so its caption fits above the phone.
+  const close = id !== "air";
+  const zoom = interpolate(frame, [0, 30], close ? [1.32, 1.36] : [1, 1.03], { easing: theme.ease.inOut, ...clamp });
   if (id === "route") return <Hero zoom={zoom}><RouteMap p={theme.light} h={h} /></Hero>;
-  if (id === "air")
-    return (
-      <Hero zoom={zoom}>
-        <AppScreen p={theme.light} h={h}>
-          <div style={{ position: "absolute", left: 12, right: 12, top: h * 0.42 }}><Rising><AirCard p={theme.light} big /></Rising></div>
-        </AppScreen>
-      </Hero>
-    );
+  if (id === "air") return <Hero zoom={zoom}><AirMap p={theme.light} h={h} /></Hero>;
   return (
     <Hero zoom={zoom} dusk>
       <AppScreen p={theme.dark} h={h}>
@@ -108,9 +111,9 @@ const UiShot = ({ id }: { id: string }) => {
 };
 
 // Fades over the cut points: H5c blows out to white before the reveal; H10 settles into the end frame.
-const ToWhite = ({ from, frames }: { from: number; frames: number }) => {
+export const ToWhite = ({ from, frames }: { from: number; frames: number }) => {
   const frame = useCurrentFrame();
-  const o = interpolate(frame, [from, from + frames], [0, 1], { easing: theme.ease.in, ...clamp });
+  const o = interpolate(frame, [from, from + frames], [0, 1], { easing: theme.ease.inOut, ...clamp });
   return <AbsoluteFill style={{ background: WARM_WHITE, opacity: o }} />;
 };
 
@@ -125,19 +128,23 @@ const Vignette = () => (
   <AbsoluteFill style={{ pointerEvents: "none", background: "radial-gradient(ellipse at center, transparent 60%, rgb(0 0 0 / .18) 100%)" }} />
 );
 
-const ShotView = ({ shot }: { shot: Shot }) => {
+export const ShotView = ({ shot }: { shot: Shot }) => {
   const len = shot.to - shot.from;
   switch (shot.id) {
-    case "H1": return <><Clip shot={shot} /><H1Wake /><Vignette /></>;
-    case "weather-insert": return <WeatherInsert />;
-    case "H5c": return <><Clip shot={shot} /><Vignette /><ToWhite from={len - 14} frames={14} /></>;
+    case "H1": return <><Clip shot={shot} /><H1Wake /><Vignette /></>; // no push: the UI sits on the still phone
+    case "weather-insert": return <WeatherInsert len={len} />;
+    case "H5c": return <><Push len={len}><Clip shot={shot} /></Push><Vignette /><ToWhite from={len - 12} frames={12} /></>;
     case "reveal": return <RevealShot />;
     case "route": case "air": case "pharmacy": return <UiShot id={shot.id} />;
-    case "H10": return <><Clip shot={shot} /><Vignette /><ToWhite from={len - 16} frames={16} /></>;
+    case "H10": return <><Push len={len}><Clip shot={shot} /></Push><Vignette /><ToWhite from={len - 12} frames={12} /></>;
     case "end": return <EndFrame wordmarkAt={END.wordmark - shot.from} taglineAt={END.tagline - shot.from} />;
-    default: return <><Clip shot={shot} /><Vignette /></>;
+    default: return <><Push len={len}><Clip shot={shot} /></Push><Vignette /></>;
   }
 };
+
+// Music bed: quick fade in, lifts on the reveal, settles for the evening, fades out on the end frame.
+const musicVolume = (f: number) =>
+  interpolate(f, [0, 10, 330, 340, 630, 650, TOTAL - 50, TOTAL - 2], [0, 0.7, 0.7, 0.95, 0.95, 0.8, 0.8, 0], { ...clamp });
 
 export const Ad = () => (
   <AbsoluteFill style={{ background: "#000" }}>
@@ -148,5 +155,9 @@ export const Ad = () => (
     ))}
     {CAPTIONS.map((c) => <Caption key={c.text} {...c} />)}
     <Grain />
+    <Audio src={staticFile(MUSIC.file)} trimBefore={MUSIC.startFrom} volume={musicVolume} />
+    {SFX.map((c, i) => (
+      <Sequence key={i} from={c.at} name={c.file}><Audio src={staticFile(c.file)} volume={c.volume} /></Sequence>
+    ))}
   </AbsoluteFill>
 );

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SHOTS, CAPTIONS, TOTAL } from "./timeline.ts";
+import { SHOTS, CAPTIONS, SFX, TOTAL } from "./timeline.ts";
 
 test("shots tile 0..TOTAL with no gaps or overlaps", () => {
   assert.equal(SHOTS[0].from, 0);
@@ -19,6 +19,10 @@ test("captions are ordered, non-overlapping, inside TOTAL", () => {
     assert.ok(c.in < c.out && c.out <= TOTAL, c.text);
     if (i) assert.ok(c.in >= CAPTIONS[i - 1].out, c.text);
   }
+});
+
+test("every sound cue starts inside the film", () => {
+  for (const c of SFX) assert.ok(c.at >= 0 && c.at < TOTAL, c.file);
 });
 
 test("copy matches spec", () => {

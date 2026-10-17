@@ -4,7 +4,7 @@ import { theme, type Palette } from "../theme";
 import { AppScreen } from "./AppScreen";
 import { AirCard, ClosureCard, PharmacyCard, WeatherCard } from "./Cards";
 
-export const REVEAL_START = 20; // frames into the shot before the card starts to compact
+export const REVEAL_START = 12; // frames into the shot before the card starts to compact
 
 const Rise = ({ delay, children }: { delay: number; children: React.ReactNode }) => {
   const frame = useCurrentFrame();
