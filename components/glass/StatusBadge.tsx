@@ -11,6 +11,13 @@ export const STATUS_COLOR: Record<Status, string> = {
   static: "var(--system-blue)",
 };
 
+const RANK: Record<Status, number> = { live: 0, static: 1, stale: 2, offline: 3 };
+
+/** The least trustworthy of `items` (the first wins a tie); undefined when there are none. */
+export function worstOf<T extends { status: Status }>(items: readonly (T | undefined)[]): T | undefined {
+  return items.reduce<T | undefined>((w, x) => (x && (!w || RANK[x.status] > RANK[w.status]) ? x : w), undefined);
+}
+
 export type Age = { n: number; unit: "min" | "h" | "d" };
 
 /** Data age as whole minutes, hours or days (floored, at least 1 min); null when the timestamp does not parse. */
@@ -35,5 +42,18 @@ export function StatusBadge({ status, updatedAt }: { status: Status; updatedAt: 
       {/* Age depends on the clock, so server and client renders may differ by a minute. */}
       <span suppressHydrationWarning>{ago ? `${label} · ${t(`age.${ago.unit}`, { n: ago.n })}` : label}</span>
     </span>
+  );
+}
+
+/**
+ * The badge a Today card, widget or detail wears when its data is not live (stale → "Stale · 2 h", offline → "Demo data").
+ * Renders nothing for live data or no data. `updatedAt` is optional: without it a stale badge has no age.
+ */
+export function LayerBadge({ data, className }: { data?: { status: Status; updatedAt?: string }; className?: string }) {
+  if (!data || data.status === "live") return null;
+  return (
+    <div className={className}>
+      <StatusBadge status={data.status} updatedAt={data.updatedAt ?? ""} />
+    </div>
   );
 }

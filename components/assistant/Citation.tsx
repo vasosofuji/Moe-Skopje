@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { StatusBadge } from "@/components/glass/StatusBadge";
-import { isLayerId, LAYERS, type LayerId } from "@/lib/layers";
+import { HIDDEN_LAYERS, isLayerId, LAYERS, type LayerId } from "@/lib/layers";
 import type { Status } from "@/lib/sources/types";
 
 /** A feature an assistant answer used. The server appends them as `\n[[cite:<json Citation[]>]]`. */
@@ -27,7 +27,7 @@ function isCitation(v: unknown): v is Citation {
   const c = v as Record<string, unknown> | null;
   return (
     typeof c === "object" && c !== null &&
-    isLayerId(c.layer) && str(c.featureId) && num(c.lng) && num(c.lat) && str(c.source) && num(c.ageMin) && str(c.title) &&
+    isLayerId(c.layer) && !HIDDEN_LAYERS.includes(c.layer) && str(c.featureId) && num(c.lng) && num(c.lat) && str(c.source) && num(c.ageMin) && str(c.title) &&
     STATUSES.includes(c.status as string)
   );
 }

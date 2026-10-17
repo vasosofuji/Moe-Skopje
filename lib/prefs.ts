@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import type { Lang } from "@/lib/i18n/core";
-import { isLayerId, type LayerId } from "@/lib/layers";
+import { HIDDEN_LAYERS, isLayerId, type LayerId } from "@/lib/layers";
 
 export type Prefs = {
   lang: Lang;
@@ -13,7 +13,7 @@ export type Prefs = {
 export const DEFAULT_PREFS: Prefs = {
   lang: "mk",
   theme: "system",
-  layers: ["air", "outages-power", "buses"],
+  layers: ["air", "outages-water", "buses"],
   onboarded: false,
 };
 
@@ -29,14 +29,14 @@ const StoredPrefs = z.object({
 
 const defaults = (): Prefs => ({ ...DEFAULT_PREFS, layers: [...DEFAULT_PREFS.layers] });
 
-/** Reads prefs from `storage` (default localStorage). Any problem yields the defaults; unknown layer ids are dropped. */
+/** Reads prefs from `storage` (default localStorage). Any problem yields the defaults; unknown and hidden layer ids are dropped. */
 export function loadPrefs(storage?: Storage): Prefs {
   try {
     const raw = (storage ?? localStorage).getItem(PREFS_KEY);
     if (raw === null) return defaults();
     const parsed = StoredPrefs.safeParse(JSON.parse(raw));
     if (!parsed.success) return defaults();
-    return { ...parsed.data, layers: parsed.data.layers.filter(isLayerId) };
+    return { ...parsed.data, layers: parsed.data.layers.filter((id): id is LayerId => isLayerId(id) && !HIDDEN_LAYERS.includes(id)) };
   } catch {
     return defaults();
   }

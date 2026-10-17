@@ -261,4 +261,6 @@ export const en: Dict = {
   "buses.tracking": "Following a bus",
   "buses.locating": "Finding the bus…",
   "buses.stopTracking": "Stop following",
+  // --- final fixes UI ---
+  "outages.activeNow": "Under way now: {n}",
 };

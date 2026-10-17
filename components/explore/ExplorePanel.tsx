@@ -6,6 +6,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { LineBadge, tidyName, useDepartures } from "@/components/map/BusDepartures";
 import { CENTER, useMap, type LngLat } from "@/components/map/MapView";
 import { featureCenter } from "@/components/map/renderLayer";
+import { LayerBadge, worstOf } from "@/components/glass/StatusBadge";
 import { AQI_COLORS, aqiColor, aqiPosition, pm10Severity } from "@/lib/aqi";
 import { cx, focusRing } from "@/lib/cx";
 import { pick, useT, type Dict } from "@/lib/i18n";
@@ -42,11 +43,12 @@ export function condition(code: number): keyof Dict {
 
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
-/** A "Today" tile. With `onOpen` a button stretched over the whole tile opens more. */
+/** A "Today" tile. With `onOpen` a button stretched over the whole tile opens more; `data` is its layer, badged when not live. */
 function Card({
   id,
   title,
   loading,
+  data,
   onOpen,
   openLabel,
   children,
@@ -54,6 +56,7 @@ function Card({
   id: LayerId;
   title: string;
   loading: boolean;
+  data?: LayerResponse;
   onOpen?(): void;
   openLabel?: string;
   children: ReactNode;
@@ -87,7 +90,10 @@ function Card({
             <span className="skeleton mt-1 h-3.5 w-24" />
           </>
         ) : (
-          children
+          <>
+            {children}
+            <LayerBadge data={data} className="mt-1.5" />
+          </>
         )}
       </div>
     </section>
@@ -134,7 +140,7 @@ function AirCard({ onOpen }: { onOpen(): void }) {
   const { data, loading } = useLayer("air", true);
   const city = data ? cityPm10(stationsOf(data)) : null;
   return (
-    <Card id="air" title={t("explore.airNow")} loading={loading} onOpen={onOpen} openLabel={t("air.details")}>
+    <Card id="air" title={t("explore.airNow")} loading={loading} data={data} onOpen={onOpen} openLabel={t("air.details")}>
       {city !== null ? (
         <>
           <Big value={city} unit="µg/m³" />
@@ -157,7 +163,7 @@ function WeatherCard() {
   const now = featuresOf(data).find((f) => typeof f.properties.value === "number");
   const code = now?.properties.detail?.weatherCode;
   return (
-    <Card id="weather" title={t("explore.weather")} loading={loading}>
+    <Card id="weather" title={t("explore.weather")} loading={loading} data={data}>
       {now ? (
         <>
           <Big value={`${Math.round(now.properties.value!)}°`} />
@@ -170,13 +176,15 @@ function WeatherCard() {
   );
 }
 
-/** "Good to go out?" from the same city PM10 as the air tile and the current weather. */
+/** "Good to go out?" from the same city PM10 as the air tile and the current weather; badged with the worse of the two layers. */
 function GoOut() {
   const air = useLayer("air", true).data;
-  const weather = featuresOf(useLayer("weather", true).data).find((f) => typeof f.properties.value === "number");
+  const weatherData = useLayer("weather", true).data;
+  const weather = featuresOf(weatherData).find((f) => typeof f.properties.value === "number");
   const precip = weather?.properties.detail?.precipitation;
   return (
     <GoOutCard
+      source={worstOf([air, weatherData])}
       pm10={air ? cityPm10(stationsOf(air)) : null}
       tempC={weather?.properties.value ?? null}
       precipMm={typeof precip === "number" ? precip : null}
@@ -206,6 +214,7 @@ function BusCard() {
       id="buses"
       title={t("explore.nextBus")}
       loading={loading || (typeof stopId === "string" && list === undefined)}
+      data={data}
       onOpen={
         nearest &&
         (() => {
@@ -252,6 +261,7 @@ function AirView({ onBack }: { onBack(): void }) {
         {t("common.back")}
       </button>
       <h2 className="t-large-title px-1">{t("layer.air")}</h2>
+      <LayerBadge data={data} className="px-1" />
       {data ? (
         <AirDetail data={data} />
       ) : loading ? (

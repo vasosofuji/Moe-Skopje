@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { toggleLayer } from "@/components/onboarding/LayerGrid";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Dict, type Lang } from "@/lib/i18n";
-import { isLayerId, LAYERS, type LayerId } from "@/lib/layers";
+import { HIDDEN_LAYERS, isLayerId, LAYERS, type LayerId } from "@/lib/layers";
 import { usePrefs, type Prefs } from "@/lib/prefs";
 import { version } from "@/package.json";
 import { DataHealth, statusSummary, useHealth, type HealthRow } from "./DataHealth";
@@ -16,7 +16,7 @@ const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const LANGS: Lang[] = ["mk", "en"];
 
 // Category order and members. Ids missing from LAYERS drop out, so roadworks shows up once it exists;
-// waste and reports are deliberately not listed (spec §11).
+// HIDDEN_LAYERS (waste) are never listed (spec §11).
 const GROUPS: { key: keyof Dict; ids: string[] }[] = [
   { key: "settings.group.environment", ids: ["air", "weather", "earthquakes"] },
   { key: "settings.group.utilities", ids: ["outages-power", "outages-water", "outages-heating"] },
@@ -25,7 +25,7 @@ const GROUPS: { key: keyof Dict; ids: string[] }[] = [
 ];
 
 /** Layers offered in Settings, by category; empty categories are dropped. */
-export const LAYER_GROUPS: { key: keyof Dict; ids: LayerId[] }[] = GROUPS.map((g) => ({ ...g, ids: g.ids.filter(isLayerId) })).filter(
+export const LAYER_GROUPS: { key: keyof Dict; ids: LayerId[] }[] = GROUPS.map((g) => ({ ...g, ids: g.ids.filter((id): id is LayerId => isLayerId(id) && !HIDDEN_LAYERS.includes(id)) })).filter(
   (g) => g.ids.length > 0,
 );
 const LISTED = LAYER_GROUPS.flatMap((g) => g.ids);

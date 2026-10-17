@@ -261,4 +261,6 @@ export const mk = {
   "buses.tracking": "Следење автобус",
   "buses.locating": "Го бараме автобусот…",
   "buses.stopTracking": "Престани со следење",
+  // --- final fixes UI ---
+  "outages.activeNow": "Во тек сега: {n}",
 };
