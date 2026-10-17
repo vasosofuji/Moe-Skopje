@@ -1,0 +1,158 @@
+[
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        21.227,
+        41.435
+      ]
+    },
+    "properties": {
+      "id": "quake-20261017_0000107",
+      "kind": "earthquake",
+      "title": {
+        "mk": "М 2.5 · Северна Македонија",
+        "en": "M 2.5 · North Macedonia"
+      },
+      "severity": 0,
+      "value": 2.5,
+      "unit": "M",
+      "startsAt": "2026-10-17T08:15:36.3Z",
+      "detail": {
+        "depthKm": 15,
+        "magType": "ml"
+      }
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        20.12,
+        41.107
+      ]
+    },
+    "properties": {
+      "id": "quake-20261017_0000088",
+      "kind": "earthquake",
+      "title": {
+        "mk": "М 2.2 · Албанија",
+        "en": "M 2.2 · Albania"
+      },
+      "severity": 0,
+      "value": 2.2,
+      "unit": "M",
+      "startsAt": "2026-10-17T07:01:06.3Z",
+      "detail": {
+        "depthKm": 15,
+        "magType": "ml"
+      }
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        20.197,
+        41.149
+      ]
+    },
+    "properties": {
+      "id": "quake-20261017_0000027",
+      "kind": "earthquake",
+      "title": {
+        "mk": "М 2.3 · Албанија",
+        "en": "M 2.3 · Albania"
+      },
+      "severity": 0,
+      "value": 2.3,
+      "unit": "M",
+      "startsAt": "2026-10-17T03:00:00.3Z",
+      "detail": {
+        "depthKm": 15,
+        "magType": "ml"
+      }
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        19.86,
+        41.659
+      ]
+    },
+    "properties": {
+      "id": "quake-20261016_0000229",
+      "kind": "earthquake",
+      "title": {
+        "mk": "М 2.0 · Албанија",
+        "en": "M 2.0 · Albania"
+      },
+      "severity": 0,
+      "value": 2,
+      "unit": "M",
+      "startsAt": "2026-10-16T17:50:33.9Z",
+      "detail": {
+        "depthKm": 15,
+        "magType": "ml"
+      }
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        20.613,
+        40.838
+      ]
+    },
+    "properties": {
+      "id": "quake-20261016_0000078",
+      "kind": "earthquake",
+      "title": {
+        "mk": "М 2.0 · Албанија",
+        "en": "M 2.0 · Albania"
+      },
+      "severity": 0,
+      "value": 2,
+      "unit": "M",
+      "startsAt": "2026-10-16T07:17:04.8Z",
+      "detail": {
+        "depthKm": 15,
+        "magType": "ml"
+      }
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        20.677,
+        40.818
+      ]
+    },
+    "properties": {
+      "id": "quake-20261016_0000065",
+      "kind": "earthquake",
+      "title": {
+        "mk": "М 2.5 · Албанија",
+        "en": "M 2.5 · Albania"
+      },
+      "severity": 0,
+      "value": 2.5,
+      "unit": "M",
+      "startsAt": "2026-10-16T06:12:20.4Z",
+      "detail": {
+        "depthKm": 15,
+        "magType": "ml"
+      }
+    }
+  }
+]

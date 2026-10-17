@@ -1,0 +1,13 @@
+import { NextResponse } from "next/server";
+import { fetchPm10Trend } from "@/lib/sources/air";
+
+/** GET /api/air-trend → number[]: daily city-wide PM10 averages for the last 7 days. 502 with [] when pulse.eco is unreachable (the sparkline just hides). */
+export async function GET() {
+  try {
+    return NextResponse.json(await fetchPm10Trend(), {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=36000" },
+    });
+  } catch {
+    return NextResponse.json([], { status: 502 });
+  }
+}

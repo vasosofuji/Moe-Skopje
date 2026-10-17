@@ -1,0 +1,31 @@
+[
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        21.4254,
+        41.9981
+      ]
+    },
+    "properties": {
+      "id": "weather-skopje",
+      "kind": "weather",
+      "title": {
+        "mk": "Време во Скопје",
+        "en": "Weather in Skopje"
+      },
+      "value": 15,
+      "unit": "°C",
+      "detail": {
+        "temperature": 15,
+        "apparent": 12.6,
+        "precipitation": 0,
+        "weatherCode": 3,
+        "wind": 5.6,
+        "hourly": "[5.9,6.1,6,5.6,5.1,4.6,4.2,4,5.2,8.9,11.9,13.4,14.5,15.1,15.6,15.7,15.3,14.7,13.5,12.3,11.4,10.4,9.2,9]",
+        "hourlyPrecip": "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]"
+      }
+    }
+  }
+]
