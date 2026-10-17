@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The adapters read data/static and data/seed at runtime through fixed paths; make sure every API route ships them.
+  outputFileTracingIncludes: { "/api/**": ["./data/**"] },
   turbopack: {
     rules: {
       "*.css": {

@@ -7,7 +7,15 @@ import { loadSeed } from "./seed";
 import type { Adapter, Feature } from "./types";
 
 const OSM = { name: "OpenStreetMap", url: "https://www.openstreetmap.org/" };
-const dataDir = () => join(process.cwd(), "data", "static");
+
+// Next traces the files a route reads by looking at the path expression at the read site. A directory held in a variable
+// makes it trace the whole project, so the production read below spells the path out: process.cwd(), "data", "static", file.
+// Tests redirect reads by swapping the whole reader (setStaticReader), never by passing a directory in.
+type Reader = (file: string) => Promise<string>;
+const readBaked: Reader = (file) => readFile(join(process.cwd(), "data", "static", file), "utf8");
+let read: Reader = readBaked;
+/** Test hook: serve the data/static files from somewhere else. Call without an argument to restore the baked files. */
+export const setStaticReader = (reader: Reader = readBaked) => void (read = reader);
 
 // Macedonian Cyrillic → Latin, used for `title.en` when OSM has no `name:en`.
 const LATIN: Record<string, string> = {
@@ -39,8 +47,6 @@ export type StaticOptions = {
   /** Property holding the Macedonian title. Default "name"; `name_en` is the English one when titleFrom is "name". */
   titleFrom?: string;
   source?: Adapter["source"];
-  /** Directory of the GeoJSON files (tests). Default data/static. */
-  dir?: string;
 };
 
 /** One baked OSM feature → adapter Feature. Unused string/number properties become `detail`. */
@@ -71,7 +77,7 @@ export function staticAdapter(id: LayerId, file: string, kind: string, opts: Sta
     minFeatures: 1,
     source: opts.source ?? OSM,
     async fetch() {
-      const fc = JSON.parse(await readFile(join(opts.dir ?? dataDir(), file), "utf8")) as GeoJSON.FeatureCollection;
+      const fc = JSON.parse(await read(file)) as GeoJSON.FeatureCollection;
       return fc.features.map((f) => toFeature(f, kind, opts.titleFrom));
     },
     seed: () => loadSeed(id),
@@ -94,7 +100,7 @@ let municipalitiesCache: Promise<MunicipalityCollection> | undefined;
 
 /** The 10 Skopje municipality polygons from data/static/municipalities.geojson (spec §5.3). Memoised. */
 export function municipalities(): Promise<MunicipalityCollection> {
-  municipalitiesCache ??= readFile(join(dataDir(), "municipalities.geojson"), "utf8")
+  municipalitiesCache ??= read("municipalities.geojson")
     .then((s) => JSON.parse(s) as MunicipalityCollection)
     .catch((err) => {
       municipalitiesCache = undefined; // don't cache a failure
