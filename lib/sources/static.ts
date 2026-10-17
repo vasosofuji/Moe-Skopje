@@ -102,3 +102,38 @@ export function municipalities(): Promise<MunicipalityCollection> {
     });
   return municipalitiesCache;
 }
+
+type Ring = number[][];
+const inRing = (ring: Ring, x: number, y: number) => {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
+const polygons = (g: GeoJSON.Polygon | GeoJSON.MultiPolygon) => (g.type === "Polygon" ? [g.coordinates] : g.coordinates);
+
+/** name_mk of the municipality containing the point, if any. */
+export function municipalityAt(munis: MunicipalityCollection, lng: number, lat: number): string | undefined {
+  return munis.features.find((m) =>
+    polygons(m.geometry).some(([outer, ...holes]) => inRing(outer, lng, lat) && !holes.some((h) => inRing(h, lng, lat))),
+  )?.properties.name_mk;
+}
+
+/** Area centroid of a municipality's largest polygon outer ring, as [lng, lat]. */
+export function centroid(g: GeoJSON.Polygon | GeoJSON.MultiPolygon): [number, number] {
+  const area = (r: Ring) => r.reduce((s, [x, y], i) => s + (x * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * y), 0) / 2;
+  const ring = polygons(g).map(([outer]) => outer).sort((a, b) => Math.abs(area(b)) - Math.abs(area(a)))[0];
+  const a = area(ring);
+  let cx = 0;
+  let cy = 0;
+  ring.forEach(([x, y], i) => {
+    const [x2, y2] = ring[(i + 1) % ring.length];
+    const f = x * y2 - x2 * y;
+    cx += (x + x2) * f;
+    cy += (y + y2) * f;
+  });
+  return [cx / (6 * a), cy / (6 * a)];
+}

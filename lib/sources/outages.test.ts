@@ -59,7 +59,7 @@ test("vodovod announcements (real excerpt) become municipality outages from toda
 
 test("adapters: power ttl 900 minFeatures 0, water and heating ttl 1800, seeds are valid outage polygons", async () => {
   expect(outages["outages-power"]).toMatchObject({ id: "outages-power", ttl: 900, minFeatures: 0 });
-  expect(outages["outages-water"].ttl).toBe(1800);
+  expect(outages["outages-water"]).toMatchObject({ ttl: 1800, minFeatures: 1 }); // nothing mapped counts as a failed fetch -> seed
   expect(outages["outages-heating"].ttl).toBe(1800);
   for (const a of Object.values(outages)) {
     const seed = await a.seed();

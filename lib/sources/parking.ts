@@ -1,28 +1,10 @@
 // Baked OSM parking plus the City Parking zone price (data/seed/parking-zones.json). No lib/server imports (tsx).
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { municipalities, staticAdapter, type MunicipalityCollection } from "./static";
+import { municipalities, municipalityAt, staticAdapter } from "./static";
 import type { Adapter, Feature } from "./types";
 
 type Zones = { zones: { zone: string; pricePerHour: number; municipalities: string[] }[] };
-
-type Ring = number[][];
-const inRing = (ring: Ring, x: number, y: number) => {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
-};
-const contains = (g: GeoJSON.Polygon | GeoJSON.MultiPolygon, x: number, y: number) =>
-  (g.type === "Polygon" ? [g.coordinates] : g.coordinates).some(([outer, ...holes]) => inRing(outer, x, y) && !holes.some((h) => inRing(h, x, y)));
-
-/** name_mk of the municipality containing the point, if any. */
-export function municipalityAt(munis: MunicipalityCollection, lng: number, lat: number): string | undefined {
-  return munis.features.find((m) => contains(m.geometry, lng, lat))?.properties.name_mk;
-}
 
 const PAID_ELSEWHERE = new Set(["private", "customers", "delivery", "no"]);
 
