@@ -142,4 +142,9 @@ export const en: Dict = {
   "air.stations": "Stations ({n})",
   "air.official": "Official",
   "air.trend": "PM10, last 7 days (daily average)",
+
+  // --- Task 12: assistant ---
+  "assistant.intro": "Ask me about the air, outages, buses or pharmacies. I answer from the city's live data.",
+  "assistant.typing": "The assistant is typing…",
+  "assistant.error": "The assistant couldn't answer. Please try again.",
 };

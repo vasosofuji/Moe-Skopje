@@ -23,7 +23,7 @@ export function normalizeName(s: string): string {
 }
 
 // Lossy fold so "Cair", "Čair" and "Чаир" meet, and "Gjorce" meets "Ѓорче". Safe: only 10 names to tell apart.
-const fold = (s: string) => s.replace(/ч/g, "ц").replace(/ш/g, "с").replace(/ж/g, "з").replace(/ѓ/g, "г").replace(/ќ/g, "к").replace(/ѕ/g, "з");
+export const fold =(s: string) => s.replace(/ч/g, "ц").replace(/ш/g, "с").replace(/ж/g, "з").replace(/ѓ/g, "г").replace(/ќ/g, "к").replace(/ѕ/g, "з");
 const words = (s: string) => ` ${fold(normalizeName(s)).split(/[^\p{L}]+/u).filter(Boolean).join(" ")} `;
 const KEYS = MUNICIPALITIES.map((name) => ({ name, key: words(name) }));
 
