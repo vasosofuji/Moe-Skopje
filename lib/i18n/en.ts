@@ -142,4 +142,11 @@ export const en: Dict = {
   "air.stations": "Stations ({n})",
   "air.official": "Official",
   "air.trend": "PM10, last 7 days (daily average)",
+
+  // --- Task 9: buses ---
+  "buses.next": "Next departures",
+  "buses.line": "Line {line}",
+  "buses.none": "No more departures today.",
+  "buses.noTimetable": "No timetable for the lines at this stop.",
+  "buses.approximate": "Approximate timetable, not official.",
 };
