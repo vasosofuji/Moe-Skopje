@@ -1,4 +1,4 @@
-# andrejcontext.md — Мое Скопје running project history
+# sourcefindings.md — Мое Скопје source findings and project history
 
 Repository: https://github.com/vasosofuji/Moe-Skopje
 
@@ -9,6 +9,8 @@ Product timezone: **Europe/Skopje**
 Product name: **Мое Скопје / Moe Skopje**
 
 This file preserves project conversations, decisions, research, and subsequent work. Read the dated entries as history. A later explicit correction can supersede an earlier statement without erasing it. The supplied original context and the complete source-registry snapshot are archived below so the handoff does not depend on the original ChatGPT session.
+
+Current repository location: **docs/sourcefindings.md**. The latest full audit is appended under **2026-10-17 — Complete audit of all 91 sources**: **31 dated current/future sources, 7 standing-information sources, 15 monitoring targets, 18 without applicable content, and 20 unresolved entries**. Earlier sections are historical snapshots.
 
 ### Reading guide
 
@@ -3682,3 +3684,172 @@ User instruction:
 Checked the available session capabilities, including a fresh capability inventory: no direct action for moving this conversation into Codex is exposed, and the local `codex` executable is absent. The controllable browser inventory contains only a blank browser tab and no native application surface for switching the current ChatGPT view. No Codex session was created or moved by this check.
 
 The prepared `andrejcontext.md` remains the complete handoff file. Its existing GitHub publication blocker remains unresolved; no new repository-write attempt was made without an access change. Continue through the application's Codex selector or a Codex workspace, explicitly reading this file and preserving its history.
+
+## 2026-10-17 — Complete audit of all 91 sources
+
+Review date: **17 October 2026**, using **Europe/Skopje** day boundaries. Review began at 12:59; classification was completed at approximately 13:12.
+
+### Answer
+
+**31 of 91 registry entries have confirmed, extractable information with dates applying now or in the future.** Another **7 provide useful standing service information**, such as published visiting hours or an ongoing route description, but lack equivalent confirmation of a current dated event. This gives **38 entries with usable planning material**, with the two groups kept separate in the product.
+
+| Audit result | Entries | Meaning |
+| --- | ---: | --- |
+| A — Current/future content confirmed | 31 | A dated forecast, measurement, current-day report, applicable timetable/season, continuing advisory, open deadline or future event was actually read. |
+| B — Standing information only | 7 | Published recurring hours, routes or continuing service guidance can support planning, subject to exceptions and freshness checks. |
+| M — Monitor for new notices | 15 | A useful publishing channel was read, but an applicable current/future item was not established. Includes a working warning feed with zero entries. |
+| D — No applicable content established | 18 | Reviewed material was old, retrospective, a directory, a placeholder or otherwise unsuitable for the requested daily content. |
+| U — Unresolved | 20 | Retrieval, dynamic data, document parsing or effective dates remain unresolved. These sources may have useful information; they are excluded from the confirmed count. |
+| **Total** | **91** | Every registry ID appears once in the audit table below. |
+
+The 31 confirmed entries consist of **19 HTML sources, 3 JSON sources, 5 PDF sources, 3 sources requiring image extraction/OCR, and 1 XLSX source**. HTML includes public calendar JSON embedded in the page, as seen on MNT. Opera also exposes an iCalendar alternative. All seven standing-information entries are HTML.
+
+These are counts of the registry's publisher/service/channel entries. They are not counts of unique legal organizations or independent events. For example, the two railway publishers can describe the same underlying train service. Deduplicate events while preserving their provenance.
+
+### Scope and counting method
+
+- Checked the listed landing page for every one of the 91 entries. Followed relevant recent notices, public-call indexes, calendars and selected linked documents. Used the browser reader, ordinary unauthenticated HTTP GETs, JSON/XML parsing, spreadsheet extraction, PDF text extraction and visual inspection of schedule images.
+- A source qualified for A only when the actual content supplied evidence of present or future applicability. A recent publication date, a current-year footer, a date-picker value, a search result or the label “upcoming” was insufficient.
+- The future horizon is unrestricted. The Archaeological Museum's conference in October 2027 is included, but belongs in optional long-range planning rather than tomorrow's main briefing.
+- B represents the publisher's currently displayed baseline. It does not certify actual opening, a live vehicle, a resolved outage or the present legal status of third-party rules.
+- M and D describe the reviewed material, not permanent judgments about the publisher. This was a bounded review of each entry, not an exhaustive crawl of every archive, language variant or social-media account.
+- A browser-reader failure was checked against a direct request for selected blocked or dynamic sources. Access failures are observations in this environment. A readable app shell is not proof that its data can already be collected.
+- This session audited sources and updated documentation. The original registry remains a preserved research snapshot, and its `adapter_implemented: false` values still accurately reflect that no production adapters were built.
+
+### Corrections and important discoveries
+
+1. **The previous seven-site answer was a sample, superseded by this full audit.** In particular, Boris Trajkovski's old pool notices coexist with an up-to-date events list, including an event on 17 October and later October–December dates.
+2. **FZO is now verified beyond its index.** A normal direct request downloaded the [October 2026 duty-pharmacy workbook](https://fzo.org.mk/sites/default/files/fzo/apteki/dezurni/261007-raspored-dezurni-apteki-10.2026.xlsx). Read-only extraction of `Sheet1!A1:F8` identified the month, headers and five Skopje pharmacy rows. Each specifies 1–31 October and a published 24/7 arrangement. Count the published duty schedule, not medicine stocks or independently observed opening.
+3. **pulse.eco returned current data without authentication in this audit.** [The public current-data request](https://skopje.pulse.eco/rest/current) returned HTTP 200 and 256 records, with timestamps from 09:30 to 11:04:12 UTC on 17 October. This adds actual public-request evidence to the earlier documentation-only access finding. One successful unauthenticated request does not establish a guaranteed production access policy; retain provider documentation, fair-use requirements and sensor-quality distinctions.
+4. **UХМР, MNT and railway sources were readable through direct requests.** UХМР supplied forecasts dated 17–21 October. MNT's HTML contained public calendar JSON for 17, 19, 20 and 21 October at 20:00. The infrastructure timetable PDF contained actual train rows and an explicit 15 October–12 December validity interval.
+5. **Read attachments and effective dates.** The Koco Racin poetry notice is a scan with a 22 October deadline; its separate October workshop poster was for 3 October. Kisela Voda's Kinenova programme images include 17 October screenings. Comedy Theatre's November poster has actual performance dates and times. A generic month title alone would have missed these differences.
+6. **Match the venue.** National Gallery's newest Basheski item is about Belgrade. A separate local exhibition, Presek at Chifte Amam, explicitly runs through 22 October and qualifies.
+7. **Retain source inconsistencies.** Centar's mural call contains a 2025/2026 copy inconsistency. Suto Orizari's job call combines an eight-day phrase with an explicit 19 October date. The rail operator's current timetable page retains older 2024/25 notes. These require field-level review rather than silent correction.
+
+### Direct request and attachment evidence
+
+| Source | Observed result on 17 October 2026 | Evidence locator |
+| --- | --- | --- |
+| Open-Meteo | HTTP 200 JSON; daily dates 17, 18 and 19 October; timezone Europe/Skopje. | [Actual request](https://api.open-meteo.com/v1/forecast?latitude=41.9981&longitude=21.4254&daily=temperature_2m_max&forecast_days=3&timezone=Europe%2FSkopje) |
+| Meteoalarm | HTTP 200 Atom; parsed update 10:35:04 UTC; zero warning entries. M, not an active-warning claim. | [Country feed](https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-republic-of-north-macedonia) |
+| pulse.eco | HTTP 200 JSON; 256 sensor records; current-day timestamps. | [Current records](https://skopje.pulse.eco/rest/current) |
+| EMSC | HTTP 200 JSON; regional query includes a North Macedonia event at 08:15:36.3 UTC on 17 October. | [Geographic query](https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=3&orderby=time&minlatitude=40.8&maxlatitude=42.5&minlongitude=20.4&maxlongitude=23.1) |
+| FZO | Workbook opened read-only: 1 sheet, 567 rows, 13 columns; Skopje records in rows 4–8 with month-long validity. | [Workbook](https://fzo.org.mk/sites/default/files/fzo/apteki/dezurni/261007-raspored-dezurni-apteki-10.2026.xlsx), Sheet1 A1:F8 |
+| Rail infrastructure | Downloaded two-page PDF; text contains validity 15.10.2026–12.12.2026 and arrivals/departures rows. | [File landing page](https://mzi.mk/download/извод-од-возен-ред-15-10-2026/); follow its actual Download Manager file request. |
+| MNT | HTTP 200 HTML; embedded dated calendar records include future events. | [Homepage](https://mnt.mk/) and its public calendar JSON |
+| Koco Racin | Competition image visually inspected; deadline is 22.10.2026. | [Announcement](https://dk-kocoracin.org.mk/content/?id=1061), [notice image](https://dk-kocoracin.org.mk/images/600/?img=807284833_1723153209815807_6761067247470976450_n.jpg) |
+| Kisela Voda | Programme's fourth image visually inspected; 17 October screenings at named local venues. | [Programme page](https://opstinakiselavoda.gov.mk/меѓународен-филмски-фестивал-кинен/), fourth programme image |
+| Comedy Theatre | November 2026 poster visually inspected; dated performances with times. | [November repertoire image](https://teatarkomedija.mk/wp-content/uploads/2026/09/Ноември-26_web-vertical.jpg) |
+| Ministry of Education | 2026/27 primary-school calendar PDF read, including future term and break dates. | [Calendar PDF](https://portal.mdt.gov.mk/post-body-files/kalendari-file-69JQ.pdf) |
+
+### All 91 entries — audit decisions
+
+Links point to the reviewed evidence or the attempted source when access was unresolved. Organization identities and the original full source records remain in the earlier inventory and Appendix B.
+
+| # | Registry ID / evidence | Result | Extraction | Finding |
+| ---: | --- | :---: | --- | --- |
+| 1 | [`electricity_distribution`](https://elektrodistribucija.mk/Grid/OutagesMap.aspx) | U | HTML / dynamic | Headings and region selector load, including with a direct HTTP 200 GET, but no dated outage rows were obtained. Public data request remains unresolved. |
+| 2 | [`evn_customer`](https://www.evn.mk/) | D | HTML | Customer-service, billing and contact pages are readable. Planned disconnections link to Elektrodistribucija; no separate applicable notice established. |
+| 3 | [`water_skopje`](https://vodovod-skopje.com.mk/mk-MK/article/INFORMACIIIZAPREKINNAVODOSNABDUVANjEIDEFEKTI_1) | M | HTML | Latest visible interruption is 15 Oct 2026, 11:15, Jane Sandanski. Unknown restoration time prevents treating it as an active 17 Oct outage. Strong monitoring target; historical reuse restriction remains. |
+| 4 | [`heat_distribution`](https://esm-distribucija.mk/izvestuvanja/) | M | HTML | 14 Oct 07:15 restoration update names four remaining affected addresses. Their status on 17 Oct is unconfirmed; retain source age and seek a later restoration update. |
+| 5 | [`heat_supply`](https://esm-snabduvanje.mk/) | A | HTML | Canonical linked site esm-snabduvanje.mk is readable. 12 Oct announcement starts the 2026/27 heating season on 13 Oct. Useful current season information; not proof of continuous supply at every address. |
+| 6 | [`heat_energetika`](https://www.esm.com.mk/?page_id=3582) | D | HTML | Parent branch description and corporate news load. No separately dated applicable consumer-service notice for this network established. |
+| 7 | [`heat_production`](https://www.esm.com.mk/?page_id=15363) | D | HTML | Parent company profile loads; linked production domain does not load through the reader. No distinct applicable consumer notice established. |
+| 8 | [`jsp`](https://skopjebus.mk/mk/izvestuvanja/) | B | HTML | Line 32 notice starts the Transport Centre–Ljubin route on 21 Sep; 9 Oct notice shortens line 55 to Arachinovo 5. Useful last-published standing route information; no live running confirmation or cancellation audit. |
+| 9 | [`streets_roads`](https://uip.gov.mk/) | M | HTML table | Latest daily work table and activity posts apply to 16 Oct, with earlier overnight work reports. Good frequent publisher; no 17 Oct or future work restriction confirmed. |
+| 10 | [`city_parking`](https://www.gradskiparking.com.mk/makedonski-ns_article-2026zimnorabotno_vreme.nspx) | A | HTML | 30 Sep announcement makes winter parking hours effective 1 Oct 2026 for the managed zones. Applicable seasonal service information; no occupancy data. |
+| 11 | [`poc`](https://poc.mk/) | B | HTML | 9 Oct notice makes 12 Oct free and explicitly resumes normal charging on 13 Oct. Useful standing charging context; the holiday exception itself has expired. |
+| 12 | [`waste_skopje`](https://www.khigiena.com.mk/) | U | HTML | Two fresh reader attempts timed out. Earlier session had readable HTML, but this audit did not obtain applicable current collection notices or an address calendar. |
+| 13 | [`parks`](https://parkovi.com.mk/) | M | HTML | Posts dated 16, 15 and 14 Oct describe maintenance and completed activity. No explicit current closure or upcoming public-service restriction established. |
+| 14 | [`drisla`](https://drisla.mk/tekovni-informaczii/) | D | HTML | Current-information archive shows institutional/retrospective material, including works completed in Aug 2025. No applicable household collection event or current restriction found. |
+| 15 | [`lajka`](https://lajka.com.mk/) | D | HTML | Adoption listings and reporting/volunteering links load, but listings lack validated currency and no dated current or future event was established. |
+| 16 | [`water_gazi_baba`](https://jkpgb2007.gov.mk/) | D | HTML | Homepage operational notice is dated 25 Sep 2025; June 2026 items are documents. Listed /novosti/ path returns 404. No applicable current interruption confirmed. |
+| 17 | [`jkp_butel`](https://opstinabutel.gov.mk/контакт-јкп-бутел/) | D | HTML | Municipal contact/directory page confirms the enterprise. No independent dated operational publisher established; do not count the municipality twice. |
+| 18 | [`jkp_kisela_voda`](https://opstinakiselavoda.gov.mk/нова-постојана-услуга-за-граѓаните-со/) | U | HTML | Supplied service-article route was checked, but applicable current article details and any dated collection programme could not be established. Historical pickup-by-request description needs reconfirmation. |
+| 19 | [`jkp_aerodrom`](https://aerodrom.gov.mk/) | D | Municipal HTML | Municipality homepage is reachable by a direct GET, but no separate enterprise operational notice was established. Shared URL is not an additional feed. |
+| 20 | [`jkp_saraj`](https://aspi.mk/imateli/30294/) | D | Directory | Official information-holder record was read. It does not supply a dated online service feed; municipal notices are a separate entry. |
+| 21 | [`shkupi_vjeter`](https://aspi.mk/imateli/30432/) | D | Directory | Official information-holder record was read. No independent applicable online operational notice established; do not double-count Cair municipality. |
+| 22 | [`rail_transport`](https://mzt.mk/poagane-od-skopje/) | A | HTML tables | Direct GET exposes a timetable explicitly valid 14 Dec 2025–12 Dec 2026 and train/station rows. Some notes still mention 2024/25; reconcile individual services against newer infrastructure notices before publication. |
+| 23 | [`rail_infrastructure`](https://mzi.mk/download/извод-од-возен-ред-15-10-2026/) | A | PDF | Downloaded and text-read the two-page Skopje arrivals/departures timetable, explicitly valid 15 Oct–12 Dec 2026. Contains actual train and time rows. Download Manager query requires following the real file link. |
+| 24 | [`amsm`](https://amsm.mk/sostojba-na-patishta/) | A | HTML | Daily national-road bulletin dated 17 Oct 2026 at 12:00, plus route restrictions. Filter to a person's journey; it is not street-level city traffic. |
+| 25 | [`state_roads`](https://roads.org.mk/odnosi-so-javnosta/izvestuvanja/) | U | HTML / attachments | Notices archive loads; latest item is a 5 Oct job announcement. Its applicable deadline was not extracted, and no applicable traffic restriction was established in the reviewed material. |
+| 26 | [`skopje_airport`](https://skp.airports.com.mk/en-EN/flights) | U | HTML / dynamic | Reader and direct GET load flight-page shells dated 17 Oct. Actual dated flight rows and their public request were not obtained; current date selector alone is insufficient. |
+| 27 | [`a1`](https://www.a1.mk/za-nas?_news_WAR_Newsroomportlet_category=218&_news_WAR_Newsroomportlet_jspPage=%2Fhtml%2Fa1%2Fnewsfrontend%2Fview.jsp&_news_WAR_Newsroomportlet_page=1&p_p_id=news_WAR_Newsroomportlet&p_p_lifecycle=0&p_p_mode=view&p_p_state=normal) | M | HTML | Service-announcement archive is readable, with Aug 2026 planned works and resolved/unexpected outages. Useful notice publisher to monitor, but no currently applicable Skopje item established. |
+| 28 | [`telekom`](https://www.telekom.mk/pres-centar) | U | HTML | Press-centre retrieval returned 502. No current operational outage content or validated alternative feed obtained. |
+| 29 | [`telekabel`](https://telekabel.com.mk/category/soopstenija/) | D | HTML | Announcements are readable, but visible latest material is a July 2026 promotion and older publicity. No applicable operational notice found. |
+| 30 | [`aek`](https://aek.mk/предлог-правилник-за-обезбедување-на/) | A | HTML | Public consultation published 5 Oct explicitly accepts comments through 20 Oct 2026. Useful optional civic/telecom deadline. The separate fixed-network interruption register remains unvalidated. |
+| 31 | [`city_skopje`](https://skopje.gov.mk/mk/apliciraj/javni-povici/) | A | HTML | Public-call index explicitly lists open deadlines of 22, 26 and 27 Oct and 30 Nov 2026, including student scholarships and craft subsidies. Filter eligibility and exclude archived calls. |
+| 32 | [`municipality_aerodrom`](https://aerodrom.gov.mk/) | M | HTML | Direct GET succeeds after reader 403. Latest visible items are a 9 Oct blood-donation report and 8 Oct road resurfacing. No future or still-open relevant item established. |
+| 33 | [`municipality_butel`](https://opstinabutel.gov.mk/) | B | HTML / PDF | Homepage publishes recurring mayor reception on Tuesdays 17:00–19:00. Sports funding call exists, but its scanned PDF deadline could not be validated. Count only the published recurring reception baseline. |
+| 34 | [`municipality_gazi_baba`](https://gazibaba.gov.mk/) | M | HTML / attachments | Direct GET succeeds after reader timeout. Latest land-disposal announcement is 24 Sep 2026; current deadline/auction attachment was not validated. Monitor calls; do not treat the listing date as validity. |
+| 35 | [`municipality_gjorce_petrov`](https://opstinagpetrov.gov.mk/) | M | HTML | News dated 15 and 13 Oct concerns international municipal activity. Reviewed public-call list contains older items without confirmed applicable deadlines. |
+| 36 | [`municipality_karpos`](https://karpos.gov.mk/покана-за-седница-на-совет-на-општина-53/) | A | HTML | 16 Oct council invitation explicitly schedules a meeting for 22 Oct 2026 at 10:00. Upcoming civic information is directly extractable. |
+| 37 | [`municipality_kisela_voda`](https://opstinakiselavoda.gov.mk/меѓународен-филмски-фестивал-кинен/) | A | HTML + images | 15 Oct Kinenova programme includes 17 Oct screenings, a 13:00–15:30 block and a 20:30 closing film. Programme image was visually read. Requires image extraction/OCR and venue matching. |
+| 38 | [`municipality_saraj`](https://saraj.gov.mk/?lang=mk) | U | HTML / PDF | Latest public-hearing page and linked draft report were identified, but the readable page lacks validated hearing dates/deadlines. No applicable event counted. |
+| 39 | [`municipality_centar`](https://www.centar.gov.mk/medija/soopshtenija-javen-povik/261013-javen-povik-za-crtane-na-murali-i-grafiti-na-javen-prostor) | A | HTML | Mural/graffiti call published 13 Oct accepts applications for five days from publication. It falls within the audit window; preserve the relative deadline wording and flag an internal 2025/2026 copy inconsistency. |
+| 40 | [`municipality_cair`](https://cair.gov.mk/?lang=mk) | U | HTML | Reader returned 502 and direct GET failed DNS resolution. No applicable source content obtained in this environment. |
+| 41 | [`municipality_suto_orizari`](https://sutoorizari.gov.mk/?p=6409) | A | HTML | Kindergarten job call published 9 Oct explicitly gives 19 Oct 2026 as its closing date. The sentence also says eight days; preserve both and flag the wording inconsistency. |
+| 42 | [`uhmr`](https://uhmr.gov.mk/) | A | HTML | Direct GET exposes forecasts for 17, 18, 19, 20 and 21 Oct 2026 and a weather outlook dated 17 Oct. Browser-reader 502 was not a source-wide access failure. |
+| 43 | [`meteoalarm_mk`](https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-republic-of-north-macedonia) | M | Atom/XML | Direct GET returned HTTP 200 and parsed feed updated 17 Oct 10:35 UTC with zero entries. Working warning channel to monitor; no active warning content confirmed and no all-clear inferred. |
+| 44 | [`air_moepp`](https://air.moepp.gov.mk/) | M | HTML / dynamic | Homepage/data-overview shells load. Readable daily report applies to 15 Oct 2026; current station rows/timestamps were not obtained. Historical measurements must retain their reporting period. |
+| 45 | [`seismology_skopje`](https://seismobsko.pmf.ukim.edu.mk/) | M | HTML | Latest visible felt-earthquake notice is 27 Sep 2026 and a 28 Sep anniversary post. Useful publisher to monitor, but no current-day local event established. |
+| 46 | [`pulse_eco`](https://skopje.pulse.eco/) | A | JSON | Unauthenticated direct GET to /rest/current returned HTTP 200 with 256 sensor records, timestamps 17 Oct 09:30–11:04:12 UTC. Corrects the earlier untested-access finding; one successful request does not settle production terms or guaranteed anonymous access. |
+| 47 | [`open_meteo`](https://open-meteo.com/en/docs) | A | JSON | Direct forecast request returned HTTP 200 and Europe/Skopje daily dates 17–19 Oct 2026. Free hosted tier remains noncommercial; attribution and provider terms apply. |
+| 48 | [`emsc`](https://www.seismicportal.eu/fdsn-wsevent.html) | A | JSON | Direct event request returned current-day global events; a North Macedonia-region bounding-box request also returned an event dated 17 Oct 08:15:36.3 UTC. Region includes neighboring areas; filter actual coordinates, and do not present earthquakes as forecasts. |
+| 49 | [`cuk`](https://cuk.gov.mk/) | U | HTML | Portal loads, but reviewed news is administrative and current operational bulletin coverage remains unconfirmed. Header date/weather and an empty alert area do not prove current crisis status. |
+| 50 | [`mvr`](https://mvr.gov.mk/mk-MK/odnosi-so-javnost/novosti) | M | HTML | 17 Oct news posts are current but mainly retrospective arrests and enforcement reports. No applicable future Skopje restriction or actionable service notice was established in the reviewed list. |
+| 51 | [`fzo_pharmacies`](https://fzo.org.mk/sites/default/files/fzo/apteki/dezurni/261007-raspored-dezurni-apteki-10.2026.xlsx) | A | XLSX | Direct GET reached the index and downloaded its October 2026 workbook. Sheet1 A1:F8 contains five Skopje pharmacy rows with explicit 1–31 Oct dates and published 24/7 arrangements. Corrects the earlier inaccessible-schedule finding; not medicine-stock or real-time opening proof. |
+| 52 | [`iph`](https://iph.mk/mk/news/index/1836) | A | HTML | 14 Oct public-health advisory describes a temporary BCG service change and continuing guidance pending further official updates. Useful current advisory as published; retain its date and check superseding notices. |
+| 53 | [`iph_healthalert`](https://healthalert.mk/) | U | JavaScript app | Direct GET returns HTTP 200 with a 625-character app shell, but no dated operational map data. Reader returned no content. |
+| 54 | [`cph_skopje`](https://cph.mk/) | D | HTML | Homepage remains a Coming Soon placeholder. No current public programme or service-status publication found. |
+| 55 | [`zds`](https://zds.mk/) | U | HTML | Homepage/direct GET and emergency-service route fail with timeout/503. No current duty rota obtained. |
+| 56 | [`moj_termin`](https://mojtermin.mk/map/ustanovi) | U | JavaScript app | Institution-map direct GET returns a small app shell; no current appointment availability or dated operational schedule obtained. Directory identity alone is insufficient. |
+| 57 | [`ahv`](https://fva.gov.mk/mk/izvestuvanje-otpovikuvanje-nebezbedni-proizvodi?page=0) | M | HTML | Homepage has 15 Oct food-seizure and 14 Oct educational reports. Recall index's latest visible notice is 9 Jan 2026. No still-applicable recall or future local event validated in this audit. |
+| 58 | [`mon`](https://portal.mdt.gov.mk/post-body-files/kalendari-file-69JQ.pdf) | A | PDF | 2026/27 primary-school calendar PDF was read. School year runs 1 Sep 2026–31 Aug 2027, with future term and holiday dates. School-specific exceptions require separate notices. |
+| 59 | [`holidays`](https://www.economy.gov.mk/build/assets/programa-nerabotni-denovi-2026-MHaAbYyO.pdf) | A | PDF | Official 2026 nonworking-day programme includes upcoming 23 Oct and 8 Dec dates, plus community-specific holidays. Preserve applicable community and manually validate calendar exceptions. |
+| 60 | [`ujp`](https://www.ujp.gov.mk/mk/kalendar/pregled/mesec?print=1) | A | HTML calendar | October calendar contains an upcoming VAT obligation listed for 25 Oct, and explicitly states weekend/holiday adjustment rules. Apply taxpayer eligibility and those rules before producing a reminder. |
+| 61 | [`uslugi`](https://uslugi.gov.mk/) | D | HTML catalogue | Public service catalogue and retrospective service-centre news load. Useful link-out directory, but no applicable dated daily status/deadline was established. |
+| 62 | [`posta`](https://www.posta.com.mk/) | B | HTML | 24 Sep shipment-acceptance notice publishes continuing instructions for parcels to the USA. Useful last-published service guidance, not a fresh disruption or independently verified customs ruling. Old branch-hours document is not assumed current. |
+| 63 | [`city_culture`](https://kultura.skopje.gov.mk/) | D | HTML | Visible event posts include March and January 2026. Institution discovery is useful, but no applicable current or future event established. |
+| 64 | [`mkc`](https://mkc.mk/) | U | HTML | MKC reader request returned 502 and direct GET failed TLS. Listed Kino Milenium alternative was also inaccessible through the reader. No own-site applicable programme obtained. |
+| 65 | [`universal_hall`](https://www.univerzalna.com.mk/) | D | HTML | Direct GET succeeds, but page is a navigation/contact shell with an old 2023 festival link. No current event dates or evidence the hall itself is open. |
+| 66 | [`zoo`](https://zooskopje.com.mk/) | B | HTML | Public visit page gives seasonal hours, including October 09:00–17:00. Useful standing visitor schedule; special closures and actual opening need a newer notice check. |
+| 67 | [`city_library`](https://www.gbsk.mk/) | U | HTML | Reader returned 502 and direct GET failed TLS. No current event calendar obtained. |
+| 68 | [`kic`](https://kic.mk/) | D | HTML | Visible programme is from 2019–2020. No current or future programme established. |
+| 69 | [`city_museum`](https://museumskopje.mk/) | D | HTML | Homepage institution/exhibition sections load, but no applicable dated exhibition interval or upcoming event established. |
+| 70 | [`dkc_karpos`](https://dkckarpos.org.mk/index.php/mk/) | M | HTML | Latest visible posts dated 8 Oct and September describe activities/gallery reports. No event date applying on/after 17 Oct was validated. |
+| 71 | [`koco_racin`](https://dk-kocoracin.org.mk/content/?id=1061) | A | HTML + image | Poetry competition published 22 Sep has a scanned notice explicitly accepting submissions through 22 Oct 2026. Notice image was visually read. Separate October workshop poster was for 3 Oct and is expired. |
+| 72 | [`national_opera_ballet`](https://operabalet.mk/events/) | A | HTML / iCalendar | Upcoming-event index explicitly lists performances on 22 and 30 Oct 2026 at 20:00. Public iCalendar export exists; cancellation/completeness checks remain necessary. |
+| 73 | [`philharmonic`](https://www.filharmonija.mk/nastani-i-bileti/) | A | HTML | Programme lists concerts on 6, 7, 12 and 26 Nov and 19 and 24 Dec 2026, with times and venue details. Booking links do not prove seats remain available. |
+| 74 | [`mnt`](https://mnt.mk/) | A | HTML with embedded JSON | Direct GET exposes embedded dated event records: 17 Oct 20:00, 19 Oct 20:00, 20 Oct 20:00 and 21 Oct 20:00, among others. Can extract public calendar data without a browser session. |
+| 75 | [`dramski`](https://dramski.mk/) | A | HTML | Homepage lists performances on 18–22 Oct at 20:00 and the RUTA festival on 26–31 Oct. The original /programa page is less useful than the current homepage/repertoire. |
+| 76 | [`comedy_theatre`](https://teatarkomedija.mk/) | A | HTML + image | November 2026 repertoire image was downloaded and visually read. Contains performance dates 3–28 Nov with times. Requires OCR or a corresponding ticketing listing. |
+| 77 | [`kinoteka`](https://kinoteka.mk/category/programa/) | U | HTML | Reader and direct GET return 403. Search-index fallback shows older programmes, including Jan 2026; it did not validate an applicable current programme. |
+| 78 | [`msu`](https://msu.mk/) | A | HTML | Explicit exhibition intervals include 14 Oct–14 Nov, 29 Sep–29 Oct and 23 Sep–30 Oct 2026. Useful current exhibitions with actual end dates. |
+| 79 | [`national_gallery`](https://nationalgallery.mk/izlozhba-pod-naslov-presek-na-avtorkata-irena-paskali-ekspozita-me-titull-prerje-nga-autorja-irena-paskali/) | A | HTML | Chifte Amam exhibition Presek explicitly remains open through 22 Oct 2026. The newer Basheski article concerns Belgrade and is excluded from Skopje local events. |
+| 80 | [`national_library`](https://nubsk.edu.mk/) | U | HTML / DOC | 9 Oct 2026 job-call page is readable and links a legacy Word .doc. Its deadline was not extracted, so the listing alone is not counted as an open call. |
+| 81 | [`tanec`](https://tanec.mk/) | U | HTML | Reader and direct GET return 403. No applicable own-site programme obtained. |
+| 82 | [`archaeological_museum`](https://amm.org.mk/wp-content/uploads/call_for_contributions.pdf) | A | PDF / HTML | Conference call PDF explicitly schedules Skopje event for 26–28 Oct 2027 and submissions through 15 Jan 2027. Genuine future content, but long-horizon/optional; visitor hours and prices are also published. |
+| 83 | [`museum_north_macedonia`](https://museum.org.mk/) | B | HTML | Site publishes Tuesday–Sunday visiting hours 09:00–17:00. Its 13 Oct workshop reports are already past despite being under Upcoming Events; count only standing visit information. |
+| 84 | [`museum_macedonian_struggle`](https://www.mmb.org.mk/) | B | HTML | Direct GET reaches dedicated visiting page: Tuesday–Sunday 10:00–18:00, last gallery entry 17:15. October holiday-closure banner lacks a year; verify that exception before date-specific display. |
+| 85 | [`turkish_theatre`](https://www.turktiyatrosu.mk/) | U | HTML | Reader timed out and direct GET failed TLS. No applicable own-site programme obtained. |
+| 86 | [`albanian_theatre`](https://www.teatri.mk/mk/repertoar/kalendar) | U | JavaScript calendar | Calendar page loads navigation but exposes no dated performance rows. Current event-data request remains unresolved. |
+| 87 | [`boris_trajkovski`](https://scboristrajkovski.gov.mk/index.php/nastani) | A | HTML | Official event list includes Kaliopi on 17 Oct, Energo Tehnoma 29–31 Oct, Emeli Sande/Duper 7 Nov, and December events. Old pool-closure notices are separate and do not invalidate the current event list. |
+| 88 | [`red_cross_skopje`](https://ckgs.org.mk/category/novosti/) | M | HTML | News dated 15 and 13 Oct describes completed activities. No future blood drive or validated current duty schedule established; conflicting undated donor-centre hours remain unresolved. |
+| 89 | [`transfusion_medicine`](https://itm.org.mk/) | D | HTML | Donation-schedule material remains from 2019/2020 while other administrative posts are newer. No applicable donation rota confirmed. |
+| 90 | [`protection_rescue`](https://dzs.gov.mk/Pages/News/Default.cshtml) | U | HTML | News and homepage routes return 500; direct GET also fails. No applicable safety notice obtained. |
+| 91 | [`erc`](https://www.erc.org.mk/) | A | PDF / HTML | 13 Oct fuel-price notice PDF explicitly makes maximum retail prices effective 14 Oct 2026 at 00:01. Current homepage values agree; check for subsequent decisions before display. |
+
+### Practical implementation order
+
+Begin with the confirmed HTML/JSON sources that support daily decisions: AMSM, UХМР or Open-Meteo, pulse.eco, current parking hours, rail timetables, FZO's monthly pharmacy schedule, ERC decisions, and local calls/events matched to interests. Add PDF/XLSX/image parsing as dedicated acquisition methods rather than expecting every useful notice to be ordinary article text.
+
+Keep water, heating-distribution notices, roadworks, air monitoring and other M sources under collection so a newly applicable notice can enter the briefing. Publish each item with its effective period, source date, retrieval time, place precision and a link. Unknown restoration times stay unknown; a stale notice never becomes a verified active outage or a verified restoration by assumption.
+
+Before production republication, retain source-specific access/reuse conditions, including the recorded water-page restriction and Open-Meteo's hosted-tier terms. Access and freshness findings here do not certify blanket republication rights.
+
+### Repository continuity
+
+The user requested a complete audit, an update of `docs/sourcefindings.md`, and a push. This entry preserves the earlier handoff and the complete archived registry. The document's filename and current location supersede historical references to a repository-root `andrejcontext.md`.
+
+Git CLI publication was already demonstrated by initial documentation commit `17eb985`. The earlier 403 entries describe the connected GitHub integration; they do not describe the working Git CLI route. This audit is published through Git CLI, with its final commit and push result recorded in Git history and the chat response.
