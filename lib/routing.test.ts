@@ -128,10 +128,10 @@ test("activeClosures drops ended, not-yet-started, approximate and plain works",
   expect(ids(fs)).toEqual(["on", "soon"]);
 });
 
-test("activeClosures also takes street-level water and heating outage works, but not power or whole-municipality ones", () => {
+test("activeClosures never treats utility outages (water, heating, power) as closures: the road stays open", () => {
   const outage = (id: string, type: string, detail: Record<string, string | number> = {}) =>
     feature(id, "outage", { startsAt: "2026-10-17T08:00:00+02:00", endsAt: "2026-10-17T16:00:00+02:00", detail: { type, ...detail } });
-  expect(ids([outage("w", "water"), outage("h", "heating"), outage("p", "power"), outage("wa", "water", { approx: 1 })])).toEqual(["w", "h"]);
+  expect(ids([outage("w", "water"), outage("h", "heating"), outage("p", "power"), outage("wa", "water", { approx: 1 })])).toEqual([]);
 });
 
 test("activeClosures turns a point into a ring around it and accepts a MultiLineString", () => {

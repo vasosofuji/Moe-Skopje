@@ -1,5 +1,5 @@
 // Events layer (tier 2): City of Skopje news and announcements, placed at the municipality (or settlement) they name,
-// else at the city centre. Municipality-level precision, like the outages. No imports from lib/server/* (tsx).
+// else at the city centre. Municipality-level precision, like the outages (detail.approx = 1 when no place is named: the pin is the city centre). No imports from lib/server/* (tsx).
 import * as cheerio from "cheerio";
 import seed from "../../data/seed/events.json";
 import { matchMunicipality, parseSkopjeTime, skopjeToday } from "./geo";
@@ -24,13 +24,13 @@ function addDays(ymd: string, n: number): string {
 
 // --- placement --------------------------------------------------------------------------------------------------------
 
-type Spot = { at: [number, number]; venue: string };
+type Spot = { at: [number, number]; venue: string; approx?: true };
 
 /** Where `text` points: the centroid of the municipality it names (settlements resolve to their municipality), else the centre. */
 function spotOf(munis: MunicipalityCollection, text: string): Spot {
   const name = matchMunicipality(text);
   const muni = name ? munis.features.find((m) => m.properties.name_mk === name) : undefined;
-  return muni ? { at: centroid(muni.geometry), venue: muni.properties.name_mk } : { at: CENTRE, venue: "Скопје" };
+  return muni ? { at: centroid(muni.geometry), venue: muni.properties.name_mk } : { at: CENTRE, venue: "Скопје", approx: true }; // no place named: the city centre, flagged approximate
 }
 
 /** Moves the 2nd, 3rd, ... event at one spot onto a small spiral around it so the markers do not hide each other. */
@@ -53,10 +53,20 @@ function spreader() {
 const GENERIC_TITLE = /^(соопштение|известување|информација|вест)$/i;
 const DATE = /(\d{1,2})\.(\d{1,2})\.(\d{4})/g;
 
+const MAX_TITLE = 90;
+
+/** At most MAX_TITLE characters, cut at a word boundary and closed with "…". */
+function clip(s: string): string {
+  if (s.length <= MAX_TITLE) return s;
+  const head = s.slice(0, MAX_TITLE - 1);
+  const space = head.lastIndexOf(" ");
+  const cut = /\s/.test(s[MAX_TITLE - 1]) || space <= 0 ? head : head.slice(0, space); // already at a boundary, or one unbroken word
+  return `${cut.replace(/[\s,;:–-]+$/, "")}…`;
+}
+
 function headline(title: string, text: string): string {
-  if (title && !GENERIC_TITLE.test(title)) return title;
-  const first = text.split(/(?<=[.!?])\s/)[0] ?? text;
-  return first.length > 110 ? `${first.slice(0, 107).trimEnd()}…` : first;
+  if (title && !GENERIC_TITLE.test(title)) return clip(title);
+  return clip(text.split(/(?<=[.!?])\s/)[0] ?? text);
 }
 
 /** News items from the page as events. Throws when the page has no news items (markup changed). */
@@ -95,7 +105,7 @@ export function parseVesti(html: string, munis: MunicipalityCollection, now = Da
         title: { mk: title, en: toLatin(title) },
         startsAt: parseSkopjeTime(toDmy(first), time ? `${time[1]}:${time[2] ?? "00"}` : "00:00"),
         endsAt: parseSkopjeTime(toDmy(last), "23:59"), // ponytail: end of the last named day; the news rarely says when it ends
-        detail: { venue: spot.venue, url: new URL(href, NEWS_URL).href },
+        detail: { venue: spot.venue, url: new URL(href, NEWS_URL).href, ...(spot.approx ? { approx: 1 } : {}) },
       },
     });
     if (out.length === MAX_EVENTS) break;
@@ -127,7 +137,7 @@ export async function seedFeatures(now = Date.now()): Promise<Feature[]> {
         title: { mk: e.mk, en: e.en },
         startsAt,
         endsAt: new Date(Date.parse(startsAt) + e.hours * 3_600_000).toISOString(),
-        detail: { place: e.place, venue: spot.venue },
+        detail: { place: e.place, venue: spot.venue, ...(spot.approx ? { approx: 1 } : {}) },
       },
     } satisfies Feature;
   });

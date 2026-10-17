@@ -84,6 +84,17 @@ test("the tools are get_layer and find_place, with eager input streaming (no rep
   expect(tools.every((t) => t.eager_input_streaming)).toBe(true);
 });
 
+test("get_layer cannot reach hidden layers (waste) and describes buses, roadworks and events", () => {
+  const getLayer = makeTools("en", []).find((t) => t.name === "get_layer") as unknown as { description: string; input_schema: { properties: { id: { enum: string[] } } } };
+  const ids = getLayer.input_schema.properties.id.enum;
+  expect(ids).not.toContain("waste");
+  expect(ids).toEqual(expect.arrayContaining(["buses", "roadworks", "events"]));
+  expect(getLayer.description).not.toMatch(/waste/i);
+  expect(getLayer.description).toMatch(/roadworks/);
+  expect(getLayer.description).toMatch(/events/);
+  expect(getLayer.description).toMatch(/stops/);
+});
+
 test("neither the system prompt nor a tool description mentions citizen reports any more", () => {
   const text = [systemPrompt("en"), ...makeTools("en", []).map((t) => (t as { description?: string }).description)].join(" ");
   expect(text).not.toMatch(/report/i);

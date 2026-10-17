@@ -45,3 +45,6 @@ next-env.d.ts
 /ad/public/
 /ad/out/
 /ad/node_modules/
+
+# written by `next dev`
+AGENTS.md

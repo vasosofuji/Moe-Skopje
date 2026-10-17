@@ -31,7 +31,7 @@ test("parseVesti: a generic 'Соопштение' title becomes the first sente
   const munis = await municipalities();
   const [first] = parseVesti(html, munis, Date.parse("2026-10-14T08:00:00Z"));
   expect(first.properties.title.mk.startsWith("Третата форумска сесија")).toBe(true);
-  expect(first.properties.title.mk.length).toBeLessThanOrEqual(110);
+  expect(first.properties.title.mk.length).toBeLessThanOrEqual(90);
   expect(first.properties.title.mk.endsWith("…")).toBe(true);
   expect(first.properties.title.en).toMatch(/^Tretata forumska sesija/);
 
@@ -51,8 +51,23 @@ test("parseVesti: news that names no municipality sits at the centre, fanned out
   const [a, b] = parseVesti(html, await municipalities(), Date.parse("2026-10-14T08:00:00Z"));
   expect(at(a)).toEqual(CENTRE);
   expect(a.properties.detail?.venue).toBe("Скопје");
+  expect(a.properties.detail?.approx).toBe(1); // no place named: flagged approximate
   expect(at(b)).not.toEqual(CENTRE);
   expect(Math.hypot(at(b)[0] - CENTRE[0], at(b)[1] - CENTRE[1])).toBeLessThan(0.01);
+});
+
+test("parseVesti: a long title is cut at a word boundary, never mid-word, and stays within 90 characters", async () => {
+  const munis = await municipalities();
+  const text = "Годишната средба на градоначалникот со претставниците на месните заедници од сите десет општини ќе се одржи во сабота";
+  const page = `<div class="news-item"><div class="desc"><h5><a href="/mk/vesti/2019/x-1/">Соопштение</a></h5><p><span>16.10.2026</span> <span>${text}</span></p></div></div>`;
+  const [f] = parseVesti(page, munis, Date.parse("2026-10-16T08:00:00Z"));
+  const title = f.properties.title.mk;
+  expect(title.length).toBeLessThanOrEqual(90);
+  expect(title.endsWith("…")).toBe(true);
+  const kept = title.slice(0, -1);
+  expect(text.startsWith(kept)).toBe(true);
+  expect(text[kept.length]).toBe(" "); // the next source character is a space: no word was split
+  expect(parseVesti(page.replace("Соопштение", text), munis, Date.parse("2026-10-16T08:00:00Z"))[0].properties.title.mk.length).toBeLessThanOrEqual(90); // a real long title is clipped too
 });
 
 test("parseVesti: a named municipality (any script) places the event at its centroid", async () => {
@@ -63,6 +78,7 @@ test("parseVesti: a named municipality (any script) places the event at its cent
   const karpos = munis.features.find((m) => m.properties.name_mk === "Карпош")!;
   expect(at(f)).toEqual(centroid(karpos.geometry));
   expect(f.properties.detail?.venue).toBe("Карпош");
+  expect(f.properties.detail?.approx).toBeUndefined();
 });
 
 test("parseVesti throws on changed markup and when nothing is recent", async () => {

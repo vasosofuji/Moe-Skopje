@@ -164,9 +164,9 @@ const ors: Provider = {
 
 // --- The plan ------------------------------------------------------------------------------------------------------------------
 
-const CLOSURE_LAYERS: LayerId[] = ["roadworks", "outages-water", "outages-heating"];
+const CLOSURE_LAYERS: LayerId[] = ["roadworks"];
 
-/** Closures on now, from the roadworks layer and the street-level water and heating works. A layer on demo data ("offline") is ignored: never detour around something that may not exist. */
+/** Closures on now, from the roadworks layer. Water and heating outages are not closures: the road stays open. A layer on demo data ("offline") is ignored: never detour around something that may not exist. */
 async function closuresNow(now: number, deps: Deps): Promise<Closure[]> {
   const layers = await Promise.all(CLOSURE_LAYERS.map((id) => (deps.layer ?? getLayer)(id)));
   return activeClosures(layers.filter((l) => l.status !== "offline").flatMap((l) => l.features.features as Feature[]), now);

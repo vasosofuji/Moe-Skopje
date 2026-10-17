@@ -4,7 +4,7 @@ import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import type { Citation } from "@/components/assistant/Citation";
 import { pick, translate, type Lang } from "@/lib/i18n/core";
-import { LAYER_IDS, type LayerId } from "@/lib/layers";
+import { HIDDEN_LAYERS, LAYER_IDS, type LayerId } from "@/lib/layers";
 import { fold, normalizeName } from "@/lib/sources/geo";
 import { municipalities, staticAdapter } from "@/lib/sources/static";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
@@ -159,10 +159,12 @@ export function makeTools(lang: Lang, cites: Citation[]) {
       "data age, source, and up to 15 features (id | title | value unit | detail). Pass `near` to get the features nearest a point, " +
       "e.g. one returned by find_place. Layers: air (PM10 per station), weather, outages-power, outages-water, outages-heating " +
       "(planned outages, one feature per affected street with startsAt/endsAt and detail.municipality; detail.approx=1 means only the municipality is known), " +
-      "buses (JSP stops; detail.lines = the lines with scheduled departures from that stop today), parking (City Parking zone polygons A0, A, B, C, D with the price per hour), pharmacies (onDuty=1 means on duty), " +
+      "buses (JSP stops with detail.stopId; detail.lines = the lines with scheduled departures from that stop today; this layer gives stops and the lines serving them, not live positions), " +
+      "parking (City Parking zone polygons A0, A, B, C, D with the price per hour), pharmacies (onDuty=1 means on duty), " +
+      "roadworks (street closures, traffic regimes and works with startsAt/endsAt), events (City of Skopje announcements and events with startsAt/endsAt and detail.venue), " +
       "earthquakes, schools.",
     inputSchema: z.object({
-      id: z.enum(LAYER_IDS as [LayerId, ...LayerId[]]),
+      id: z.enum(LAYER_IDS.filter((id) => !HIDDEN_LAYERS.includes(id)) as [LayerId, ...LayerId[]]),
       near: z.object({ lng: z.number(), lat: z.number() }).optional(),
     }),
     run: async ({ id, near }) => {

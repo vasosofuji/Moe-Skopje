@@ -109,11 +109,11 @@ export type Closure = { id: string; title: { mk: string; en: string }; rings: Ln
 
 const LEAD_MS = 30 * 60_000; // a closure starting within half an hour counts: the trip is about to happen
 
-/** Is this feature something a driver cannot get through right now? Closures and regimes, and street-level water/heating works. */
+/** Is this feature something a driver cannot get through right now? Closures and regimes only (utility outages leave the road open). */
 function blocks(f: Feature, now: number): boolean {
   const { kind, startsAt, endsAt, detail } = f.properties;
   if (detail?.approx) return false; // only a municipality or a city centre is known: no street to avoid
-  const blocking = kind === "closure" || kind === "regime" || (kind === "outage" && (detail?.type === "water" || detail?.type === "heating"));
+  const blocking = kind === "closure" || kind === "regime";
   return blocking && (!startsAt || Date.parse(startsAt) <= now + LEAD_MS) && (!endsAt || Date.parse(endsAt) >= now);
 }
 
