@@ -31,7 +31,6 @@ export const mk = {
   "layer.parking": "Паркинг",
   "layer.pharmacies": "Дежурни аптеки",
   "layer.earthquakes": "Земјотреси",
-  "layer.reports": "Пријави од граѓани",
   "layer.events": "Настани",
   "layer.waste": "Собирање смет",
   "layer.schools": "Училишта и градинки",
@@ -71,7 +70,7 @@ export const mk = {
 
   // ── onboarding
   "onboarding.welcome": "Добредојдовте во Мое Скопје",
-  "onboarding.welcomeBody": "Воздух, струја, автобуси и пријави од граѓани, сè на една карта.",
+  "onboarding.welcomeBody": "Воздух, струја, автобуси и паркинг, сè на една карта.",
   "onboarding.language": "Јазик",
   "onboarding.layersTitle": "Што сакате да следите?",
   "onboarding.layersBody": "Подоцна можете да го промените ова во Поставки.",
@@ -96,35 +95,8 @@ export const mk = {
   "settings.aboutBody":
     "Мое Скопје ги собира јавните податоци на градот на едно место. Податоците доаѓаат од јавни извори и може да каснат или да недостасуваат; секогаш е означено колку се свежи.",
 
-  // ── reports
+  // kept until the UI agent drops the report tab: AppShell.tsx still reads report.title, TabBar/AppShell the tab.report label
   "report.title": "Пријавете проблем",
-  "report.step.category": "Што пријавувате?",
-  "report.step.photo": "Додајте фотографија",
-  "report.step.pin": "Означете ја локацијата",
-  "report.step.note": "Уште некои детали",
-  "report.category.pothole": "Дупка на патот",
-  "report.category.dump": "Дива депонија",
-  "report.category.streetlight": "Улично осветлување",
-  "report.category.dogs": "Бездомни кучиња",
-  "report.category.parking": "Нерегуларно паркирање",
-  "report.category.water-leak": "Протекување на вода",
-  "report.category.other": "Друго",
-  "report.takePhoto": "Сликај или избери фотографија",
-  "report.skipPhoto": "Без фотографија",
-  "report.photoTooLarge": "Фотографијата е преголема. Може најмногу 4 MB.",
-  "report.photoType": "Дозволени се само слики.",
-  "report.description": "Опис",
-  "report.descriptionPlaceholder": "Што се случува? (најмногу 500 знаци)",
-  "report.nickname": "Прекар (по желба)",
-  "report.submit": "Испрати",
-  "report.success": "Пријавата е испратена. Ви благодариме!",
-  "report.rateLimited": "Испративте премногу пријави. Обидете се повторно подоцна.",
-  "report.disabled": "Пријавувањето моментално не е достапно.",
-  "report.error": "Пријавата не се испрати. Обидете се повторно.",
-  "report.upvote": "Поддржи",
-  "report.alreadyVoted": "Веќе сте гласале за оваа пријава.",
-  "report.empty": "Сè уште нема пријави.",
-  "report.status.new": "Нова",
 
   // ── assistant
   "assistant.title": "Асистент за градот",

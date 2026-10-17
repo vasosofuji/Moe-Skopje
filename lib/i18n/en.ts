@@ -31,7 +31,6 @@ export const en: Dict = {
   "layer.parking": "Parking",
   "layer.pharmacies": "On-duty pharmacies",
   "layer.earthquakes": "Earthquakes",
-  "layer.reports": "Citizen reports",
   "layer.events": "Events",
   "layer.waste": "Waste collection",
   "layer.schools": "Schools & kindergartens",
@@ -71,7 +70,7 @@ export const en: Dict = {
 
   // ── onboarding
   "onboarding.welcome": "Welcome to Moe Skopje",
-  "onboarding.welcomeBody": "Air, power, buses and citizen reports, all on one map.",
+  "onboarding.welcomeBody": "Air, power, buses and parking, all on one map.",
   "onboarding.language": "Language",
   "onboarding.layersTitle": "What do you want to follow?",
   "onboarding.layersBody": "You can change this later in Settings.",
@@ -96,35 +95,8 @@ export const en: Dict = {
   "settings.aboutBody":
     "Moe Skopje brings the city's public data together in one place. It comes from public sources and can be late or missing; how fresh it is is always shown.",
 
-  // ── reports
+  // kept until the UI agent drops the report tab: AppShell.tsx still reads report.title, TabBar/AppShell the tab.report label
   "report.title": "Report an issue",
-  "report.step.category": "What are you reporting?",
-  "report.step.photo": "Add a photo",
-  "report.step.pin": "Pin the location",
-  "report.step.note": "A few more details",
-  "report.category.pothole": "Pothole",
-  "report.category.dump": "Illegal dump",
-  "report.category.streetlight": "Streetlight",
-  "report.category.dogs": "Stray dogs",
-  "report.category.parking": "Illegal parking",
-  "report.category.water-leak": "Water leak",
-  "report.category.other": "Other",
-  "report.takePhoto": "Take or choose a photo",
-  "report.skipPhoto": "No photo",
-  "report.photoTooLarge": "That photo is too large. The limit is 4 MB.",
-  "report.photoType": "Only images are allowed.",
-  "report.description": "Description",
-  "report.descriptionPlaceholder": "What's going on? (500 characters max)",
-  "report.nickname": "Nickname (optional)",
-  "report.submit": "Submit",
-  "report.success": "Report sent. Thank you!",
-  "report.rateLimited": "You've sent too many reports. Please try again later.",
-  "report.disabled": "Reporting isn't available right now.",
-  "report.error": "The report wasn't sent. Please try again.",
-  "report.upvote": "Upvote",
-  "report.alreadyVoted": "You've already voted on this report.",
-  "report.empty": "No reports yet.",
-  "report.status.new": "New",
 
   // ── assistant
   "assistant.title": "City assistant",

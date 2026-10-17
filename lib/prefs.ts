@@ -13,7 +13,7 @@ export type Prefs = {
 export const DEFAULT_PREFS: Prefs = {
   lang: "mk",
   theme: "system",
-  layers: ["air", "outages-power", "buses", "reports"],
+  layers: ["air", "outages-power", "buses"],
   onboarded: false,
 };
 

@@ -20,7 +20,7 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   if (!url || !key) {
     if (!warnedDisabled) {
       warnedDisabled = true;
-      console.warn("[supabase] NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing: snapshots and reports are disabled.");
+      console.warn("[supabase] NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing: snapshots are disabled.");
     }
     return null;
   }

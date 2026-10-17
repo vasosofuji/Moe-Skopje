@@ -10,6 +10,7 @@ import {
   resetAssistantLimits,
   streamAnswer,
   summarizeLayer,
+  systemPrompt,
 } from "./assistant";
 import { parseReply } from "@/components/assistant/Citation";
 import { translate } from "@/lib/i18n/core";
@@ -77,10 +78,15 @@ test("find_place matches Latin input to Cyrillic name", async () => {
   expect(await findPlace("k")).toEqual([]); // one letter is too short to search
 });
 
-test("the tools are get_layer, list_reports and find_place, with eager input streaming", () => {
+test("the tools are get_layer and find_place, with eager input streaming (no reports tool)", () => {
   const tools = makeTools("mk", []);
-  expect(tools.map((t) => t.name)).toEqual(["get_layer", "list_reports", "find_place"]);
+  expect(tools.map((t) => t.name)).toEqual(["get_layer", "find_place"]);
   expect(tools.every((t) => t.eager_input_streaming)).toBe(true);
+});
+
+test("neither the system prompt nor a tool description mentions citizen reports any more", () => {
+  const text = [systemPrompt("en"), ...makeTools("en", []).map((t) => (t as { description?: string }).description)].join(" ");
+  expect(text).not.toMatch(/report/i);
 });
 
 test("allowMessage lets 20 messages per device through each hour", () => {

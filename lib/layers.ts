@@ -6,7 +6,6 @@ import {
   Droplets,
   Flame,
   GraduationCap,
-  Megaphone,
   Pill,
   SquareParking,
   Trash2,
@@ -26,7 +25,6 @@ export type LayerId =
   | "parking"
   | "pharmacies"
   | "earthquakes"
-  | "reports"
   | "events"
   | "waste"
   | "schools";
@@ -51,7 +49,6 @@ export const LAYERS: Record<LayerId, LayerMeta> = {
   parking: { color: "var(--c-parking)", icon: SquareParking, titleKey: "layer.parking", tier: 1 },
   pharmacies: { color: "var(--c-pharmacy)", icon: Pill, titleKey: "layer.pharmacies", tier: 1 },
   earthquakes: { color: "var(--c-quake)", icon: Activity, titleKey: "layer.earthquakes", tier: 1 },
-  reports: { color: "var(--c-report)", icon: Megaphone, titleKey: "layer.reports", tier: 1 },
   events: { color: "var(--system-indigo)", icon: CalendarDays, titleKey: "layer.events", tier: 2 },
   waste: { color: "var(--system-green)", icon: Trash2, titleKey: "layer.waste", tier: 2 },
   schools: { color: "var(--system-teal)", icon: GraduationCap, titleKey: "layer.schools", tier: 2 },

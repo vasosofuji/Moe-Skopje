@@ -5,7 +5,6 @@ import { z } from "zod";
 import type { Citation } from "@/components/assistant/Citation";
 import { pick, translate, type Lang } from "@/lib/i18n/core";
 import { LAYER_IDS, type LayerId } from "@/lib/layers";
-import { REPORT_CATEGORIES } from "@/lib/reports-schema";
 import { fold, normalizeName } from "@/lib/sources/geo";
 import { municipalities, staticAdapter } from "@/lib/sources/static";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
@@ -151,7 +150,7 @@ export async function findPlace(name: string): Promise<Place[]> {
   return out;
 }
 
-/** The three read-only tools; each records the features it returned in `cites`. */
+/** The two read-only tools; each records the features it returned in `cites`. */
 export function makeTools(lang: Lang, cites: Citation[]) {
   const getLayerTool = betaZodTool({
     name: "get_layer",
@@ -160,7 +159,7 @@ export function makeTools(lang: Lang, cites: Citation[]) {
       "data age, source, and up to 15 features (id | title | value unit | detail). Pass `near` to get the features nearest a point, " +
       "e.g. one returned by find_place. Layers: air (PM10 per station), weather, outages-power, outages-water, outages-heating " +
       "(planned outages per municipality with startsAt/endsAt), buses (stops and routes), parking, pharmacies (onDuty=1 means on duty), " +
-      "earthquakes, reports (citizen reports), schools.",
+      "earthquakes, schools.",
     inputSchema: z.object({
       id: z.enum(LAYER_IDS as [LayerId, ...LayerId[]]),
       near: z.object({ lng: z.number(), lat: z.number() }).optional(),
@@ -170,19 +169,6 @@ export function makeTools(lang: Lang, cites: Citation[]) {
       const at: LngLat | undefined = near && [near.lng, near.lat];
       cites.push(...citationsOf(res, lang, at));
       return summarizeLayer(res, lang, at);
-    },
-  });
-
-  const listReportsTool = betaZodTool({
-    name: "list_reports",
-    description: "Recent citizen reports in Skopje (newest first), optionally only one category, with the same status/age/source header as get_layer.",
-    inputSchema: z.object({ category: z.enum(REPORT_CATEGORIES).optional() }),
-    run: async ({ category }) => {
-      const res = await getLayer("reports");
-      const features = (res.features.features as Feature[]).filter((f) => !category || f.properties.detail?.category === category);
-      const filtered: LayerResponse = { ...res, features: { ...res.features, features } };
-      cites.push(...citationsOf(filtered, lang));
-      return summarizeLayer(filtered, lang);
     },
   });
 
@@ -196,7 +182,7 @@ export function makeTools(lang: Lang, cites: Citation[]) {
   });
 
   // betaZodTool has no option for it: spread it on so tool input streams as it is generated.
-  return [getLayerTool, listReportsTool, findPlaceTool].map((t) => ({ ...t, eager_input_streaming: true }));
+  return [getLayerTool, findPlaceTool].map((t) => ({ ...t, eager_input_streaming: true }));
 }
 
 const LANGUAGE: Record<Lang, string> = { mk: "Macedonian (Cyrillic script)", en: "English" };
@@ -206,7 +192,7 @@ export function systemPrompt(lang: Lang): string {
   return [
     "You are Мое Скопје's city assistant for Skopje, North Macedonia.",
     `Answer in ${LANGUAGE[lang]}.`,
-    "Use the tools for any fact about current conditions (air, weather, outages, buses, parking, pharmacies, earthquakes, citizen reports) and never invent values. If the tools don't have it, say so.",
+    "Use the tools for any fact about current conditions (air, weather, outages, buses, parking, pharmacies, earthquakes) and never invent values. If the tools don't have it, say so.",
     "Say how old the data is and where it comes from.",
     'If a layer\'s status is "offline", say it is demo data.',
     "Keep answers to 2–4 sentences of plain text, no Markdown.",

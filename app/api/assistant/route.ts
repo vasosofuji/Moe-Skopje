@@ -1,5 +1,5 @@
 import { AssistantBodySchema, allowMessage, clientIp, streamAnswer } from "@/lib/server/assistant";
-import { deviceHashOf } from "@/lib/server/reports";
+import { deviceHashOf } from "@/lib/server/device";
 
 export const maxDuration = 60; // a few tool rounds plus the answer
 

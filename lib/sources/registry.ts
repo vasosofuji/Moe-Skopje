@@ -5,7 +5,6 @@ import { earthquakes } from "./earthquakes";
 import { outages } from "./outages";
 import { parkingAdapter } from "./parking";
 import { pharmacies } from "./pharmacies";
-import { reportsAdapter } from "./reports";
 import { staticAdapter } from "./static";
 import type { Adapter } from "./types";
 import { weather } from "./weather";
@@ -15,7 +14,6 @@ export const registry: Partial<Record<LayerId, Adapter>> = {
   air,
   weather,
   earthquakes,
-  reports: reportsAdapter,
   buses,
   parking: parkingAdapter(),
   pharmacies,
