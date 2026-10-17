@@ -23,7 +23,7 @@ for (const c of comps) {
     ...(alpha && { imageFormat: "png", pixelFormat: "yuva444p10le" }),
     muted: true,
     concurrency: 3, // keep the machine responsive
-    outputLocation: path.join(outDir, `${c.id}.mov`),
+    outputLocation: path.join(outDir, `${c.id}${process.env.SUFFIX ?? ""}.mov`), // SUFFIX=_v2: new file, Premiere may lock the old one
   });
   console.log("rendered", c.id);
 }

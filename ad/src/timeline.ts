@@ -12,7 +12,8 @@ type Src =
   | { kind: "end" };
 
 export type Shot = { id: string; from: number; to: number; src: Src };
-export type Caption = { text: string; in: number; out: number; ink?: boolean };
+// side: set on the full-screen phone shots; the line sits beside the phone in rows (\n = row break).
+export type Caption = { text: string; in: number; out: number; ink?: boolean; side?: "left" | "right" };
 export type Cue = { file: string; at: number; volume: number };
 
 // clipFrames from ffprobe (Kling 5 s = 121, 10 s = 241); trimIn and rate picked from the review strips.
@@ -56,9 +57,9 @@ export const CAPTIONS: Caption[] = [
   cap("Rain means an umbrella.", 162, 197),
   cap("Cold means another layer.", 202, 236),
   cap("Small things change how you prepare.", 240, 333),
-  cap("Now extend that check to the city around you.", 348, 442, true), // charcoal, above the hero phone
+  { ...cap("Now extend\nthat check\nto the city\naround you.", 348, 442, true), side: "left" },
   cap("A road closure on your route.", 475, 510), // on the street footage, not over the light map
-  cap("Air quality in your neighborhood.", 516, 564, true), // air beat is UI only: charcoal, above the phone
+  { ...cap("Air quality\nin your\nneighborhood.", 516, 564, true), side: "right" },
   cap("A pharmacy open tonight.", 599, 637),
   cap("Think about your usual day.", 650, 722),
   cap("We'll show you what might affect it.", 732, 826),

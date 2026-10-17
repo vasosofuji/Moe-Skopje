@@ -20,7 +20,7 @@ export const Root = () => (
     <Composition id="Overlay-white-dip" component={() => <ToWhite from={0} frames={12} />} durationInFrames={12} {...size} />
     {CAPTIONS.map((c, i) => (
       <Composition key={i} id={`Caption-${String(i + 1).padStart(2, "0")}`}
-        component={() => <Caption text={c.text} in={0} out={c.out - c.in} ink={c.ink} />} durationInFrames={c.out - c.in} {...size} />
+        component={() => <Caption text={c.text} in={0} out={c.out - c.in} ink={c.ink} side={c.side} />} durationInFrames={c.out - c.in} {...size} />
     ))}
   </>
 );
