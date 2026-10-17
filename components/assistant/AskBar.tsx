@@ -1,26 +1,43 @@
 "use client";
 
-import { ArrowUp, ChevronDown, ChevronUp, CornerUpRight, MessageCircle } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { GlassButton } from "@/components/glass/GlassButton";
+import { ChevronDown, ChevronUp, CornerUpRight } from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { RoutePlanner } from "@/components/route/RoutePlanner";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import { spring } from "@/lib/motion";
-import { Conversation, useAssistant } from "./AssistantPanel";
+import { Conversation } from "./AssistantPanel";
+import { ChatField } from "./ChatInput";
 import type { Citation } from "./Citation";
+import { useAssistant } from "./chatStore";
 
-const hidden = { opacity: 0, y: 12 };
-const shown = { opacity: 1, y: 0 };
-const panel = "glass glass-strong absolute inset-x-0 bottom-full mb-2 flex max-h-[60vh] flex-col";
 const iconButton = cx("flex size-11 shrink-0 items-center justify-center rounded-full text-label-2", focusRing);
 
 /**
+ * A part of the bar's surface that folds away to nothing (and stays mounted, so a planner keeps its fields and route).
+ * It clips rather than hides: a hidden overflow is a scroll container, and scrollIntoView would shift its content while it unfolds.
+ */
+function Fold({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={open ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+      transition={spring}
+      inert={!open}
+      className="overflow-clip"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/**
  * Desktop Spotlight bar, docked at the bottom centre of the map: ask the assistant, or open directions with the glyph at
- * its trailing edge. Both unfold in the same glass panel above the bar (max 60vh). ⌘K / Ctrl+K focuses the input.
- * Esc folds the panel; a click outside folds the chat (not the planner, whose points are picked on the map). A folded
- * planner keeps its route on the map until its X clears it. `left` is the screen width the sidebar covers.
+ * its trailing edge. The conversation or the planner unfolds above the field inside the same glass, so bar and panel are
+ * one surface that grows upward (the field's 22 px corners sit concentric in the surface's 28 px). ⌘K / Ctrl+K focuses the
+ * input. Esc folds the panel; a click outside folds the chat (not the planner, whose points are picked on the map). A
+ * folded planner keeps its route on the map until its X clears it. `left` is the screen width the sidebar covers.
  */
 export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citation): void }) {
   const { t } = useT();
@@ -30,7 +47,7 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
   const [routing, setRouting] = useState(false); // the planner is mounted (it may be folded away)
   const [focused, setFocused] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-  const field = useRef<HTMLInputElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
   const mac = /Mac|iPhone|iPad/.test(navigator.userAgent);
   const hasChat = chat.messages.length > 0 || chat.disabled;
   const chatOpen = view === "chat" && hasChat;
@@ -57,7 +74,7 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || chat.busy) return;
+    if (!input.trim() || chat.busy || chat.disabled) return;
     void chat.send(input);
     setInput("");
     setView("chat");
@@ -84,66 +101,54 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
       }}
       className="pointer-events-none fixed right-0 bottom-12 z-20 flex justify-center px-[88px]"
     >
-      <div className="pointer-events-auto relative w-full max-w-[560px]">
-        <AnimatePresence>
-          {chatOpen && (
-            <motion.section key="chat" initial={hidden} animate={shown} exit={hidden} transition={spring} aria-label={t("assistant.title")} className={panel}>
-              {chat.disabled ? (
-                <p className="t-subhead p-4 text-label-2">{t("assistant.unavailable")}</p>
-              ) : (
-                <Conversation chat={chat} onCitation={cite} className="p-4" />
-              )}
-            </motion.section>
-          )}
-        </AnimatePresence>
-
-        {routing && (
-          // Folded, not unmounted, so the route stays on the map and the fields keep their places.
-          <motion.div
-            initial={hidden}
-            animate={view === "route" ? shown : hidden}
-            transition={spring}
-            inert={view !== "route"}
-            className={cx(panel, "overflow-y-auto overscroll-contain p-4", view !== "route" && "pointer-events-none")}
-          >
-            <RoutePlanner
-              variant="bar"
-              insetLeft={left}
-              onClose={() => {
-                setRouting(false);
-                setView(null);
-              }}
-            />
-          </motion.div>
+      <div className="glass glass-strong pointer-events-auto flex w-full max-w-[560px] flex-col overflow-clip rounded-[28px]">
+        {hasChat && (
+          <Fold open={chatOpen}>
+            {chat.disabled ? (
+              <p className="t-subhead p-4 text-label-2">{t("assistant.unavailable")}</p>
+            ) : (
+              <Conversation chat={chat} onCitation={cite} className="max-h-[min(50vh,480px)] p-4" />
+            )}
+          </Fold>
         )}
 
-        <form
-          onSubmit={submit}
-          className="glass glass-pill h-14 w-full gap-2 pr-1.5 pl-5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-(--system-blue)"
-        >
-          <MessageCircle size={19} aria-hidden className="mr-1 shrink-0 text-label-2" />
-          <input
+        {routing && (
+          <Fold open={view === "route"}>
+            <div className="max-h-[60vh] overflow-y-auto overscroll-contain p-4">
+              <RoutePlanner
+                variant="bar"
+                insetLeft={left}
+                onClose={() => {
+                  setRouting(false);
+                  setView(null);
+                }}
+              />
+            </div>
+          </Fold>
+        )}
+
+        <form onSubmit={submit} className={cx("flex items-end gap-1 p-1.5", (chatOpen || view === "route") && "border-t-[0.5px] border-(--label)/10")}>
+          <ChatField
             ref={field}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={setInput}
+            canSend={!chat.busy && !chat.disabled && !!input.trim()}
             onFocus={() => {
               setFocused(true);
               if (hasChat && view === null) setView("chat");
             }}
             onBlur={() => setFocused(false)}
-            placeholder={t("assistant.barPlaceholder")}
-            aria-label={t("assistant.barPlaceholder")}
-            aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
-            maxLength={2000}
-            enterKeyHint="send"
-            autoComplete="off"
-            className="t-body h-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-label-2"
+            hint={
+              !hasChat &&
+              !focused &&
+              !input && (
+                <kbd aria-hidden className="t-caption mb-3 shrink-0 rounded-md bg-(--label)/6 px-1.5 py-0.5 font-sans text-label-2">
+                  {mac ? "⌘K" : "Ctrl K"}
+                </kbd>
+              )
+            }
           />
-          {input.trim() ? (
-            <GlassButton size="sm" shape="circle" type="submit" aria-label={t("assistant.send")} disabled={chat.busy} className="shrink-0 bg-(--system-blue) text-white">
-              <ArrowUp aria-hidden className="size-5" />
-            </GlassButton>
-          ) : hasChat ? (
+          {hasChat && (
             <button
               type="button"
               onClick={() => setView(chatOpen ? null : "chat")}
@@ -153,12 +158,6 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
             >
               {chatOpen ? <ChevronDown size={20} aria-hidden /> : <ChevronUp size={20} aria-hidden />}
             </button>
-          ) : (
-            !focused && (
-              <kbd aria-hidden className="t-caption shrink-0 rounded-md bg-(--label)/6 px-1.5 py-0.5 font-sans text-label-2">
-                {mac ? "⌘K" : "Ctrl K"}
-              </kbd>
-            )
           )}
           <button
             type="button"

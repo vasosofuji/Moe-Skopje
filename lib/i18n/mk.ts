@@ -99,7 +99,7 @@ export const mk = {
   "assistant.send": "Испрати",
   "assistant.refused": "Не можам да одговорам на ова. Обидете се со друго прашање.",
   "assistant.unavailable": "Асистентот не е поврзан.",
-  "assistant.rateLimited": "Ја достигнавте границата на пораки за овој час. Обидете се подоцна.",
+  "assistant.rateLimited": "Премногу пораки. Обидете се подоцна.",
 
   // --- Task 7: air ---
   "air.cityPm10": "PM10 во градот",
@@ -114,7 +114,7 @@ export const mk = {
 
   // --- Task 12: assistant ---
   "assistant.typing": "Пишува…",
-  "assistant.error": "Асистентот не успеа да одговори. Обидете се повторно.",
+  "assistant.error": "Одговорот не успеа.",
 
   // --- Task 4: shell ---
   "lang.mk": "Македонски",
@@ -226,10 +226,10 @@ export const mk = {
   "route.openGoogle": "Отвори во Google Maps",
   "route.openWaze": "Отвори во Waze",
   "route.wazeNote": "Waze прима само одредиште, па сам ја избира рутата.",
-  "route.error.router": "Рутирањето моментално не е достапно. Обидете се повторно.",
-  "route.error.rate": "Премногу барања. Почекајте малку и обидете се повторно.",
-  "route.error.bbox": "Двете точки мора да бидат во Скопје.",
-  "route.error.noroute": "Не најдовме рута меѓу овие две точки.",
+  "route.error.router": "Рутирањето не е достапно.",
+  "route.error.rate": "Премногу барања. Почекајте малку.",
+  "route.error.bbox": "Точките мора да бидат во Скопје.",
+  "route.error.noroute": "Нема рута меѓу двете точки.",
   "route.attribution": "Рутирање: FOSSGIS Valhalla. Податоци © учесниците на OpenStreetMap",
 
   // --- Wave E2 ---
@@ -266,8 +266,17 @@ export const mk = {
   "route.clear": "Избриши ја рутата",
   "route.detour": "Заобиколница: +{distance}",
   "route.error.same": "Изберете две различни точки.",
-  "route.error.network": "Нема врска со серверот. Проверете ја интернет-врската.",
+  "route.error.network": "Нема врска со серверот.",
 
   // --- final fixes UI ---
   "outages.activeNow": "Во тек сега: {n}",
+
+  // --- u4-route-chat ---
+  "route.min": "{min} мин",
+  "route.hour": "{h} ч",
+  "route.hourMin": "{h} ч {min} мин",
+  "route.avoidsOne": "заобиколува 1 затворање",
+  "route.avoidsMany": "заобиколува {n} затворања",
+  "route.noClosures": "без затворања",
+  "assistant.empty": "Прашај за воздух, прекини, автобуси, паркинг, патишта.",
 };

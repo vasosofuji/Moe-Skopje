@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { StatusBadge } from "@/components/glass/StatusBadge";
 import { focusRing } from "@/lib/cx";
+import { useT } from "@/lib/i18n";
 import { HIDDEN_LAYERS, isLayerId, LAYERS, type LayerId } from "@/lib/layers";
 import type { Status } from "@/lib/sources/types";
 
@@ -60,18 +59,24 @@ export function parseReply(raw: string): { text: string; citations: Citation[] }
   return { text: raw, citations: [] };
 }
 
-/** Chip under an answer: layer colour, feature title, source and status badge. Tapping flies the map to it. */
+/**
+ * Chip under an answer, one of a row that scrolls sideways: the layer's own glyph in its colour and the feature's title,
+ * plus the data's age as a grey caption when it is not live. 32 px tall with a 44 px touch area. Tapping flies the map to it.
+ */
 export function CitationChip({ c, onClick }: { c: Citation; onClick(): void }) {
-  // StatusBadge wants a timestamp; the server sends the age as of when the answer arrived, so pin it once.
-  const [updatedAt] = useState(() => new Date(Date.now() - c.ageMin * 60_000).toISOString());
+  const { t } = useT();
+  const { icon: Icon, color } = LAYERS[c.layer];
+  const ago = c.status === "live" || c.status === "static" ? null : c.ageMin < 60 ? t("age.min", { n: Math.max(1, c.ageMin) }) : c.ageMin < 1440 ? t("age.h", { n: Math.floor(c.ageMin / 60) }) : t("age.d", { n: Math.floor(c.ageMin / 1440) });
   return (
-    <button type="button" onClick={onClick} className={`glass glass-pill glass-button min-w-0 max-w-full gap-2 py-1 pr-2 pl-3 text-left ${focusRing}`}>
-      <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-(--dot)" style={{ "--dot": LAYERS[c.layer].color } as CSSProperties} />
-      <span className="flex min-w-0 flex-col">
-        <span className="t-footnote truncate font-semibold">{c.title}</span>
-        <span className="t-caption truncate text-label-2">{c.source}</span>
-      </span>
-      <StatusBadge status={c.status} updatedAt={updatedAt} />
+    <button
+      type="button"
+      onClick={onClick}
+      title={c.source}
+      className={`relative inline-flex h-8 max-w-64 shrink-0 items-center gap-1.5 rounded-full bg-(--label)/6 pr-3 pl-2.5 text-left before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] ${focusRing}`}
+    >
+      <Icon size={14} aria-hidden className="shrink-0" style={{ color }} />
+      <span className="t-footnote truncate font-medium">{c.title}</span>
+      {ago && <span className="t-caption shrink-0 text-label-2">{ago}</span>}
     </button>
   );
 }
