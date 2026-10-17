@@ -146,4 +146,13 @@ export const mk = {
   "onboarding.locationDenied": "Локацијата не е дозволена. Можете да ја вклучите подоцна со копчето на картата.",
   "settings.healthEmpty": "Сè уште нема поврзани извори.",
   "settings.items": "Записи: {n}",
+
+  // --- Wave E1b ---
+  "buses.live": "Во живо",
+  "buses.estimated": "Проценета позиција (возен ред)",
+  "buses.inMin": "за {n} мин",
+  "buses.now": "сега",
+  "buses.toward": "кон {headsign}",
+  "buses.tapDeparture": "Допрете поаѓање за да го видите автобусот на картата.",
+  "buses.unavailable": "Возниот ред моментално не е достапен.",
 };

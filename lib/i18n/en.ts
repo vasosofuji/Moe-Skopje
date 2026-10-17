@@ -146,4 +146,13 @@ export const en: Dict = {
   "onboarding.locationDenied": "Location wasn't allowed. You can turn it on later with the button on the map.",
   "settings.healthEmpty": "No sources connected yet.",
   "settings.items": "Items: {n}",
+
+  // --- Wave E1b ---
+  "buses.live": "Live",
+  "buses.estimated": "Estimated position (timetable)",
+  "buses.inMin": "in {n} min",
+  "buses.now": "now",
+  "buses.toward": "to {headsign}",
+  "buses.tapDeparture": "Tap a departure to see the bus on the map.",
+  "buses.unavailable": "The timetable is unavailable right now.",
 };

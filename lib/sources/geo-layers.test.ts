@@ -17,12 +17,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("baked layers resolve as static; buses merge stops and routes", async () => {
-  const [buses, parking, schools] = await Promise.all((["buses", "parking", "schools"] as const).map((id) => getLayer(id, deps)));
-  for (const l of [buses, parking, schools]) expect(l.status).toBe("static");
-  const kinds = new Set(buses.features.features.map((f) => f.properties?.kind));
-  expect(kinds).toEqual(new Set(["bus-stop", "bus-route"]));
+test("baked layers resolve as static", async () => {
+  const [parking, schools] = await Promise.all((["parking", "schools"] as const).map((id) => getLayer(id, deps)));
+  for (const l of [parking, schools]) expect(l.status).toBe("static");
   expect(parking.features.features.length).toBeGreaterThan(100);
+});
+
+test("buses: with the GTFS feed down the layer is offline and serves the baked OSM stops, no route lines", async () => {
+  const layer = await getLayer("buses", deps); // fetch is stubbed to answer 503
+  expect(layer.status).toBe("offline");
+  expect(new Set(layer.features.features.map((f) => f.properties?.kind))).toEqual(new Set(["bus-stop"]));
+  expect(layer.features.features.length).toBeGreaterThan(300);
 });
 
 test("water: announcements for today that name no place serve the seed (demo data), not an empty live layer", async () => {
