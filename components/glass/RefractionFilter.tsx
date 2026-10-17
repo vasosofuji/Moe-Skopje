@@ -27,9 +27,19 @@ export function RefractionFilter() {
 
   return (
     <svg aria-hidden width="0" height="0" className="pointer-events-none absolute">
-      <filter id="glass-refraction" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-        <feImage href={MAP} x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" />
-        <feDisplacementMap in="SourceGraphic" in2="map" scale="48" xChannelSelector="R" yChannelSelector="G" />
+      {/* Bounding-box units: with user-space units the map resolved against this 0×0 <svg> and came out empty,
+          which shifted the whole backdrop. Here the map spans the panel and scale is a fraction of its size. */}
+      <filter
+        id="glass-refraction"
+        x="0"
+        y="0"
+        width="1"
+        height="1"
+        primitiveUnits="objectBoundingBox"
+        colorInterpolationFilters="sRGB"
+      >
+        <feImage href={MAP} x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map" />
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="0.2" xChannelSelector="R" yChannelSelector="G" />
       </filter>
     </svg>
   );

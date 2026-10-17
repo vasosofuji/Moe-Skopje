@@ -74,6 +74,7 @@
   }
 }
 
+/* Keep in sync with the media-query block above. */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #000;

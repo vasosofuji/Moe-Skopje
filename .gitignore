@@ -1,8 +1,8 @@
 .superpowers/
 node_modules/
 .next/
-.env*.local
-.env
+.env*
+!.env.example
 .vercel
 
 # dependencies
