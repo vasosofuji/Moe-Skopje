@@ -1,5 +1,6 @@
 import type { LayerId } from "@/lib/layers";
 import { air } from "./air";
+import { earthquakes } from "./earthquakes";
 import type { Adapter } from "./types";
 import { weather } from "./weather";
 
@@ -7,4 +8,5 @@ import { weather } from "./weather";
 export const registry: Partial<Record<LayerId, Adapter>> = {
   air,
   weather,
+  earthquakes,
 };
