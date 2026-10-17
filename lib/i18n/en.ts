@@ -149,4 +149,9 @@ export const en: Dict = {
   "buses.none": "No more departures today.",
   "buses.noTimetable": "No timetable for the lines at this stop.",
   "buses.approximate": "Approximate timetable, not official.",
+
+  // --- Task 12: assistant ---
+  "assistant.intro": "Ask me about the air, outages, buses or pharmacies. I answer from the city's live data.",
+  "assistant.typing": "The assistant is typing…",
+  "assistant.error": "The assistant couldn't answer. Please try again.",
 };
