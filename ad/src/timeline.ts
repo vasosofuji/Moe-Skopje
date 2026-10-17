@@ -60,7 +60,7 @@ export const CAPTIONS: Caption[] = [
   { ...cap("Now extend\nthat check\nto the city\naround you.", 348, 442, true), side: "left" },
   cap("A road closure on your route.", 475, 510), // on the street footage, not over the light map
   { ...cap("Air quality\nin your\nneighborhood.", 516, 564, true), side: "right" },
-  cap("A pharmacy open tonight.", 599, 637),
+  { ...cap("A pharmacy\nopen\ntonight.", 566, 604), side: "left" }, // on the night phone (user moved it there in Premiere)
   cap("Think about your usual day.", 650, 722),
   cap("We'll show you what might affect it.", 732, 826),
 ];

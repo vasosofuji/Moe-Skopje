@@ -96,8 +96,8 @@ const Rising = ({ children }: { children: React.ReactNode }) => {
 const UiShot = ({ id }: { id: string }) => {
   const frame = useCurrentFrame();
   const h = screenHeight("P1");
-  // Route and pharmacy push in close on the screen; air stays full-size so its caption fits above the phone.
-  const close = id !== "air";
+  // Route pushes in close on the screen; air and pharmacy stay full-size so their captions fit beside the phone.
+  const close = id === "route";
   const zoom = interpolate(frame, [0, 30], close ? [1.32, 1.36] : [1, 1.03], { easing: theme.ease.inOut, ...clamp });
   if (id === "route") return <Hero zoom={zoom}><RouteMap p={theme.light} h={h} /></Hero>;
   if (id === "air") return <Hero zoom={zoom}><AirMap p={theme.light} h={h} /></Hero>;
