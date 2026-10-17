@@ -6,12 +6,13 @@ import { GoOutCard } from "./GoOutCard";
 const render = (pm10: number | null, tempC: number | null, precipMm: number | null) =>
   renderToStaticMarkup(<GoOutCard pm10={pm10} tempC={tempC} precipMm={precipMm} />);
 
-test("clean air, mild and dry: ring is full, score 100, good verdict, no reasons", () => {
+test("clean air, mild and dry: meter is full, score 100, good verdict, no reasons", () => {
   const html = render(15, 20, 0);
   expect(html).toContain(`aria-label="${translate("mk", "goOut.score", { score: 100 })}"`);
   expect(html).toContain(">100<");
   expect(html).toContain(translate("mk", "goOut.verdict.good"));
-  expect(html).toMatch(/stroke-dashoffset="0"/);
+  expect(html).toMatch(/aria-valuenow="100"/);
+  expect(html).toContain("width:100%");
   expect(html).not.toContain(translate("mk", "goOut.reason.air"));
 });
 
@@ -30,15 +31,14 @@ test("a middling score is the fair verdict; extreme temperature is named", () =>
   expect(render(60, 38, 0)).toContain(translate("mk", "goOut.verdict.poor")); // 100 - 50 - 15 = 35
 });
 
-test("half the score draws half the ring", () => {
+test("half the score fills half the meter", () => {
   const html = render(60, 20, 0); // score 50
-  const circumference = 2 * Math.PI * 22;
-  expect(Number(/stroke-dashoffset="([\d.]+)"/.exec(html)![1])).toBeCloseTo(circumference / 2, 1);
+  expect(html).toContain('aria-valuenow="50"');
+  expect(html).toContain("width:50%");
 });
 
 test("with no readings at all it says there is no data instead of a misleading 100", () => {
   const html = render(null, null, null);
   expect(html).toContain(translate("mk", "explore.noData"));
-  expect(html).not.toContain('role="img"'); // no ring
-  expect(html).not.toContain("stroke-dashoffset");
+  expect(html).not.toContain('role="meter"'); // no meter
 });

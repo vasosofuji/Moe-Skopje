@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { cx } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import type { Status } from "@/lib/sources/types";
 
@@ -29,31 +29,59 @@ export function age(updatedAt: string, now = Date.now()): Age | null {
   return { n: Math.floor(minutes / 1440), unit: "d" };
 }
 
-export function StatusBadge({ status, updatedAt }: { status: Status; updatedAt: string }) {
+/**
+ * How fresh data is, as small grey caption text (no capsule, no dot): "Демо податоци", "Пред 2 ч". Live and static data
+ * are the norm and render nothing unless `showLive` asks for them ("Во живо · 3 мин", "Статично"). `compact` is for
+ * narrow tiles: "Демо" and "2 ч", with the full text for screen readers and as the tooltip. Never wraps or shrinks.
+ */
+export function StatusBadge({
+  status,
+  updatedAt,
+  compact,
+  showLive,
+  className,
+}: {
+  status: Status;
+  updatedAt: string;
+  compact?: boolean;
+  showLive?: boolean;
+  className?: string;
+}) {
   const { t } = useT();
-  const ago = status === "live" || status === "stale" ? age(updatedAt) : null;
-  const label = t(`status.${status}`);
+  if ((status === "live" || status === "static") && !showLive) return null;
+  const a = status === "live" || status === "stale" ? age(updatedAt) : null;
+  const ago = a && t(`age.${a.unit}`, { n: a.n });
+  const full =
+    status === "stale" ? (ago ? t("status.ago", { age: ago }) : t("status.stale")) : ago ? `${t(`status.${status}`)} · ${ago}` : t(`status.${status}`);
+  const short = status === "offline" ? t("status.demo") : status === "stale" ? (ago ?? t("status.stale")) : full;
   return (
+    // Age depends on the clock, so server and client renders may differ by a minute.
     <span
-      className="t-caption inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-(--badge)/15 px-2 whitespace-nowrap"
-      style={{ "--badge": STATUS_COLOR[status] } as CSSProperties}
+      title={compact ? full : undefined}
+      suppressHydrationWarning
+      className={cx("t-caption inline-block shrink-0 whitespace-nowrap text-label-2 tabular-nums", className)}
     >
-      <span aria-hidden className="size-1.5 rounded-full bg-(--badge) ring-2 ring-(--badge)/25" />
-      {/* Age depends on the clock, so server and client renders may differ by a minute. */}
-      <span suppressHydrationWarning>{ago ? `${label} · ${t(`age.${ago.unit}`, { n: ago.n })}` : label}</span>
+      {compact ? (
+        <>
+          <span aria-hidden suppressHydrationWarning>
+            {short}
+          </span>
+          <span className="sr-only" suppressHydrationWarning>
+            {full}
+          </span>
+        </>
+      ) : (
+        full
+      )}
     </span>
   );
 }
 
 /**
- * The badge a Today card, widget or detail wears when its data is not live (stale → "Stale · 2 h", offline → "Demo data").
- * Renders nothing for live data or no data. `updatedAt` is optional: without it a stale badge has no age.
+ * The note a Today card, widget or detail wears when its data is not live (stale → "Пред 2 ч", offline → "Демо податоци").
+ * Renders nothing for live, static or missing data. `updatedAt` is optional: without it a stale note has no age.
  */
-export function LayerBadge({ data, className }: { data?: { status: Status; updatedAt?: string }; className?: string }) {
-  if (!data || data.status === "live") return null;
-  return (
-    <div className={className}>
-      <StatusBadge status={data.status} updatedAt={data.updatedAt ?? ""} />
-    </div>
-  );
+export function LayerBadge({ data, className, compact }: { data?: { status: Status; updatedAt?: string }; className?: string; compact?: boolean }) {
+  if (!data) return null;
+  return <StatusBadge status={data.status} updatedAt={data.updatedAt ?? ""} compact={compact} className={className} />;
 }

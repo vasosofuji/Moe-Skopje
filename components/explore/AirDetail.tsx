@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { aqiColor, pm10Severity, sparkPoints } from "@/lib/aqi";
+import { AQI_COLORS, aqiColor, aqiPosition, pm10Severity, sparkPoints } from "@/lib/aqi";
+import { cx } from "@/lib/cx";
 import { pick, useT } from "@/lib/i18n";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
 
@@ -36,6 +37,19 @@ export function cityPm10(stations: Station[]): number | null {
   return pm10.length ? Math.round(median(pm10.sort((a, b) => a - b))) : null;
 }
 
+/** The AQI scale as a bar with a dot at the reading: the legend of the heat map, which uses the same colours and spots. */
+export function AqiBar({ pm10, className }: { pm10: number; className?: string }) {
+  const stops = AQI_COLORS.map((c, i) => `${c} ${(((i + 0.5) / 6) * 100).toFixed(1)}%`).join(", ");
+  return (
+    <span aria-hidden className={cx("relative block h-1.5 shrink-0 rounded-full", className)} style={{ background: `linear-gradient(90deg, ${stops})` }}>
+      <span
+        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_1.5px_rgb(0_0_0/.35)]"
+        style={{ left: `${aqiPosition("pm10", pm10) * 100}%` }}
+      />
+    </span>
+  );
+}
+
 /** Daily city PM10 averages for the sparkline; stays null (sparkline hidden) on any failure. */
 function useTrend() {
   const [trend, setTrend] = useState<number[] | null>(null);
@@ -66,25 +80,25 @@ export function AirDetail({ data }: { data: LayerResponse }) {
   return (
     <div className="flex flex-col gap-3">
       <GlassCard>
-        <p className="t-footnote text-label-2">{t("air.cityPm10")}</p>
+        <p className="t-footnote font-semibold text-label-2">{t("air.cityPm10")}</p>
         {city === null || severity === null ? (
           <p className="t-body mt-1">{t("explore.noData")}</p>
         ) : (
           <>
-            <p className="mt-1 flex items-baseline gap-2">
-              <span aria-hidden className="size-3 shrink-0 self-center rounded-full" style={{ background: aqiColor(city) }} />
-              <span className="t-large-title tabular-nums">{city}</span>
-              <span className="t-subhead text-label-2">µg/m³</span>
-              <span className="t-headline ml-auto">{t(`air.level.${severity}`)}</span>
+            <p className="t-large-title mt-1 tabular-nums">
+              {city}
+              <span className="t-subhead ml-0.5 font-semibold text-label-2">µg/m³</span>
             </p>
-            <p className="t-subhead text-label-2 mt-2">{t(`air.advice.${severity}`)}</p>
+            <p className="t-headline">{t(`air.level.${severity}`)}</p>
+            <AqiBar pm10={city} className="mt-3" />
+            <p className="t-subhead mt-3 text-label-2">{t(`air.advice.${severity}`)}</p>
           </>
         )}
       </GlassCard>
 
       {trend && (
         <GlassCard>
-          <p className="t-footnote text-label-2">{t("air.trend")}</p>
+          <p className="t-footnote font-semibold text-label-2">{t("air.trend")}</p>
           <svg viewBox="0 0 200 48" preserveAspectRatio="none" role="img" aria-label={t("air.trend")} className="mt-2 h-12 w-full">
             <polyline
               points={sparkPoints(trend, 200, 48, 3)}
@@ -103,12 +117,14 @@ export function AirDetail({ data }: { data: LayerResponse }) {
         <h3 className="t-headline">{t("air.stations", { n: stations.length })}</h3>
         <ul className="mt-1">
           {stations.map((s) => (
-            <li key={s.id} className="flex min-h-11 items-center gap-3 border-t border-(--glass-stroke) first:border-t-0">
+            <li key={s.id} className="flex min-h-11 items-center gap-3 border-t-[0.5px] border-(--label)/10 first:border-t-0">
               <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: aqiColor(pm10Scale(s)) }} />
-              <span className="t-body min-w-0 flex-1 truncate">{pick(s.name, lang)}</span>
-              {s.official && <span className="t-caption bg-label/10 shrink-0 rounded-full px-2">{t("air.official")}</span>}
+              <span className="t-body min-w-0 flex-1 truncate" title={pick(s.name, lang)}>
+                {pick(s.name, lang)}
+              </span>
+              {s.official && <span className="t-caption shrink-0 text-label-2">{t("air.official")}</span>}
               {s.pm25 && <span className="t-caption shrink-0 text-label-2">{t("air.pm25")}</span>}
-              <span className="t-headline tabular-nums">{Math.round(s.value)}</span>
+              <span className="min-w-8 text-right t-headline tabular-nums">{Math.round(s.value)}</span>
             </li>
           ))}
         </ul>

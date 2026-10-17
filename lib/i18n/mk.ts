@@ -50,9 +50,9 @@ export const mk = {
 
   // ── explore
   "explore.today": "Денес во Скопје",
-  "explore.airNow": "Воздух сега",
+  "explore.airNow": "Воздух",
   "explore.weather": "Време",
-  "explore.nextBus": "Следен автобус",
+  "explore.nextBus": "Автобус",
   "explore.layers": "Слоеви",
   "explore.noData": "Нема податоци",
 
@@ -169,8 +169,8 @@ export const mk = {
   "goOut.title": "За надвор",
   "goOut.score": "Оцена {score} од 100",
   "goOut.verdict.good": "Одличен ден",
-  "goOut.verdict.fair": "Во ред, но внимавајте",
-  "goOut.verdict.poor": "Подобро останете внатре",
+  "goOut.verdict.fair": "Со внимание",
+  "goOut.verdict.poor": "Подобро внатре",
   "goOut.reason.air": "Загаден воздух",
   "goOut.reason.rain": "Врне",
   "goOut.reason.temp": "Екстремна температура",
@@ -183,8 +183,8 @@ export const mk = {
   "buses.inMin": "за {n} мин",
   "buses.now": "сега",
   "buses.toward": "кон {headsign}",
-  "buses.tapDeparture": "Допрете поаѓање за да го видите автобусот на картата.",
-  "buses.unavailable": "Возниот ред моментално не е достапен.",
+  "buses.tapDeparture": "Допрете за да го следите автобусот.",
+  "buses.unavailable": "Возниот ред не е достапен.",
 
   // --- S1 settings ---
   "settings.display": "Приказ",
@@ -236,7 +236,7 @@ export const mk = {
   "outages.title": "Прекини",
   "outages.days": "Избери ден",
   "outages.today": "Денес",
-  "outages.none": "Нема најавени прекини за овој ден.",
+  "outages.none": "Нема најавени прекини.",
   "outages.count.one": "{n} прекин",
   "outages.count.other": "{n} прекини",
   "outages.type.power": "Струја",
@@ -273,4 +273,9 @@ export const mk = {
 
   // --- u5-settings ---
   "settings.ago": "Пред {age}",
+
+  // --- u3-widgets ---
+  "status.demo": "Демо",
+  "status.ago": "Пред {age}",
+  "unit.min": "мин",
 };

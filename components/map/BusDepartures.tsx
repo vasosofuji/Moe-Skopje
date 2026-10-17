@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import { useFetched } from "@/lib/useFetched";
@@ -40,21 +39,22 @@ export function useDepartures(stopId: string | undefined): Departure[] | null | 
   return useFetched(stopId && `/api/buses/stop/${encodeURIComponent(stopId)}`, readDepartures, POLL_MS);
 }
 
-/** "за 3 мин" / "сега" for a departure within the hour, else its clock time. */
+/** "3 мин" / "сега" for a departure within the hour, else its clock time. */
 export function useWhen() {
   const { t } = useT();
-  return (d: Departure) => (d.inMin <= 0 ? t("buses.now") : d.inMin < 60 ? t("buses.inMin", { n: d.inMin }) : d.at);
+  return (d: Departure) => (d.inMin <= 0 ? t("buses.now") : d.inMin < 60 ? t("age.min", { n: d.inMin }) : d.at);
 }
 
-/** The line number on an indigo capsule, as on the stop signs. */
-export function LineBadge({ route, className }: { route: string; className?: string }) {
+/** The line number on an indigo capsule, as on the stop signs; `compact` for the narrow Today tile. */
+export function LineBadge({ route, compact, className }: { route: string; compact?: boolean; className?: string }) {
   const { t } = useT();
   return (
     <span
       role="img"
       aria-label={t("buses.line", { line: route })}
       className={cx(
-        "t-subhead flex h-7 min-w-9 shrink-0 items-center justify-center rounded-[8px] bg-(--c-bus) px-1.5 font-semibold whitespace-nowrap text-white tabular-nums",
+        "flex shrink-0 items-center justify-center bg-(--c-bus) px-1.5 font-semibold whitespace-nowrap text-white tabular-nums",
+        compact ? "t-footnote h-6 min-w-7 rounded-[7px]" : "t-subhead h-7 min-w-9 rounded-[8px]",
         className,
       )}
     >
@@ -78,10 +78,13 @@ export function BusDepartures({ stopId }: { stopId?: string }) {
     <section aria-busy={list === undefined} className="flex flex-col gap-1">
       <h3 className="t-footnote font-semibold text-label-2">{t("buses.next")}</h3>
       {list === undefined ? (
-        <div className="flex flex-col gap-1 py-0.5">
-          <span className="skeleton h-10" />
-          <span className="skeleton h-10" />
-          <span className="skeleton h-10" />
+        // as many rows as a full list, so the card does not grow when the timetable answers
+        <div className="flex flex-col">
+          {Array.from({ length: SHOWN }, (_, i) => (
+            <span key={i} className="flex h-11 items-center">
+              <span className="skeleton h-7 w-full" />
+            </span>
+          ))}
         </div>
       ) : list === null ? (
         <p className="t-subhead text-label-2">{t("buses.unavailable")}</p>
@@ -90,26 +93,34 @@ export function BusDepartures({ stopId }: { stopId?: string }) {
       ) : (
         <>
           <ul className="-mx-2 flex flex-col">
-            {list.slice(0, SHOWN).map((d) => (
-              <li key={d.tripId} className="[contain-intrinsic-size:auto_44px] [content-visibility:auto]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    track({ tripId: d.tripId, route: d.route, headsign: d.headsign });
-                    select(null);
-                  }}
-                  className={cx(
-                    "flex min-h-11 w-full items-center gap-3 rounded-[10px] px-2 text-left hover:bg-(--label)/5",
-                    focusRing,
-                  )}
-                >
-                  <LineBadge route={d.route} />
-                  <span className="t-subhead min-w-0 flex-1 truncate">{t("buses.toward", { headsign: tidyName(d.headsign) })}</span>
-                  <span className="t-subhead shrink-0 font-semibold tabular-nums">{when(d)}</span>
-                  <ChevronRight size={16} aria-hidden className="-mr-1 shrink-0 text-label-2" />
-                </button>
-              </li>
-            ))}
+            {list.slice(0, SHOWN).map((d) => {
+              const headsign = tidyName(d.headsign);
+              return (
+                <li key={d.tripId} className="[contain-intrinsic-size:auto_44px] [content-visibility:auto]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      track({ tripId: d.tripId, route: d.route, headsign: d.headsign });
+                      select(null);
+                    }}
+                    aria-label={`${t("buses.line", { line: d.route })}, ${t("buses.toward", { headsign })}, ${when(d)}`}
+                    className={cx(
+                      "flex min-h-11 w-full items-center gap-3 rounded-[10px] px-2 text-left hover:bg-(--label)/5 active:scale-98",
+                      focusRing,
+                    )}
+                  >
+                    {/* a fixed slot, so the headsigns line up */}
+                    <span className="flex min-w-12 shrink-0">
+                      <LineBadge route={d.route} />
+                    </span>
+                    <span className="t-subhead min-w-0 flex-1 truncate" title={headsign}>
+                      {headsign}
+                    </span>
+                    <span className="t-subhead min-w-12 shrink-0 text-right font-semibold tabular-nums">{when(d)}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           <p className="t-caption text-label-2">{t("buses.tapDeparture")}</p>
         </>
