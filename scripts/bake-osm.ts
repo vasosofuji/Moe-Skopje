@@ -123,7 +123,39 @@ ${jsonLines(streets)}
 `, count: streets.length };
 }
 
+// Roads under construction, and roads closed to traffic with a note, for the roadworks layer (R1). Footpaths are left out.
+const ROADWORK_TAGS = ["construction", "access", "note", "description", "start_date", "opening_date", "check_date"];
+
+/** `out geom` ways → one LineString per way carrying the roadwork tags (underscored). */
+function roadWays(elements: unknown[]): GeoJSON.Feature<GeoJSON.Geometry, Props>[] {
+  return (elements as OverpassWay[]).flatMap((w) => {
+    const t = w.tags ?? {};
+    if (w.type !== "way" || !w.geometry || w.geometry.length < 2 || /^(footway|path|steps|cycleway|bridleway|track|corridor|elevator|platform|proposed|raceway)$/.test(t.highway ?? "")) return [];
+    return [
+      {
+        type: "Feature" as const,
+        geometry: { type: "LineString" as const, coordinates: w.geometry.map((p) => [Math.round(p.lon * 1e5) / 1e5, Math.round(p.lat * 1e5) / 1e5]) },
+        properties: { osm_id: String(w.id), highway: t.highway, ...(t["name:mk"] ?? t.name ? { name_mk: t["name:mk"] ?? t.name } : {}), ...tags(t, ["name:en", ...ROADWORK_TAGS]) } as Props,
+      },
+    ];
+  });
+}
+
+/** Roadworks file: a FeatureCollection with a `baked_at` date, so the layer can say how old the OSM snapshot is. */
+async function roadworkRows(features: GeoJSON.Feature[]): Promise<{ body: string; count: number }> {
+  const baked_at = new Date().toISOString().slice(0, 10);
+  return { body: `{"type":"FeatureCollection","baked_at":"${baked_at}","features":[\n${jsonLines(features)}\n]}\n`, count: features.length };
+}
+
 const DATASETS: Record<string, Dataset> = {
+  roadworks: {
+    file: "roadworks.geojson",
+    minutes: 5,
+    query: q(`way["highway"="construction"](${BBOX});way["highway"]["access"="no"]["note"](${BBOX});`, "out geom;"),
+    raw: roadWays,
+    pick: (f) => f,
+    format: roadworkRows,
+  },
   municipalities: {
     file: "municipalities.geojson",
     query: q(muni("name") + muni("name:mk"), "out geom;"),

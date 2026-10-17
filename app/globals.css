@@ -51,6 +51,7 @@
   --c-parking: var(--system-purple);
   --c-pharmacy: var(--system-red);
   --c-quake: var(--system-brown);
+  --c-roadworks: #ff6a13; /* a deeper orange than --c-heating, so closed streets do not read as heating outages */
   --c-report: var(--system-pink);
 }
 

@@ -6,6 +6,7 @@ import { events } from "./events";
 import { outages } from "./outages";
 import { parkingAdapter } from "./parking";
 import { pharmacies } from "./pharmacies";
+import { roadworks } from "./roadworks";
 import { staticAdapter } from "./static";
 import type { Adapter } from "./types";
 import { waste } from "./waste";
@@ -19,6 +20,7 @@ export const registry: Partial<Record<LayerId, Adapter>> = {
   buses,
   parking: parkingAdapter(),
   pharmacies,
+  roadworks,
   schools: staticAdapter("schools", "schools.geojson", "school"),
   events,
   waste,
