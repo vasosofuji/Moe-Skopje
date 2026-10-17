@@ -1,13 +1,20 @@
-import { beforeEach, expect, test, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { getLayer, resetLayerCache } from "@/lib/server/layer";
 import { memorySnapshots } from "@/lib/server/supabase";
 
 // Real registry, real baked data: the geo layers as getLayer serves them (offline snapshots, no network for the static ones).
-const deps = { snapshots: memorySnapshots(), timeoutMs: 2000 };
+let deps = { snapshots: memorySnapshots(), timeoutMs: 2000 };
 beforeEach(() => {
+  deps = { snapshots: memorySnapshots(), timeoutMs: 2000 };
   resetLayerCache();
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 503 }))); // power, heating, water all "down"
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 test("baked layers resolve as static; buses merge stops and routes", async () => {
@@ -16,6 +23,16 @@ test("baked layers resolve as static; buses merge stops and routes", async () =>
   const kinds = new Set(buses.features.features.map((f) => f.properties?.kind));
   expect(kinds).toEqual(new Set(["bus-stop", "bus-route"]));
   expect(parking.features.features.length).toBeGreaterThan(100);
+});
+
+test("water: a live page where no announcement maps to a municipality serves the seed (demo data), not an empty live layer", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(Date.parse("2026-10-17T10:00:00Z"));
+  const html = readFileSync(new URL("./__fixtures__/vodovod.html", import.meta.url), "utf8");
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(html)));
+  const layer = await getLayer("outages-water", deps);
+  vi.useRealTimers();
+  expect(layer.status).toBe("offline");
+  expect(layer.features.features.length).toBeGreaterThanOrEqual(2);
 });
 
 test("outages and pharmacies fall back to a valid seed (offline) when the live source is down", async () => {

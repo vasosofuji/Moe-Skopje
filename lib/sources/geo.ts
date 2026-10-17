@@ -46,6 +46,9 @@ function offsetMinutes(instant: number): number {
   return m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] ?? 0)) : 0;
 }
 
+/** Today in Skopje as YYYY-MM-DD (the server clock is UTC). */
+export const skopjeToday = (now: number) => new Date(now).toLocaleDateString("en-CA", { timeZone: "Europe/Skopje" });
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /**

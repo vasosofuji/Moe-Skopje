@@ -1,7 +1,7 @@
 // Outage layers (spec §5.3): text → municipality polygon, municipality-level precision.
 // ponytail: no per-street geocoding; add Nominatim post-hackathon. No lib/server imports (tsx).
 import * as cheerio from "cheerio";
-import { matchMunicipality, parseSkopjeTime } from "./geo";
+import { matchMunicipality, parseSkopjeTime, skopjeToday } from "./geo";
 import { loadSeed } from "./seed";
 import { municipalities, type MunicipalityCollection } from "./static";
 import type { Adapter, Feature } from "./types";
@@ -98,10 +98,9 @@ const power: Adapter = {
 // The announcements are free text paragraphs ("Ве известуваме дека на ден 13.10.2026 поради ... од 09:55 часот до
 // завршување"), newest first, mostly naming streets, not municipalities. Only announcements dated today or later that
 // name a municipality can be placed; the rest are dropped. "Until completion" ends the same day at 23:59.
+// With minFeatures 1, a page where nothing maps counts as failed and getLayer serves the seed ("Demo data").
 // ponytail: a street/settlement → municipality gazetteer would place far more of them.
 const WATER_URL = "https://www.vodovod-skopje.com.mk/mk-MK/article/INFORMACIIIZAPREKINNAVODOSNABDUVANjEIDEFEKTI_1";
-
-const skopjeToday = (now: number) => new Date(now).toLocaleDateString("en-CA", { timeZone: "Europe/Skopje" }); // YYYY-MM-DD
 
 export function parseVodovod(html: string, munis: MunicipalityCollection, now = Date.now()): Feature[] {
   const $ = cheerio.load(html);
@@ -138,6 +137,7 @@ export function parseVodovod(html: string, munis: MunicipalityCollection, now = 
 const water: Adapter = {
   id: "outages-water",
   ttl: 1800,
+  minFeatures: 1, // nothing mappable is a failed fetch: getLayer serves the seed ("Demo data") instead of an empty live layer
   source: { name: "ЈП Водовод и канализација", url: "https://www.vodovod-skopje.com.mk/" },
   async fetch(signal) {
     const res = await fetch(WATER_URL, { signal: abort(signal), headers: HEADERS });
