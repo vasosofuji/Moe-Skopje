@@ -192,4 +192,13 @@ export const en: Dict = {
   "eservices.title": "e-Services",
   "eservices.hint": "Common tasks you can sort out online.",
   "eservices.opensNew": "opens in a new tab",
+
+  // --- Wave E1b ---
+  "buses.live": "Live",
+  "buses.estimated": "Estimated position (timetable)",
+  "buses.inMin": "in {n} min",
+  "buses.now": "now",
+  "buses.toward": "to {headsign}",
+  "buses.tapDeparture": "Tap a departure to see the bus on the map.",
+  "buses.unavailable": "The timetable is unavailable right now.",
 };

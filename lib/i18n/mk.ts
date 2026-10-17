@@ -192,4 +192,13 @@ export const mk = {
   "eservices.title": "е-Услуги",
   "eservices.hint": "Најчестите работи што можете да ги средите онлајн.",
   "eservices.opensNew": "се отвора во нов прозорец",
+
+  // --- Wave E1b ---
+  "buses.live": "Во живо",
+  "buses.estimated": "Проценета позиција (возен ред)",
+  "buses.inMin": "за {n} мин",
+  "buses.now": "сега",
+  "buses.toward": "кон {headsign}",
+  "buses.tapDeparture": "Допрете поаѓање за да го видите автобусот на картата.",
+  "buses.unavailable": "Возниот ред моментално не е достапен.",
 };
