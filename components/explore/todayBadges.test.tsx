@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
-import { LayerBadge, worstOf } from "@/components/glass/StatusBadge";
+import { LayerBadge, StatusBadge, worstOf } from "@/components/glass/StatusBadge";
 import { translate } from "@/lib/i18n/core";
 import { activeNow } from "./activeNow";
 import { GoOutCard } from "./GoOutCard";
@@ -19,13 +19,26 @@ test("activeNow counts startsAt <= now < endsAt only: not upcoming, not over, th
   expect(activeNow(items, NOW).map((i) => i.id)).toEqual(["now", "starts-now"]);
 });
 
-test("LayerBadge says nothing for live or missing data, and names stale and demo data", () => {
+test("LayerBadge says nothing for live, static or missing data, and names stale and demo data as plain text", () => {
   expect(renderToStaticMarkup(<LayerBadge />)).toBe("");
   expect(renderToStaticMarkup(<LayerBadge data={{ status: "live", updatedAt: at(1) }} />)).toBe("");
+  expect(renderToStaticMarkup(<LayerBadge data={{ status: "static", updatedAt: at(1) }} />)).toBe("");
   const stale = renderToStaticMarkup(<LayerBadge data={{ status: "stale", updatedAt: new Date(Date.now() - 2 * 3600_000).toISOString() }} />);
-  expect(stale).toContain(translate("mk", "status.stale"));
-  expect(stale).toContain(translate("mk", "age.h", { n: 2 }));
-  expect(renderToStaticMarkup(<LayerBadge data={{ status: "offline" }} />)).toContain(translate("mk", "status.offline"));
+  expect(stale).toContain(translate("mk", "status.ago", { age: translate("mk", "age.h", { n: 2 }) }));
+  expect(renderToStaticMarkup(<LayerBadge data={{ status: "stale" }} />)).toContain(translate("mk", "status.stale"));
+  const demo = renderToStaticMarkup(<LayerBadge data={{ status: "offline" }} />);
+  expect(demo).toContain(translate("mk", "status.offline"));
+  expect(demo).not.toContain("rounded-full"); // no capsule, no dot
+  // the compact tile form shows the short word and keeps the full text for screen readers
+  const compact = renderToStaticMarkup(<LayerBadge data={{ status: "offline" }} compact />);
+  expect(compact).toContain(`>${translate("mk", "status.demo")}<`);
+  expect(compact).toContain(translate("mk", "status.offline"));
+});
+
+test("StatusBadge shows live data only when asked", () => {
+  const live = { status: "live" as const, updatedAt: new Date(Date.now() - 3 * 60_000).toISOString() };
+  expect(renderToStaticMarkup(<StatusBadge {...live} />)).toBe("");
+  expect(renderToStaticMarkup(<StatusBadge {...live} showLive />)).toContain(`${translate("mk", "status.live")} · ${translate("mk", "age.min", { n: 3 })}`);
 });
 
 test("worstOf picks the least trustworthy response", () => {

@@ -50,9 +50,9 @@ export const en: Dict = {
 
   // ── explore
   "explore.today": "Today in Skopje",
-  "explore.airNow": "Air now",
+  "explore.airNow": "Air",
   "explore.weather": "Weather",
-  "explore.nextBus": "Next bus near you",
+  "explore.nextBus": "Next bus",
   "explore.layers": "Layers",
   "explore.noData": "No data",
 
@@ -166,11 +166,11 @@ export const en: Dict = {
   "assistant.expand": "Show the conversation",
 
   // --- Task 13: tier 2 ---
-  "goOut.title": "Good to go out?",
+  "goOut.title": "Go out?",
   "goOut.score": "Score {score} out of 100",
-  "goOut.verdict.good": "A great day",
-  "goOut.verdict.fair": "Fine, with some care",
-  "goOut.verdict.poor": "Better to stay in",
+  "goOut.verdict.good": "Great day",
+  "goOut.verdict.fair": "With care",
+  "goOut.verdict.poor": "Better indoors",
   "goOut.reason.air": "Polluted air",
   "goOut.reason.rain": "Rain",
   "goOut.reason.temp": "Extreme temperature",
@@ -183,8 +183,8 @@ export const en: Dict = {
   "buses.inMin": "in {n} min",
   "buses.now": "now",
   "buses.toward": "to {headsign}",
-  "buses.tapDeparture": "Tap a departure to see the bus on the map.",
-  "buses.unavailable": "The timetable is unavailable right now.",
+  "buses.tapDeparture": "Tap to follow the bus.",
+  "buses.unavailable": "Timetable unavailable.",
 
   // --- S1 settings ---
   "settings.display": "Display",
@@ -237,7 +237,7 @@ export const en: Dict = {
   "outages.title": "Outages",
   "outages.days": "Pick a day",
   "outages.today": "Today",
-  "outages.none": "No planned outages on this day.",
+  "outages.none": "No planned outages.",
   "outages.count.one": "{n} outage",
   "outages.count.other": "{n} outages",
   "outages.type.power": "Power",
@@ -269,4 +269,9 @@ export const en: Dict = {
 
   // --- final fixes UI ---
   "outages.activeNow": "Under way now: {n}",
+
+  // --- u3-widgets ---
+  "status.demo": "Demo",
+  "status.ago": "{age} ago",
+  "unit.min": "min",
 };
