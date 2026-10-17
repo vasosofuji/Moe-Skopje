@@ -3,9 +3,8 @@
 import { CornerUpRight, LocateFixed, LocateOff, WifiOff } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import dynamic from "next/dynamic";
 import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from "react";
-import { AskBar } from "@/components/assistant/AskBar";
-import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import type { Citation } from "@/components/assistant/Citation";
 import { ExplorePanel } from "@/components/explore/ExplorePanel";
 import { GlassButton } from "@/components/glass/GlassButton";
@@ -13,8 +12,6 @@ import { BusTracker } from "@/components/map/BusTracker";
 import { MapContext, MapView, type BBox, type Highlight, type LngLat, type MapApi, type Trip } from "@/components/map/MapView";
 import { MarkerCard } from "@/components/map/MarkerCard";
 import { Onboarding } from "@/components/onboarding/Onboarding";
-import { RoutePlanner } from "@/components/route/RoutePlanner";
-import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Dict } from "@/lib/i18n";
 import { HIDDEN_LAYERS, type LayerId } from "@/lib/layers";
@@ -29,6 +26,12 @@ import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 
 export type Tab = "explore" | "ask" | "settings";
+
+// Off the first load: only Explore shows at start, and AskBar is desktop-only.
+const AskBar = dynamic(() => import("@/components/assistant/AskBar").then((m) => m.AskBar));
+const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel").then((m) => m.AssistantPanel));
+const RoutePlanner = dynamic(() => import("@/components/route/RoutePlanner").then((m) => m.RoutePlanner));
+const SettingsPanel = dynamic(() => import("@/components/settings/SettingsPanel").then((m) => m.SettingsPanel));
 
 const TOAST_MS = 6000;
 /** Camera moves stay short and run even with reduced motion (they say where the content went). */

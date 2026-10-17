@@ -115,13 +115,20 @@ export function MarkerCard({
   const [lng, lat] = featureCenter(feature.geometry);
   const [point, setPoint] = useState(() => map.project([lng, lat]));
 
+  // Only a floating card follows the map; a docked one (phones) would re-render on every pan frame for nothing.
   useEffect(() => {
-    const follow = () => setPoint(map.project([lng, lat]));
+    if (docked) return;
+    let frame = 0;
+    const follow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setPoint(map.project([lng, lat])));
+    };
     map.on("move", follow);
     return () => {
+      cancelAnimationFrame(frame);
       map.off("move", follow);
     };
-  }, [map, lng, lat]);
+  }, [map, lng, lat, docked]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

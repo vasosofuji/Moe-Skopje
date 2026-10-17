@@ -7,7 +7,8 @@ const POLL_MS = 60_000;
 const FRESH_MS = 50_000;
 
 // One cache for the whole page. `data` is undefined after a 404 (layer not registered) or before any good response.
-type Entry = { at: number; data?: LayerResponse };
+// `sig` is the features' JSON: a poll that returns the same features keeps the old object, so the map skips setData.
+type Entry = { at: number; data?: LayerResponse; sig?: string };
 const cache = new Map<LayerId, Entry>();
 const inflight = new Set<LayerId>();
 const listeners = new Set<() => void>();
@@ -28,14 +29,17 @@ export async function refreshLayer(id: LayerId, now = Date.now()): Promise<void>
   if (inflight.has(id) || (prev && now - prev.at < FRESH_MS)) return;
   inflight.add(id);
   let data = prev?.data;
+  let sig = prev?.sig;
   try {
     const res = await fetch(`/api/layers/${id}`);
     data = res.ok ? ((await res.json()) as LayerResponse) : undefined;
+    sig = data ? JSON.stringify(data.features) : undefined;
+    if (data && prev?.data && sig === prev.sig) data = { ...data, features: prev.data.features };
   } catch {
     // Offline or a broken body: keep showing what we had.
   }
   inflight.delete(id);
-  cache.set(id, { at: Date.now(), data });
+  cache.set(id, { at: Date.now(), data, sig });
   listeners.forEach((l) => l());
 }
 
