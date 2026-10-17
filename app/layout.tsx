@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { RefractionFilter } from "@/components/glass/RefractionFilter";
 import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
+import "./layout-tokens.css";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
 

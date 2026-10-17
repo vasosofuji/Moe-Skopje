@@ -3,7 +3,6 @@
 import { Search } from "lucide-react";
 import { useId, useState, type FocusEvent } from "react";
 import { Glass } from "@/components/glass/Glass";
-import { GlassPill } from "@/components/glass/GlassPill";
 import { useMap } from "@/components/map/MapView";
 import { featureCenter } from "@/components/map/renderLayer";
 import { TIER1, toggleLayer } from "@/components/onboarding/LayerGrid";
@@ -93,6 +92,40 @@ export function SearchPill({ floating, className }: { floating?: boolean; classN
     </>
   );
 
+  const results = open && !!q && (
+    <>
+      <ul id={listId} aria-label={t("shell.searchResults")}>
+        {hits.map((hit) => {
+          const { icon: Icon, color } = LAYERS[hit.layer];
+          return (
+            <li key={hit.key}>
+              <button
+                type="button"
+                onClick={() => choose(hit)}
+                className={cx(
+                  "flex min-h-12 w-full items-center gap-3 rounded-[10px] px-2.5 text-left hover:bg-(--label)/6",
+                  focusRing,
+                )}
+              >
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-white"
+                  style={{ background: color }}
+                >
+                  <Icon size={16} aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="t-subhead block truncate font-semibold">{hit.title}</span>
+                  <span className="t-footnote block truncate text-label-2">{hit.sub}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {!hits.length && <p className="t-subhead px-2.5 py-3 text-label-2">{t("shell.noResults")}</p>}
+    </>
+  );
+
   return (
     <form
       role="search"
@@ -104,47 +137,28 @@ export function SearchPill({ floating, className }: { floating?: boolean; classN
       className={cx("relative", className)}
     >
       {floating ? (
-        <GlassPill className="h-12 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-(--system-blue)">
-          {field}
-        </GlassPill>
-      ) : (
-        <div className="flex h-11 items-center gap-2 rounded-full bg-(--label)/6 px-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-(--system-blue)">
-          {field}
-        </div>
-      )}
-
-      {open && q && (
-        <Glass strong className="glass-card absolute inset-x-0 top-full z-10 mt-2 p-1.5">
-          <ul id={listId} aria-label={t("shell.searchResults")}>
-            {hits.map((hit) => {
-              const { icon: Icon, color } = LAYERS[hit.layer];
-              return (
-                <li key={hit.key}>
-                  <button
-                    type="button"
-                    onClick={() => choose(hit)}
-                    className={cx(
-                      "flex min-h-12 w-full items-center gap-3 rounded-[10px] px-2.5 text-left hover:bg-(--label)/6",
-                      focusRing,
-                    )}
-                  >
-                    <span
-                      className="flex size-8 shrink-0 items-center justify-center rounded-full text-white"
-                      style={{ background: color }}
-                    >
-                      <Icon size={16} aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="t-subhead block truncate font-semibold">{hit.title}</span>
-                      <span className="t-footnote block truncate text-label-2">{hit.sub}</span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {!hits.length && <p className="t-subhead px-2.5 py-3 text-label-2">{t("shell.noResults")}</p>}
+        // One surface: the results unfold out of the pill and share its glass, corners and shadow (the row is 1 px
+        // under --search-h for the hairline border).
+        <Glass
+          strong={!!results}
+          className="flex flex-col overflow-hidden rounded-3xl has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-(--system-blue)"
+        >
+          <div className="flex h-[calc(var(--search-h)-1px)] shrink-0 items-center gap-2 px-4">{field}</div>
+          {/* Never taller than the free map: they stop above the controls row, the sheet and the tab bar. */}
+          {results && (
+            <div className="max-h-[calc(100dvh-var(--map-t)-var(--controls-b)-var(--control)-var(--gap))] overflow-y-auto overscroll-contain border-t-[0.5px] border-(--label)/10 p-1.5">
+              {results}
+            </div>
+          )}
         </Glass>
+      ) : (
+        <>
+          <div className="flex h-11 items-center gap-2 rounded-full bg-(--label)/6 px-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-(--system-blue)">
+            {field}
+          </div>
+          {/* In the sidebar the results are part of the panel, right under the field. */}
+          {results && <div className="mt-1.5">{results}</div>}
+        </>
       )}
     </form>
   );

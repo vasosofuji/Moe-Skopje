@@ -247,9 +247,9 @@ export const MapView = memo(function MapView({
     void import("maplibre-gl").then(({ AttributionControl }) => {
       if (cancelled) return;
       const link = `<a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">${t("route.fixTheMap")}</a>`;
-      // Compact, bottom-right, and collapsed: MapLibre opens a compact control by default, so close it right after adding.
+      // Compact, bottom-left, and collapsed: MapLibre opens a compact control by default, so close it right after adding.
       const ctrl = new AttributionControl({ compact: true, customAttribution: link });
-      map.addControl(ctrl, "bottom-right");
+      map.addControl(ctrl, "bottom-left");
       control = ctrl;
       const el = map.getContainer().querySelector(".maplibregl-ctrl-attrib");
       el?.classList.remove("maplibregl-compact-show");
