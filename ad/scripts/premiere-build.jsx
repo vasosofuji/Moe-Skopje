@@ -1,6 +1,7 @@
 // Builds the editable Premiere project from out/premiere-plan.json (node scripts/premiere-plan.mjs).
 // Run inside Premiere: $.evalFile(".../ad/scripts/premiere-build.jsx"). Never renders or exports.
-// Tracks: V1 footage, V2 app UI shots + end frame, V3 overlays (H1 screen, white dips), V4 captions; A1 music, A2 SFX.
+// Tracks: V1 footage, V2 app UI shots + end frame, V3 overlays (H1 screen, white dips), V4 captions;
+// A1 music, A2 SFX, A3 SFX that overlap one already on A2 (overwriteClip would cut it).
 (function () {
   var report = [];
   var planFile = new File(new File($.fileName).parent.parent.fsName + "/out/premiere-plan.json");
@@ -41,7 +42,7 @@
   app.enableQE();
   var qs = qe.project.getActiveSequence();
   if (seq.videoTracks.numTracks < 4) qs.addTracks(4 - seq.videoTracks.numTracks, seq.videoTracks.numTracks, 0);
-  if (seq.audioTracks.numTracks < 2) qs.addTracks(0, 0, 2 - seq.audioTracks.numTracks);
+  if (seq.audioTracks.numTracks < 3) qs.addTracks(0, 0, 3 - seq.audioTracks.numTracks);
   report.push("tracks V" + seq.videoTracks.numTracks + " A" + seq.audioTracks.numTracks);
 
   function place(trackColl, idx, projectItem, start, srcIn, srcDur) {
@@ -77,12 +78,17 @@
       sc.addKey(z); sc.setValueAtKey(z, 105.4, true);
     }
   }
-  // Slow H1 to its edit speed (QE): it was placed at srcDur and grows to dur.
+  // Slow H1 to its edit speed (QE). setSpeed keeps the clip length, so then extend its end to the slot.
   var qv = qs.getVideoTrackAt(0);
   for (var q = 0; q < qv.numItems; q++) {
     var qi = qv.getItemAt(q);
-    for (var r = 0; r < plan.footage.length; r++)
-      if (plan.footage[r].rate !== 1 && qi.type !== "Empty" && Math.abs(qi.start.secs - plan.footage[r].start) < 0.02) qi.setSpeed(plan.footage[r].rate, "", false, false, false);
+    for (var r = 0; r < plan.footage.length; r++) {
+      var fr = plan.footage[r];
+      if (fr.rate === 1 || qi.type === "Empty" || Math.abs(qi.start.secs - fr.start) > 0.02) continue;
+      qi.setSpeed(fr.rate, "", false, false, false);
+      for (var v1 = 0; v1 < V[0].clips.numItems; v1++)
+        if (Math.abs(V[0].clips[v1].start.seconds - fr.start) < 0.02) { var te = new Time(); te.seconds = fr.start + fr.dur; V[0].clips[v1].end = te; }
+    }
   }
 
   for (var u = 0; u < plan.ui.length; u++) place(V, 1, item(plan.ui[u].file), plan.ui[u].start);
@@ -99,9 +105,13 @@
       lv.addKey(tk); lv.setValueAtKey(tk, level(plan.musicKeys[k2][1]), true);
     }
   }
-  // A2 synthesised SFX.
+  // A2 synthesised SFX; a cue that starts before the previous A2 cue ends goes to A3.
+  var busy = 0;
   for (var x = 0; x < plan.sfx.length; x++) {
-    var s = place(A, 1, item(plan.sfx[x].file), plan.sfx[x].at);
+    var pi = item(plan.sfx[x].file), dur = pi.getOutPoint(4).seconds - pi.getInPoint(4).seconds;
+    var tr = plan.sfx[x].at >= busy - 0.001 ? 1 : 2;
+    if (tr === 1) busy = plan.sfx[x].at + dur;
+    var s = place(A, tr, pi, plan.sfx[x].at);
     if (s) prop(s, "Volume", "Level").setValue(level(plan.sfx[x].db), true);
   }
 
@@ -109,6 +119,6 @@
   seq.setOutPoint(plan.total);
   proj.save();
   report.push("V1 " + V[0].clips.numItems + " / V2 " + V[1].clips.numItems + " / V3 " + V[2].clips.numItems + " / V4 " + V[3].clips.numItems +
-    " / A1 " + A[0].clips.numItems + " / A2 " + A[1].clips.numItems + ", seq end " + seq.end);
+    " / A1 " + A[0].clips.numItems + " / A2 " + A[1].clips.numItems + " / A3 " + A[2].clips.numItems + ", seq end " + seq.end);
   return report.join("\n");
 })();
