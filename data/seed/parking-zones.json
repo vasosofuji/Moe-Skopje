@@ -1,0 +1,14 @@
+{
+  "source": "https://www.gradskiparking.com.mk/",
+  "priceList": "https://www.gradskiparking.com.mk/makedonski-ns_article-cenovnik-javno-i-zonsko.nspx",
+  "currency": "MKD",
+  "unit": "per hour",
+  "note": "approximate",
+  "noteDetail": "pricePerHour is the public-lot hourly price from the City Parking price list (checked 2026-10-17). Zone A/A0 first hour is 75 MKD. The zone-to-municipality mapping is a municipality-level approximation of the official zone map (spec 5.3).",
+  "zones": [
+    { "zone": "A", "name": { "mk": "Црвена зона", "en": "Red zone" }, "pricePerHour": 40, "municipalities": ["Центар"] },
+    { "zone": "B", "name": { "mk": "Жолта зона", "en": "Yellow zone" }, "pricePerHour": 40, "municipalities": ["Чаир", "Карпош", "Кисела Вода"] },
+    { "zone": "C", "name": { "mk": "Зелена зона", "en": "Green zone" }, "pricePerHour": 30, "municipalities": ["Аеродром", "Гази Баба", "Бутел"] },
+    { "zone": "D", "name": { "mk": "Бела зона", "en": "White zone" }, "pricePerHour": 30, "municipalities": ["Шуто Оризари", "Ѓорче Петров", "Сарај"] }
+  ]
+}
