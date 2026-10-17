@@ -287,11 +287,15 @@ async function answer(messages: Anthropic.Beta.BetaMessageParam[], lang: Lang, c
     { signal },
   );
 
+  let wrote = false; // has any text of this answer reached the client yet?
   for (let attempt = 0; ; attempt++) {
     try {
       for await (const messageStream of runner) {
         for await (const event of messageStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") write(event.delta.text);
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            wrote = true;
+            write(event.delta.text);
+          }
         }
         const message = await messageStream.finalMessage();
         attempt = 0; // the cap is on consecutive failures
@@ -306,16 +310,19 @@ async function answer(messages: Anthropic.Beta.BetaMessageParam[], lang: Lang, c
       }
       return;
     } catch (err) {
-      if (err instanceof Anthropic.APIError || err instanceof TruncatedToolInput || attempt >= 2) throw err;
-      console.warn("[assistant] tool input was not parseable JSON, re-issuing the turn");
+      // A re-issue starts the whole answer again, so once the client has seen any text it would see that text twice: end with
+      // the inline error instead. Before any text, retry (the usual cause is a tool input that did not parse as JSON).
+      if (wrote || err instanceof Anthropic.APIError || err instanceof TruncatedToolInput || attempt >= 2) throw err;
+      console.warn(`[assistant] turn failed before any text was sent (${err instanceof Error ? err.message : String(err)}), re-issuing it`);
       runner = api.beta.messages.toolRunner({ ...runner.params }, { signal }); // a consumed runner cannot be iterated again
     }
   }
 }
 
 /**
- * The answer as a text/plain stream. When a tool returned features, the last line is
- * `\n[[cite:<json Citation[]>]]`, which the client strips and renders as chips.
+ * The answer as a text/plain stream. The last line is always the server's own `\n[[cite:<json Citation[]>]]` (`[]` when
+ * no tool returned features), which the client strips and renders as chips. The client reads only the last trailer and
+ * only when it ends the stream, so a lookalike the model writes earlier is never taken for citations.
  */
 export function streamAnswer(messages: Anthropic.Beta.BetaMessageParam[], lang: Lang): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
@@ -334,7 +341,7 @@ export function streamAnswer(messages: Anthropic.Beta.BetaMessageParam[], lang: 
         write(`\n\n${translate(lang, "assistant.error")}`);
       }
       const unique = cites.filter((c, i) => cites.findIndex((d) => d.layer === c.layer && d.featureId === c.featureId) === i);
-      if (unique.length) write(`\n[[cite:${JSON.stringify(unique)}]]`);
+      write(`\n[[cite:${JSON.stringify(unique)}]]`);
       if (!ac.signal.aborted) ctrl.close();
     },
     cancel() {

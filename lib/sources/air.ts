@@ -21,6 +21,9 @@ const EXTRA = { no2: "no2", o3: "o3", noise_dba: "noise", temperature: "temperat
 
 const num = (s: string) => Number.parseFloat(s);
 
+/** Same 0 to 3 scale as pm10Severity, from the PM2.5 bands: <=10 green, <=20 yellow-green, <=25 yellow, <=50 orange, <=75 red, above purple. */
+const pm25Severity = (v: number): 0 | 1 | 2 | 3 => (v <= 20 ? 0 : v <= 25 ? 1 : v <= 50 ? 2 : 3);
+
 /** Pure: latest reading per sensor and type (≤3 h old, numeric) → one air-station point per sensor with pm10 or pm25. */
 export function parseAir(readings: PulseReading[], names: ReadonlyMap<string, string>, now = Date.now()): Feature[] {
   const bySensor = new Map<string, { position: string; latest: Map<string, { at: number; v: number }> }>();
@@ -45,6 +48,8 @@ export function parseAir(readings: PulseReading[], names: ReadonlyMap<string, st
     const detail: Record<string, string | number> = {};
     if (pm10 !== undefined) detail.pm10 = pm10;
     if (pm25 !== undefined) detail.pm25 = pm25;
+    // A station with only PM2.5 is rated on PM2.5 bands (PM10 limits would call 30 µg/m³ "good"); detail.metric says so.
+    if (pm10 === undefined) detail.metric = "pm25";
     for (const [type, key] of Object.entries(EXTRA)) {
       const v = latest.get(type)?.v;
       if (v !== undefined) detail[key] = v;
@@ -56,7 +61,7 @@ export function parseAir(readings: PulseReading[], names: ReadonlyMap<string, st
     features.push({
       type: "Feature",
       geometry: { type: "Point", coordinates: [lng, lat] },
-      properties: { id: `air-${sensorId}`, kind: "air-station", title: { mk: name, en: name }, severity: pm10Severity(value), value, unit: "µg/m³", detail },
+      properties: { id: `air-${sensorId}`, kind: "air-station", title: { mk: name, en: name }, severity: pm10 !== undefined ? pm10Severity(pm10) : pm25Severity(value), value, unit: "µg/m³", detail },
     });
   }
   return features;

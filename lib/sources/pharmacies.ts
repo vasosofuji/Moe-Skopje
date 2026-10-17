@@ -14,21 +14,37 @@ const base = staticAdapter("pharmacies", "pharmacies.geojson", "pharmacy");
 const PAGE = "https://fzo.org.mk/dezurni-apteki";
 const MONTHS = ["јануари", "февруари", "март", "април", "мај", "јуни", "јули", "август", "септември", "октомври", "ноември", "декември"];
 const TIMEOUT_MS = 8000;
+const MAX_BYTES = 2 * 1024 * 1024; // the real roster is about 70 KB
+const FZO_HOSTS = new Set(["fzo.org.mk", "www.fzo.org.mk"]);
 const abort = (signal?: AbortSignal) => (signal ? AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]) : AbortSignal.timeout(TIMEOUT_MS));
 
 export type Cell = string | number | boolean | Date | null;
 export type Duty = { name: string; municipality: string | null; phone?: string };
 
-/** Absolute URL of the XLSX for the month of `today` (YYYY-MM-DD, Skopje), or null when the page lists none. */
+/** The link as an absolute URL, only when it is https on fzo.org.mk / www.fzo.org.mk (the page is third-party markup). */
+function fzoUrl(href: string): string | null {
+  try {
+    const u = new URL(href, PAGE);
+    return u.protocol === "https:" && FZO_HOSTS.has(u.host) && !u.username && !u.password ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Absolute URL of the XLSX for the month of `today` (YYYY-MM-DD, Skopje), or null when the page lists none on fzo.org.mk. */
 export function rosterUrl(html: string, today: string): string | null {
   const [year, month] = today.split("-").map(Number);
   const wanted = `за ${year} месец ${MONTHS[month - 1]}`;
   const $ = cheerio.load(html);
-  const href = $("a")
+  const hrefs = $("a")
     .filter((_, el) => $(el).text().toLowerCase().replace(/\s+/g, " ").includes(wanted))
-    .first()
-    .attr("href");
-  return href ? new URL(href, PAGE).href : null;
+    .map((_, el) => $(el).attr("href") ?? "")
+    .get();
+  for (const href of hrefs) {
+    const url = fzoUrl(href);
+    if (url) return url; // an off-site link is skipped, so it cannot hide the real one
+  }
+  return null;
 }
 
 /** First sheet of the roster XLSX as rows. */
@@ -146,10 +162,29 @@ export function markOnDuty(features: Feature[], roster?: string[]): Feature[] {
   });
 }
 
-async function get(url: string, what: string, signal?: AbortSignal): Promise<Response> {
+/** The response body, refusing anything over 2 MB (by Content-Length, or by counting what actually arrives). */
+async function get(url: string, what: string, signal?: AbortSignal): Promise<ArrayBuffer> {
   const res = await fetch(url, { signal: abort(signal), headers: { "User-Agent": "Mozilla/5.0 (compatible; MoeSkopje/1.0)" } });
   if (!res.ok) throw new Error(`FZO roster ${what} HTTP ${res.status}`);
-  return res;
+  const tooBig = () => new Error(`FZO roster ${what} is over 2 MB`);
+  if (Number(res.headers.get("content-length")) > MAX_BYTES) {
+    await res.body?.cancel();
+    throw tooBig();
+  }
+  const reader = res.body?.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (reader) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BYTES) {
+      await reader.cancel();
+      throw tooBig();
+    }
+    chunks.push(value);
+  }
+  return new Blob(chunks as BlobPart[]).arrayBuffer();
 }
 
 export const pharmacies: Adapter = {
@@ -159,9 +194,9 @@ export const pharmacies: Adapter = {
   source: { name: "ФЗО, OpenStreetMap", url: PAGE },
   async fetch(signal) {
     const today = skopjeToday(Date.now());
-    const url = rosterUrl(await (await get(PAGE, "page", signal)).text(), today);
+    const url = rosterUrl(new TextDecoder().decode(await get(PAGE, "page", signal)), today);
     if (!url) throw new Error(`FZO roster: no file for ${today.slice(0, 7)}`);
-    const duty = parseRoster(await readRosterXlsx(await (await get(url, "file", signal)).arrayBuffer()), today);
+    const duty = parseRoster(await readRosterXlsx(await get(url, "file", signal)), today);
     const { features, matched, placed } = matchRoster(await base.fetch(), duty, await municipalities());
     // live only when something is actually on duty; otherwise getLayer serves the 24/7 seed
     if (matched + placed === 0) throw new Error(`FZO roster: nobody on duty in Skopje on ${today}`);

@@ -5,9 +5,9 @@ import { fetchPm10Trend } from "@/lib/sources/air";
 export async function GET() {
   try {
     return NextResponse.json(await fetchPm10Trend(), {
-      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=36000" },
+      headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=6000" },
     });
   } catch {
-    return NextResponse.json([], { status: 502 });
+    return NextResponse.json([], { status: 502, headers: { "Cache-Control": "public, s-maxage=60" } }); // retry soon, but not on every hit
   }
 }

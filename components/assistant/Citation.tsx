@@ -40,11 +40,12 @@ export function parseReply(raw: string): { text: string; citations: Citation[] }
   const at = raw.lastIndexOf(MARK);
   if (at >= 0) {
     const body = raw.slice(at + MARK.length);
-    const end = body.lastIndexOf("]]");
     let citations: Citation[] = [];
-    if (end >= 0) {
+    // Only the last trailer counts, and only when it ends the stream: the server always writes one last, so a lookalike the
+    // model wrote earlier is followed by more text and is never believed.
+    if (body.endsWith("]]")) {
       try {
-        const list: unknown = JSON.parse(body.slice(0, end));
+        const list: unknown = JSON.parse(body.slice(0, -2));
         if (Array.isArray(list)) citations = list.filter(isCitation);
       } catch {
         // not complete yet, or not ours

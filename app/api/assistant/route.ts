@@ -7,7 +7,7 @@ const fail = (status: number, code: string) => Response.json({ code }, { status 
 
 /**
  * POST /api/assistant (JSON `{ messages, lang }`, header x-device-id) → streamed text/plain answer,
- * ending in `\n[[cite:<json>]]` when a tool returned features. 400 { code } | 429 { code: "rate" } | 503 { code: "disabled" }.
+ * always ending in `\n[[cite:<json>]]` (`[]` when a tool returned no features). 400 { code } | 429 { code: "rate" } | 503 { code: "disabled" }.
  */
 export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) return fail(503, "disabled"); // the UI shows its disabled state

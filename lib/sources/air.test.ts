@@ -4,6 +4,7 @@ import avg from "./__fixtures__/pulse-avg.json";
 import sensors from "./__fixtures__/pulse-sensor.json";
 import { air, fetchPm10Trend, parseAir, resetAirCache } from "./air";
 import { FeatureSchema } from "./types";
+import { GET as airTrendRoute } from "@/app/api/air-trend/route";
 
 // The fixture's newest reading is 2026-10-17T10:45:02Z.
 const NOW = Date.parse("2026-10-17T11:00:00Z");
@@ -58,8 +59,23 @@ test("air keeps the latest reading per type, drops NaN, and falls back to pm25",
   const byId = Object.fromEntries(parseAir(rows, new Map(), NOW).map((f) => [f.properties.id, f.properties]));
   expect(Object.keys(byId).sort()).toEqual(["air-p", "air-s"]);
   expect(byId["air-s"]).toMatchObject({ value: 20, severity: 0, detail: { pm10: 20, pm25: 9, no2: 41, noise: 55, temperature: 14 } });
-  expect(byId["air-p"]).toMatchObject({ value: 12, detail: { pm25: 12 } });
+  expect(byId["air-p"]).toMatchObject({ value: 12, severity: 0, detail: { pm25: 12, metric: "pm25" } });
   expect(byId["air-p"].detail).not.toHaveProperty("pm10");
+  expect(byId["air-s"].detail).not.toHaveProperty("metric"); // PM10 stations are rated on PM10
+});
+
+test("a PM2.5-only station is rated on PM2.5 bands, not PM10 ones", () => {
+  // <=10 green, <=20 yellow-green, <=25 yellow, <=50 orange, <=75 red, above purple -> severity 0, 0, 1, 2, 3, 3
+  const severity = (pm25: string) => parseAir([reading("p", "pm25", pm25)], new Map(), NOW)[0].properties.severity;
+  expect([5, 10, 15, 20, 21, 25, 26, 50, 51, 75, 76, 200].map((v) => severity(String(v)))).toEqual([0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 3]);
+  // 30 ug/m3 of PM2.5 is unhealthy for sensitive groups; read as PM10 it would have been "good"
+  expect(severity("30")).toBe(2);
+});
+
+test("PM10 wins when a station has both, and its severity ignores PM2.5", () => {
+  const [f] = parseAir([reading("b", "pm10", "20"), reading("b", "pm25", "90")], new Map(), NOW);
+  expect(f.properties).toMatchObject({ value: 20, severity: 0 });
+  expect(f.properties.detail).not.toHaveProperty("metric");
 });
 
 beforeEach(() => {
@@ -98,4 +114,18 @@ test("fetchPm10Trend returns the daily city averages as numbers, oldest first", 
   expect(String(fetchMock.mock.calls[0][0])).toContain(
     "/rest/avgData/day?sensorId=-1&type=pm10&from=2026-10-10T11:00:00Z&to=2026-10-17T11:00:00Z",
   );
+});
+
+test("GET /api/air-trend is cached for 10 minutes on success and 1 minute on a 502", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json(avg)));
+  const ok = await airTrendRoute();
+  expect(ok.status).toBe(200);
+  expect(ok.headers.get("cache-control")).toBe("public, s-maxage=600, stale-while-revalidate=6000");
+  expect(await ok.json()).toEqual([17, 9, 4, 5, 5, 8, 10]);
+
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("nope", { status: 503 })));
+  const down = await airTrendRoute();
+  expect(down.status).toBe(502);
+  expect(down.headers.get("cache-control")).toBe("public, s-maxage=60");
+  expect(await down.json()).toEqual([]);
 });
