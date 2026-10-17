@@ -10,7 +10,7 @@ test("shots tile 0..TOTAL with no gaps or overlaps", () => {
 
 test("every clip covers its slot", () => {
   for (const s of SHOTS)
-    if (s.src.kind === "clip") assert.ok(s.src.trimIn + (s.to - s.from) <= s.src.clipFrames, s.id);
+    if (s.src.kind === "clip") assert.ok(s.src.trimIn + (s.to - s.from) * s.src.rate <= s.src.clipFrames, s.id);
 });
 
 test("captions are ordered, non-overlapping, inside TOTAL", () => {
