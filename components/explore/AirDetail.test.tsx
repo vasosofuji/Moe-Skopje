@@ -33,3 +33,17 @@ test("AirDetail with no stations says so instead of inventing a level", () => {
   expect(html).toContain(translate("mk", "explore.noData"));
   for (const n of [0, 1, 2, 3] as const) expect(html).not.toContain(translate("mk", `air.advice.${n}`));
 });
+
+test("a PM2.5-only station is labelled PM2.5 and kept out of the city PM10", () => {
+  const station = (id: string, value: number, detail: Record<string, number>) => ({
+    type: "Feature" as const,
+    geometry: { type: "Point" as const, coordinates: [21.43, 42] },
+    properties: { id, kind: "air-station", title: { mk: id, en: id }, value, unit: "µg/m³", detail },
+  });
+  const html = renderToStaticMarkup(
+    <AirDetail data={layer([station("a", 10, { pm10: 10 }), station("b", 30, { pm10: 30 }), station("c", 200, { pm25: 200 })])} />,
+  );
+  expect(html).toContain(">20<"); // median of 10 and 30; counting the PM2.5 reading would make it 30
+  expect(html).toContain(translate("mk", "air.pm25"));
+  expect(html).toContain(translate("mk", "air.advice.0"));
+});

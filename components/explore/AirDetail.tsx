@@ -6,12 +6,35 @@ import { aqiColor, pm10Severity, sparkPoints } from "@/lib/aqi";
 import { pick, useT } from "@/lib/i18n";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
 
-type Station = { id: string; name: { mk: string; en: string }; value: number; official: boolean };
+type Station = { id: string; name: { mk: string; en: string }; value: number; official: boolean; pm25: boolean };
+
+/** PM2.5 bands are the PM10 ones halved (10/20/25/50/75), so a PM2.5 reading doubled lands on the PM10 scale. */
+const pm10Scale = (s: Station) => (s.pm25 ? s.value * 2 : s.value);
 
 const median = (sorted: number[]) => {
   const mid = sorted.length >> 1;
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
+
+/** Every station with a reading, worst first. A station without PM10 reports PM2.5 in `value`: it is flagged and left out of the city PM10. */
+export function stationsOf(data: LayerResponse): Station[] {
+  return (data.features.features as Feature[])
+    .filter((f) => f.properties.kind === "air-station" && Number.isFinite(f.properties.value))
+    .map((f) => ({
+      id: f.properties.id,
+      name: f.properties.title,
+      value: f.properties.value!,
+      official: Boolean(f.properties.detail?.official),
+      pm25: typeof f.properties.detail?.pm10 !== "number",
+    }))
+    .sort((a, b) => pm10Scale(b) - pm10Scale(a));
+}
+
+/** Median PM10 over the stations that measure PM10; the median ignores the odd glitching community sensor a mean would let skew the advice. */
+export function cityPm10(stations: Station[]): number | null {
+  const pm10 = stations.filter((s) => !s.pm25).map((s) => s.value);
+  return pm10.length ? Math.round(median(pm10.sort((a, b) => a - b))) : null;
+}
 
 /** Daily city PM10 averages for the sparkline; stays null (sparkline hidden) on any failure. */
 function useTrend() {
@@ -34,17 +57,8 @@ export function AirDetail({ data }: { data: LayerResponse }) {
   const { t, lang } = useT();
   const trend = useTrend();
 
-  const stations = useMemo<Station[]>(
-    () =>
-      (data.features.features as Feature[])
-        .filter((f) => f.properties.kind === "air-station" && Number.isFinite(f.properties.value))
-        .map((f) => ({ id: f.properties.id, name: f.properties.title, value: f.properties.value!, official: Boolean(f.properties.detail?.official) }))
-        .sort((a, b) => b.value - a.value),
-    [data],
-  );
-
-  // The median ignores the odd glitching community sensor that a mean would let skew the advice.
-  const city = stations.length ? Math.round(median(stations.map((s) => s.value))) : null;
+  const stations = useMemo(() => stationsOf(data), [data]);
+  const city = cityPm10(stations);
   const severity = city === null ? null : pm10Severity(city);
 
   return (
@@ -88,9 +102,10 @@ export function AirDetail({ data }: { data: LayerResponse }) {
         <ul className="mt-1">
           {stations.map((s) => (
             <li key={s.id} className="flex min-h-11 items-center gap-3 border-t border-(--glass-stroke) first:border-t-0">
-              <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: aqiColor(s.value) }} />
+              <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: aqiColor(pm10Scale(s)) }} />
               <span className="t-body min-w-0 flex-1 truncate">{pick(s.name, lang)}</span>
               {s.official && <span className="t-caption bg-label/10 shrink-0 rounded-full px-2">{t("air.official")}</span>}
+              {s.pm25 && <span className="t-caption shrink-0 text-label-2">{t("air.pm25")}</span>}
               <span className="t-headline tabular-nums">{Math.round(s.value)}</span>
             </li>
           ))}
