@@ -113,7 +113,7 @@ type Acc = { seq: number[]; stop: string[]; arr: number[]; dep: number[]; dist: 
 
 /**
  * Parses the GTFS text files into compact indexes; the raw text is not kept.
- * ponytail: a stop_times row with no time at all is dropped (JSP always sets arrival and departure); interpolating
+ * note: a stop_times row with no time at all is dropped (JSP always sets arrival and departure); interpolating
  * the untimed stops between timepoints would be the upgrade if a feed ever needs it.
  */
 export function parseGtfs(files: Record<string, string>): Gtfs {

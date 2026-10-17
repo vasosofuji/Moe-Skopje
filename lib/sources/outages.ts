@@ -119,7 +119,7 @@ const seedOf = async (id: OutageId) => rebaseOutages(await loadSeed(id));
 //   $.getJSON("https://portal-api.elektrodistribucija.mk/DSO/Prekini/ZemiPrekini")
 // and renders rows { tipPrekin, nasMesto, adresa, pocetok, kraj, kecId }; Skopje is kecId 10, 38 and 39 (the map's
 // Aerodrom, Vasil Glavinov and Gjorce Petrov regions). GisMap.aspx is only the PV-capacity ArcGIS map.
-// ponytail: on 2026-10-17 that API answered HTTP 404 for every path behind Cloudflare, so no real response could be saved;
+// note: on 2026-10-17 that API answered HTTP 404 for every path behind Cloudflare, so no real response could be saved;
 // lib/sources/__fixtures__/evn.synthetic.json is hand-made in the row shape above (datetimes are ISO, Skopje local time).
 // While it 404s the adapter throws and getLayer serves data/seed/outages-power.json. Re-check the endpoint when it is back.
 const EVN_URL = "https://portal-api.elektrodistribucija.mk/DSO/Prekini/ZemiPrekini";
@@ -234,7 +234,7 @@ const water: Adapter = {
 };
 
 // --- Heating: Balkan Energy Group -------------------------------------------------------------------------------------
-// ponytail: www.beg.com.mk did not resolve on 2026-10-17 (ENOTFOUND), so there is no outage list to parse. The adapter
+// note: www.beg.com.mk did not resolve on 2026-10-17 (ENOTFOUND), so there is no outage list to parse. The adapter
 // fetches the page and throws, which makes getLayer serve data/seed/outages-heating.json. Add a parser once the page exists.
 const heating: Adapter = {
   id: "outages-heating",

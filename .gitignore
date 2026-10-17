@@ -1,4 +1,3 @@
-.superpowers/
 node_modules/
 .next/
 .env*
@@ -36,7 +35,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.claude/
 
 # maplibre worker, copied from node_modules by scripts/copy-maplibre-worker.mjs (predev/prebuild)
 /public/maplibre/

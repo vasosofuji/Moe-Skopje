@@ -21,7 +21,7 @@ const SEVERITY: Record<Kind, 1 | 2 | 3> = { works: 1, regime: 2, closure: 3 };
 // traffic, with no category filter that works over GET, so the candidates come from /sitemap.xml: every article with its lastmod
 // (and a slug such as "utre-poseben-rezim-na-soobrakjaj-poradi-skopskiot-maraton"). Each article is a title, a DD/MM/YYYY date and
 // a .blog-content body naming the day, the start time and the streets ("ул.„11-ти Октомври“", "бул.„Илинден“").
-// ponytail: the sitemap is ~1.6 MB (7000 urls) and is fetched once per cache miss (ttl 30 min); switch to the news list if MVR splits it.
+// note: the sitemap is ~1.6 MB (7000 urls) and is fetched once per cache miss (ttl 30 min); switch to the news list if MVR splits it.
 
 const MVR = "https://mvr.gov.mk";
 const NEWS = `${MVR}/mk-MK/odnosi-so-javnost/novosti/`;
@@ -87,7 +87,7 @@ const nextDay = (dmy: string) => {
 /**
  * The window a notice announces, in Skopje time. "На 04.10.2026 … со почеток во 08:00 часот" has a start only (assumed to run
  * four hours), "во периодот од 08:00 часот до 11:30 часот" a range, "Утре (02.10.2026)" a day. Without a time the whole day.
- * ponytail: the four-hour default is a guess; MVR rarely says when an event ends.
+ * note: the four-hour default is a guess; MVR rarely says when an event ends.
  */
 function windowOf(text: string, published?: string): { startsAt: string; endsAt?: string } | undefined {
   const day = /(?<![\d.])(\d{1,2})\.(\d{1,2})\.(\d{4})(?![\d])/.exec(text);

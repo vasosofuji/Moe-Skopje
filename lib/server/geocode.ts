@@ -7,7 +7,7 @@ import type { Place } from "./places";
 // Primary: Photon (komoot's public instance; PHOTON_URL points at another one, e.g. our own). Fallback, only when Photon fails
 // or takes over 3 s: Nominatim on openstreetmap.org, whose usage policy allows 1 request per second, an identifying
 // User-Agent and no bulk use, so its calls go through a gate. Both are cached and rate limited by the caller (places.ts).
-// ponytail: the gate is in memory, per warm server instance, so N instances can send N calls a second to Nominatim. Move it to a
+// note: the gate is in memory, per warm server instance, so N instances can send N calls a second to Nominatim. Move it to a
 // shared store (Supabase) before running more than one instance, or host our own Photon.
 
 export type Lang = "mk" | "en";

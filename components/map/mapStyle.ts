@@ -8,7 +8,7 @@ const PALETTE = {
   dark: { place: "#d1d1d6", label: "#8e8e93", halo: "rgba(0,0,0,0.7)", road: "#2c2c2e" },
 };
 
-// ponytail: matches OpenMapTiles layer ids (positron, dark); a different basemap needs its own patterns.
+// note: matches OpenMapTiles layer ids (positron, dark); a different basemap needs its own patterns.
 const ROAD = /road|highway|street|motorway|trunk|primary|secondary|tertiary|minor|service|bridge|tunnel/;
 const NOT_ROAD = /casing|rail|path|track|ferry|aeroway/;
 

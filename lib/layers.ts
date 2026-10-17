@@ -40,7 +40,7 @@ export type LayerMeta = {
   tier: 1 | 2;
 };
 
-// ponytail: spec §6.4 colours only the first ten layers; the tier-2 ones borrow a system colour.
+// note: spec §6.4 colours only the first ten layers; the tier-2 ones borrow a system colour.
 export const LAYERS: Record<LayerId, LayerMeta> = {
   air: { color: "var(--c-air)", icon: Wind, titleKey: "layer.air", tier: 1 },
   weather: { color: "var(--c-weather)", icon: CloudSun, titleKey: "layer.weather", tier: 1 },

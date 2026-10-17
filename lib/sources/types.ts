@@ -19,7 +19,7 @@ export type Feature = GeoJSON.Feature<
 >;
 
 const Position = z.array(z.number()).min(2); // [lng, lat, alt?]; z.number() also rejects NaN and Infinity
-// ponytail: GeometryCollection is not accepted; no adapter emits it. Add a branch if one ever does.
+// note: GeometryCollection is not accepted; no adapter emits it. Add a branch if one ever does.
 const GeometrySchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("Point"), coordinates: Position }),
   z.object({ type: z.literal("MultiPoint"), coordinates: z.array(Position) }),

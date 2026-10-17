@@ -80,7 +80,7 @@ async function namesOf(signal?: AbortSignal): Promise<Map<string, string>> {
       const list = Sensors.parse(await fetchJson(`${BASE}/sensor`, signal));
       sensorNames = { at: Date.now(), map: new Map(list.map((s) => [s.sensorId, s.description])) };
     } catch (err) {
-      // ponytail: without the list a sensor is titled "Sensor <id>"; the readings themselves are what matters.
+      // note: without the list a sensor is titled "Sensor <id>"; the readings themselves are what matters.
       console.warn(`[air] sensor list failed: ${err instanceof Error ? err.message : err}`);
     }
   }

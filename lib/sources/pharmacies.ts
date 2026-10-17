@@ -98,7 +98,7 @@ const nice = (s: string) => s.toLowerCase().replace(/(^|[\s(-])(\p{L})/gu, (_, s
  * specific one first ("ЕуроФарм Тафталиџе" beats the bare brand "Еурофарм"). If that is not exactly one pharmacy (OSM often
  * has only the brand, 20+ times) nothing is flagged, so a brand never lights up every branch; the entry is added as its own
  * point at the municipality centroid with `detail.approx = 1`. An entry without a known municipality is skipped (counted).
- * ponytail: name-word matching only; add address matching if the roster ever carries addresses for Skopje.
+ * note: name-word matching only; add address matching if the roster ever carries addresses for Skopje.
  */
 export function matchRoster(osm: Feature[], duty: Duty[], munis: MunicipalityCollection) {
   const named = osm.flatMap((f, i) => {

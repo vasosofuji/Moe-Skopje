@@ -104,7 +104,7 @@ export function parseVesti(html: string, munis: MunicipalityCollection, now = Da
         kind: "event",
         title: { mk: title, en: toLatin(title) },
         startsAt: parseSkopjeTime(toDmy(first), time ? `${time[1]}:${time[2] ?? "00"}` : "00:00"),
-        endsAt: parseSkopjeTime(toDmy(last), "23:59"), // ponytail: end of the last named day; the news rarely says when it ends
+        endsAt: parseSkopjeTime(toDmy(last), "23:59"), // note: end of the last named day; the news rarely says when it ends
         detail: { venue: spot.venue, url: new URL(href, NEWS_URL).href, ...(spot.approx ? { approx: 1 } : {}) },
       },
     });

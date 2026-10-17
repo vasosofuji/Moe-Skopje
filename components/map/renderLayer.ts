@@ -3,7 +3,7 @@ import { AQI_COLORS, aqiBand, aqiPosition, metricOf } from "@/lib/aqi";
 import { LAYERS, type LayerId } from "@/lib/layers";
 
 // iOS system green, yellow, orange and red for severity 0 to 3.
-// ponytail: light-mode hexes in both themes; MapLibre cannot read the CSS variables, resolve them if dark needs its own.
+// note: light-mode hexes in both themes; MapLibre cannot read the CSS variables, resolve them if dark needs its own.
 export const SEVERITY_COLORS = ["#34c759", "#ffcc00", "#ff9500", "#ff3b30"] as const;
 
 type Layer = Parameters<MapLibreMap["addLayer"]>[0];
@@ -48,7 +48,7 @@ export function airHeat(fc: FC): FC {
     const metric = metricOf(f.properties?.detail);
     return [{ f, x: lng * 111_320 * Math.cos((lat * Math.PI) / 180), y: lat * 110_540, t: aqiPosition(metric, v), band: aqiBand(metric, v) }];
   });
-  // ponytail: O(n²) over the stations; fine for pulse.eco's ~60 in Skopje, use a grid index past a few thousand.
+  // note: O(n²) over the stations; fine for pulse.eco's ~60 in Skopje, use a grid index past a few thousand.
   const props = new Map(
     pts.map((p) => [p.f, { band: p.band, heat: p.t / pts.reduce((s, q) => s + kernel(Math.hypot(p.x - q.x, p.y - q.y)), 0) }]),
   );

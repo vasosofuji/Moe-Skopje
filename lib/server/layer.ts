@@ -12,7 +12,7 @@ const FETCH_TIMEOUT_MS = 8000;
 /** A stale/offline answer is re-tried after this long, whatever the adapter's ttl: a fallback must not outlive the outage that caused it. */
 const FALLBACK_TTL_MS = 60_000;
 
-// ponytail: per-instance cache; the CDN header does the real work. Concurrent callers share one in-flight fetch per layer.
+// note: per-instance cache; the CDN header does the real work. Concurrent callers share one in-flight fetch per layer.
 const cache = new Map<LayerId, { at: number; ttlMs: number; res: LayerResponse }>();
 const inflight = new Map<LayerId, Promise<LayerResponse>>();
 const defaultSnapshots = supabaseSnapshots();

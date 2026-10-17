@@ -21,7 +21,7 @@ const I18nContext = createContext<I18n>({ lang: "mk", t: makeT("mk"), setLang: (
 /**
  * Language comes from prefs, so it hydrates after the first paint (no SSR mismatch) and persists.
  * Also mirrors lang and theme onto <html>: prefs.theme "system" removes data-theme, otherwise sets it.
- * ponytail: a saved theme that differs from the OS one flashes for a frame; add a pre-paint script if it matters.
+ * note: a saved theme that differs from the OS one flashes for a frame; add a pre-paint script if it matters.
  */
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [{ lang, theme }, setPrefs] = usePrefs();

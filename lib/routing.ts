@@ -52,7 +52,7 @@ export function perimeterM(ring: LngLat[]): number {
  * A closed ring around a polyline: `radiusM` to either side, square end caps, mitred corners (the mitre is capped at twice the
  * radius). One point gives an octagon. A line gives ONE ring of about 2 x length + 4 x radius, which keeps the total perimeter low
  * (Valhalla caps the sum of all exclude polygons' perimeters).
- * ponytail: a corner sharper than ~60 degrees with legs shorter than the radius can make the ring cross itself; streets are baked
+ * note: a corner sharper than ~60 degrees with legs shorter than the radius can make the ring cross itself; streets are baked
  * with 5 m simplification, so this does not happen in practice. Upgrade to a real offset/union (e.g. polygon-clipping) if it does.
  */
 export function bufferLine(line: number[][], radiusM = 15): LngLat[] {

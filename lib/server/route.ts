@@ -23,7 +23,7 @@ import { getLayer } from "./layer";
 // a Referer where possible, OSM attribution plus a link to openstreetmap.org/fixthemap shown to users, no bulk use, and no
 // guaranteed availability. So: a per-IP and a global cap on what we accept, and a gate that spaces upstream calls by more than a
 // second whatever the cap lets in.
-// ponytail: every ceiling below is in memory and per warm server instance, so with N instances they are N times higher, and so is
+// note: every ceiling below is in memory and per warm server instance, so with N instances they are N times higher, and so is
 // the upstream rate (the FOSSGIS one-per-second rule only holds for a single instance). A cold start also forgets the counts.
 // Move the counters and the gate to a shared store (Supabase) before running more than one instance, or host our own Valhalla.
 export const ROUTE_PER_IP = 30;

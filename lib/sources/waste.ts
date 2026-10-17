@@ -1,5 +1,5 @@
 // Waste layer (tier 2): which municipalities have waste collection today, as municipality fills.
-// ponytail: ЈП Комунална хигиена publishes no machine-readable schedule (khigiena.com.mk answers 403 to bots and has no
+// note: ЈП Комунална хигиена publishes no machine-readable schedule (khigiena.com.mk answers 403 to bots and has no
 // feed), so there is no live fetch: the adapter always throws and getLayer serves this seed as "Demo data". The weekly
 // pattern in data/seed/waste.json is illustrative; replace it once the utility publishes real routes.
 // No imports from lib/server/* (tsx).

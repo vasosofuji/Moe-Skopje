@@ -103,7 +103,7 @@ async function build(): Promise<Indexed[]> {
       order: 0,
     });
   }
-  // ponytail: data/static/settlements.json has no coordinates, so a settlement resolves to the centre of its municipality.
+  // note: data/static/settlements.json has no coordinates, so a settlement resolves to the centre of its municipality.
   // Bake lat/lng into it (scripts/bake-osm.ts) when a settlement must land exactly.
   for (const s of settlements as { name_mk: string; name_en?: string; municipality_mk: string }[]) {
     const at = centre.get(s.municipality_mk);
@@ -226,7 +226,7 @@ export async function searchPlaces(
 // --- Cache and limits ----------------------------------------------------------------------------------------------------------
 // OSM's geocoders are volunteer-run (see geocode.ts): answer repeats from memory, and cap what one client, and all clients,
 // can ask of us. A refused request is not recorded.
-// ponytail: the cache, the counters and the Nominatim gate are in memory and per warm server instance, so with N instances the
+// note: the cache, the counters and the Nominatim gate are in memory and per warm server instance, so with N instances the
 // ceilings are N times higher (and so is the upstream rate), and a cold start forgets everything. Move them to a shared store
 // (Supabase) before running more than one instance, or host our own Photon. The s-maxage below lets the CDN absorb repeats meanwhile.
 export const PLACES_PER_IP = 60;

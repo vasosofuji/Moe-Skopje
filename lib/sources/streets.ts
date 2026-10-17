@@ -86,11 +86,11 @@ export function mergeStreets(ways: Way[], munis: MunicipalityCollection, toleran
 let data: StreetCollection | undefined;
 /** Test hook: serve this collection instead of data/static/streets.geojson. Call without an argument to read the baked file again. */
 export const setStreets = (fc?: StreetCollection) => void (data = fc);
-// ponytail: one synchronous read of a ~5 MB file per server instance, on first use; move to an async reader if it ever shows in a profile.
+// note: one synchronous read of a ~5 MB file per server instance, on first use; move to an async reader if it ever shows in a profile.
 const streets = (): StreetCollection => (data ??= JSON.parse(readFileSync(join(process.cwd(), "data", "static", "streets.geojson"), "utf8")) as StreetCollection);
 
 // A name that is also an ordinary word, a month, a municipality or a neighbourhood is only a street when ул./бул. says so.
-// ponytail: a hand-picked word list plus the 10 municipality names and the baked settlements; extend it when a false positive shows up.
+// note: a hand-picked word list plus the 10 municipality names and the baked settlements; extend it when a false positive shows up.
 const COMMON = new Set<string>([
   ...MUNICIPALITIES.map(streetKey),
   ...(gazetteer as { name_mk: string; name_en?: string }[]).flatMap((s) => [streetKey(s.name_mk), s.name_en ? streetKey(s.name_en) : ""]),

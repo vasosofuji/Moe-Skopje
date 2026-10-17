@@ -21,7 +21,7 @@ const MAX_DETAIL = 300;
 type LngLat = [lng: number, lat: number];
 
 /** Average of all vertices; good enough to fly to or sort by. */
-// ponytail: vertex average, not a true centroid; a concave polygon's average can fall outside it.
+// note: vertex average, not a true centroid; a concave polygon's average can fall outside it.
 function pointOf(g: GeoJSON.Geometry): LngLat | null {
   const all: number[][] = [];
   const walk = (c: unknown): void => {
@@ -204,7 +204,7 @@ export function systemPrompt(lang: Lang): string {
   ].join("\n");
 }
 
-// ponytail: in-memory and per instance, so every cap below is really "× warm instances" (a cold start resets it), and
+// note: in-memory and per instance, so every cap below is really "× warm instances" (a cold start resets it), and
 // devices/IPs that never come back keep their entry. x-device-id is caller-chosen, so the per-IP cap is what stops a fresh
 // id per request; a caller that also rotates IPs is bounded only by the 60/min instance cap (3600/hour/instance).
 // Move it to a Supabase table if it gets abused.
@@ -256,7 +256,7 @@ class TruncatedToolInput extends Error {}
 
 let client: Anthropic | undefined;
 
-/** The streaming tool-runner loop (claude-api skill, "Streaming with Tool Use"): text deltas go to `write`. */
+/** The streaming tool-runner loop: text deltas go to `write`. */
 async function answer(messages: Anthropic.Beta.BetaMessageParam[], lang: Lang, cites: Citation[], write: (s: string) => void, signal: AbortSignal) {
   client ??= new Anthropic();
   const api = client;

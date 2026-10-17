@@ -14,8 +14,7 @@ export default defineConfig({
   test: {
     environment: "node",
     passWithNoTests: true,
-    // Agent worktrees live under .claude/; never test them from the main checkout.
-    exclude: ["**/node_modules/**", ".claude/**", ".superpowers/**"],
+    exclude: ["**/node_modules/**", "ad/**"],
     maxWorkers: 4,
   },
 });
