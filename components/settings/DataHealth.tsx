@@ -1,77 +1,89 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
-import { StatusBadge } from "@/components/glass/StatusBadge";
-import { cx, focusRing } from "@/lib/cx";
-import { useT } from "@/lib/i18n";
+import { useEffect, useState, type CSSProperties } from "react";
+import { age, STATUS_COLOR } from "@/components/glass/StatusBadge";
+import { useT, type Dict } from "@/lib/i18n";
+import type { TVars } from "@/lib/i18n/core";
 import { isLayerId, LAYERS } from "@/lib/layers";
 import type { Status } from "@/lib/sources/types";
+import { List, row, RowContent, rowStatic } from "./Grouped";
 
-type Row = { id: string; status: Status; updatedAt: string; featureCount: number; source: { name: string; url: string } };
+export type HealthRow = { id: string; status: Status; updatedAt: string; featureCount: number; source: { name: string; url: string } };
 
-/** One row per registered source from GET /api/health: status badge, size and a link to the source. */
-export function DataHealth() {
-  const { t } = useT();
-  const [rows, setRows] = useState<Row[] | null>(); // undefined while loading, null when the request failed
-
+/** GET /api/health once: undefined while loading, null when the request failed. */
+export function useHealth() {
+  const [rows, setRows] = useState<HealthRow[] | null>();
   useEffect(() => {
     const ac = new AbortController();
     fetch("/api/health", { signal: ac.signal })
-      .then((r) => (r.ok ? (r.json() as Promise<Row[]>) : Promise.reject(new Error(String(r.status)))))
+      .then((r) => (r.ok ? (r.json() as Promise<HealthRow[]>) : Promise.reject(new Error(String(r.status)))))
       .then(setRows)
       .catch(() => !ac.signal.aborted && setRows(null));
     return () => ac.abort();
   }, []);
+  return rows;
+}
 
-  if (rows === undefined) {
-    return (
-      <div aria-busy className="flex flex-col gap-2">
-        <span className="skeleton h-12" />
-        <span className="skeleton h-12" />
-      </div>
-    );
-  }
-  if (!rows?.length) return <p className="t-subhead px-1 text-label-2">{t("settings.healthEmpty")}</p>;
+const ORDER = ["live", "stale", "offline"] as const;
+
+/**
+ * "9 во живо · 2 демо": feeds per status, freshest first, zero counts left out.
+ * Static (baked) datasets never go stale, so they say nothing about freshness and are not counted.
+ */
+export function statusSummary(statuses: Status[], t: (key: keyof Dict, vars?: TVars) => string): string {
+  return ORDER.map((s) => [s, statuses.filter((x) => x === s).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([s, n]) => t(`settings.count.${s}`, { n }))
+    .join(" · ");
+}
+
+/** Status dot plus age (live, stale) or a short label (demo, static). */
+function Freshness({ status, updatedAt }: { status: Status; updatedAt: string }) {
+  const { t } = useT();
+  const ago = status === "live" || status === "stale" ? age(updatedAt) : null;
+  return (
+    <span className="t-footnote flex shrink-0 items-center gap-1.5 text-label-2" style={{ "--dot": STATUS_COLOR[status] } as CSSProperties}>
+      <span aria-hidden className="size-2 rounded-full bg-(--dot)" />
+      {ago ? (
+        <>
+          <span className="sr-only">{t(`status.${status}`)}, </span>
+          {t(`age.${ago.unit}`, { n: ago.n })}
+        </>
+      ) : (
+        t(status === "offline" ? "settings.demo" : "status.static")
+      )}
+    </span>
+  );
+}
+
+/** Data sources sub-page body: one compact row per source, linking out to it. */
+export function DataHealth({ rows }: { rows: HealthRow[] | null | undefined }) {
+  const { t } = useT();
+
+  if (rows === undefined) return <span aria-busy className="skeleton block h-44" />;
+  if (!rows?.length) return <p className="t-subhead px-4 text-label-2">{rows ? t("settings.healthEmpty") : t("explore.noData")}</p>;
 
   return (
-    <ul className="divide-y-[0.5px] divide-(--label)/10 rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile)">
-      {rows.map((row) => {
-        const meta = isLayerId(row.id) ? LAYERS[row.id] : undefined;
-        const Icon = meta?.icon;
-        return (
-          <li key={row.id} className="flex min-h-14 items-center gap-3 py-2 pr-1 pl-3">
-            {Icon && (
-              <span
-                className="flex size-8 shrink-0 items-center justify-center rounded-[9px] text-white"
-                style={{ background: meta.color }}
-              >
-                <Icon size={18} aria-hidden />
-              </span>
-            )}
-            <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-              <span className="t-subhead w-full truncate font-semibold">{meta ? t(meta.titleKey) : row.source.name}</span>
-              <span className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-0.5">
-                <StatusBadge status={row.status} updatedAt={row.updatedAt} />
-                <span className="t-footnote truncate text-label-2">
-                  {row.source.name} · {t("settings.items", { n: row.featureCount })}
-                </span>
-              </span>
-            </div>
-            {row.source.url && (
-              <a
-                href={row.source.url}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${t("settings.openSource")}: ${row.source.name}`}
-                className={cx("flex size-11 shrink-0 items-center justify-center rounded-full text-(--system-blue)", focusRing)}
-              >
-                <ExternalLink size={18} aria-hidden />
-              </a>
-            )}
-          </li>
+    <List>
+      {rows.map((r) => {
+        const meta = isLayerId(r.id) ? LAYERS[r.id] : undefined;
+        const content = (
+          <RowContent icon={meta?.icon} title={meta ? t(meta.titleKey) : r.source.name} sub={meta && r.source.name}>
+            <Freshness status={r.status} updatedAt={r.updatedAt} />
+            {r.source.url && <ExternalLink size={15} aria-hidden className="shrink-0 text-label-2" />}
+          </RowContent>
+        );
+        return r.source.url ? (
+          <a key={r.id} href={r.source.url} target="_blank" rel="noreferrer" title={`${t("settings.openSource")}: ${r.source.name}`} className={row}>
+            {content}
+          </a>
+        ) : (
+          <div key={r.id} className={rowStatic}>
+            {content}
+          </div>
         );
       })}
-    </ul>
+    </List>
   );
 }

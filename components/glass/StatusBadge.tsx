@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { useT } from "@/lib/i18n";
 import type { Status } from "@/lib/sources/types";
 
-const COLOR: Record<Status, string> = {
+export const STATUS_COLOR: Record<Status, string> = {
   live: "var(--system-green)",
   stale: "var(--system-orange)",
   offline: "var(--system-gray)",
@@ -29,7 +29,7 @@ export function StatusBadge({ status, updatedAt }: { status: Status; updatedAt: 
   return (
     <span
       className="t-caption inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full bg-(--badge)/15 px-2 whitespace-nowrap"
-      style={{ "--badge": COLOR[status] } as CSSProperties}
+      style={{ "--badge": STATUS_COLOR[status] } as CSSProperties}
     >
       <span aria-hidden className="size-1.5 rounded-full bg-(--badge) ring-2 ring-(--badge)/25" />
       {/* Age depends on the clock, so server and client renders may differ by a minute. */}
