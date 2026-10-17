@@ -1,4 +1,5 @@
 import type { LayerId } from "@/lib/layers";
+import { outages } from "./outages";
 import { parkingAdapter } from "./parking";
 import { staticAdapter, staticBuses } from "./static";
 import type { Adapter } from "./types";
@@ -8,4 +9,7 @@ export const registry: Partial<Record<LayerId, Adapter>> = {
   buses: staticBuses(),
   parking: parkingAdapter(),
   schools: staticAdapter("schools", "schools.geojson", "school"),
+  "outages-power": outages["outages-power"],
+  "outages-water": outages["outages-water"],
+  "outages-heating": outages["outages-heating"],
 };
