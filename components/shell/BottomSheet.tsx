@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Drawer } from "vaul";
 import { cx } from "@/lib/cx";
 
@@ -30,7 +30,12 @@ export function midDetent(blockBottom: number | null, area: number): number | st
  * The snaps are measured in the area above the tab bar (vaul measures its `container`), and the container clips, so
  * the sheet's bottom edge always sits on the bar, at rest and while dragged. The content is laid out once at full
  * height and only translates; nothing in it is masked, lazily painted or re-rendered while the sheet moves.
- * Inner scrolling only at the top snap; at the lower snaps a drag anywhere moves the sheet.
+ * Inner scrolling only at the top snap; at the lower snaps a drag anywhere moves the sheet. Drag only: a tap on the
+ * handle does not cycle the snaps.
+ *
+ * A `[data-sheet-pin]` block (the chat) is sized to the top snap's visible area (`--sheet-pin-h`) and kept bottom-aligned
+ * with the visible part of the sheet at every snap and through a drag: it is shifted up by how far the sheet sits
+ * below its top snap, a transform written in the same task as vaul's own and eased with the same curve when it snaps.
  */
 export function BottomSheet({
   snap,
@@ -47,16 +52,29 @@ export function BottomSheet({
   const [sheet, setSheet] = useState<HTMLDivElement | null>(null);
   const [body, setBody] = useState<HTMLDivElement | null>(null);
   const [mid, setMid] = useState<number | string>(0.5);
+  const area = useRef(0);
+  const pinned = useRef<{ el?: HTMLElement; lift?: string }>({});
   const snaps = useMemo(() => [`${PEEK}px`, mid, FULL], [mid]);
   const top = snap === 2;
 
+  const pin = useEffectEvent(() => {
+    const el = body?.querySelector<HTMLElement>("[data-sheet-pin]");
+    const y = sheet && /translate3d\([^,]+,\s*(-?[\d.]+)px/.exec(sheet.style.transform)?.[1];
+    if (!el || !y) return;
+    const lift = `translate3d(0, ${Math.min(0, area.current * (1 - FULL) - Number(y)).toFixed(1)}px, 0)`;
+    if (pinned.current.el === el && pinned.current.lift === lift) return; // our own write comes back as a mutation
+    pinned.current = { el, lift };
+    el.style.transform = lift;
+  });
   const measure = useEffectEvent(() => {
     const el = body;
     if (!el || !container) return;
     // Hidden panels stay mounted (display: none, no boxes): use the shown panel's block.
     const block = [...el.querySelectorAll("[data-detent]")].find((b) => b.getClientRects().length > 0);
     const bottom = block ? block.getBoundingClientRect().bottom - el.getBoundingClientRect().top - PAD_TOP + el.scrollTop : null;
-    setMid(midDetent(bottom, container.clientHeight));
+    area.current = container.clientHeight;
+    setMid(midDetent(bottom, area.current));
+    pin();
   });
   // On start (a ResizeObserver reports once when it begins), on a panel switch, and whenever the content or the area
   // changes size: a route result, a badge, rotation. setMid bails out when the value is unchanged.
@@ -79,6 +97,16 @@ export function BottomSheet({
     types.forEach((t) => sheet.addEventListener(t, mark));
     return () => types.forEach((t) => sheet.removeEventListener(t, mark));
   }, [sheet]);
+
+  // vaul moves the sheet through its inline transform; a panel mounting or being shown also needs its pin placed.
+  useEffect(() => {
+    if (!sheet || !body) return;
+    const mo = new MutationObserver(() => pin());
+    mo.observe(sheet, { attributes: true, attributeFilter: ["style"] });
+    mo.observe(body, { subtree: true, childList: true, attributes: true, attributeFilter: ["style"] });
+    pin();
+    return () => mo.disconnect();
+  }, [sheet, body]);
 
   return (
     <>
@@ -110,15 +138,18 @@ export function BottomSheet({
                 "will-change-auto! data-moving:will-change-transform! [&.vaul-dragging]:will-change-transform!",
                 // Everything is painted up front (no lazy rows) and placeholders hold still.
                 "[&_*]:[content-visibility:visible]! [&_.skeleton]:animate-none",
+                // The pin follows a snap with the sheet's own timing (vaul's curve, the .25 s from globals.css).
+                "[&_[data-sheet-pin]]:transition-transform [&_[data-sheet-pin]]:duration-250 [&_[data-sheet-pin]]:ease-[cubic-bezier(0.32,0.72,0,1)] [&.vaul-dragging_[data-sheet-pin]]:transition-none",
               )}
             >
-              <Drawer.Handle className="mt-2 mb-1 shrink-0" style={{ width: 36, background: "var(--label-2)" }} />
+              <Drawer.Handle preventCycle className="mt-2 mb-1 shrink-0" style={{ width: 36, background: "var(--label-2)" }} />
               <Drawer.Title className="sr-only">{title}</Drawer.Title>
               <div
                 ref={setBody}
                 data-vaul-no-drag={top ? "" : undefined}
                 className={cx(
-                  "min-h-0 flex-1 overscroll-contain pt-3 pr-[max(16px,env(safe-area-inset-right))] pb-8 pl-[max(16px,env(safe-area-inset-left))]",
+                  // A size container: 100cqh is this content box, which is the top snap's visible area.
+                  "min-h-0 flex-1 overscroll-contain pt-3 pr-[max(16px,env(safe-area-inset-right))] pb-4 pl-[max(16px,env(safe-area-inset-left))] [container-type:size] [--sheet-pin-h:100cqh]",
                   top ? "overflow-y-auto" : "overflow-hidden",
                 )}
               >
