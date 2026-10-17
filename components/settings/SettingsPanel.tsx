@@ -11,8 +11,8 @@ import { usePrefs, type Prefs } from "@/lib/prefs";
 import { version } from "@/package.json";
 import { DataHealth, statusSummary, useHealth, type HealthRow } from "./DataHealth";
 import { Choice, HeaderButton, List, row, RowContent, rowStatic, Section, SwitchKnob } from "./Grouped";
+import { spring } from "@/lib/motion";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const LANGS: Lang[] = ["mk", "en"];
 
 // Category order and members. Ids missing from LAYERS drop out, so roadworks shows up once it exists;

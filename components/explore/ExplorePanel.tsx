@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ExternalLink } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { LineBadge, tidyName, useDepartures } from "@/components/map/BusDepartures";
 import { CENTER, useMap, type LngLat } from "@/components/map/MapView";
 import { featureCenter } from "@/components/map/renderLayer";
@@ -15,9 +15,9 @@ import { LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature, LayerResponse } from "@/lib/sources/types";
 import { useLayer } from "@/lib/useLayer";
 import { AirDetail, cityPm10, stationsOf } from "./AirDetail";
-import { EServices } from "./EServices";
 import { GoOutCard } from "./GoOutCard";
 import { OutagesWidget } from "./OutagesWidget";
+import { spring } from "@/lib/motion";
 
 const featuresOf = (data?: LayerResponse) => (data?.features.features ?? []) as Feature[];
 
@@ -41,7 +41,6 @@ export function condition(code: number): keyof Dict {
   return "weather.storm";
 }
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 /** A "Today" tile. With `onOpen` a button stretched over the whole tile opens more; `data` is its layer, badged when not live. */
 function Card({
@@ -67,7 +66,8 @@ function Card({
       aria-busy={loading}
       className={cx(
         "relative flex min-h-[116px] min-w-0 flex-col rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-3",
-        onOpen && "transition-transform duration-200 has-[button:active]:scale-96 motion-reduce:has-[button:active]:scale-100",
+        // Press feedback for the whole tile: in at once, out in 200 ms.
+        onOpen && "transition-transform duration-200 has-[button:active]:scale-97 has-[button:active]:duration-0 motion-reduce:has-[button:active]:scale-100",
       )}
     >
       {onOpen && (
@@ -76,7 +76,7 @@ function Card({
           data-opens={id}
           onClick={onOpen}
           aria-label={openLabel}
-          className={cx("absolute inset-0 rounded-card", focusRing)}
+          className={cx("absolute inset-0 rounded-card active:scale-100", focusRing)}
         />
       )}
       <h3 className="t-footnote flex min-w-0 items-center gap-1.5 font-semibold text-label-2">
@@ -197,11 +197,17 @@ function BusCard() {
   const { t, lang } = useT();
   const { location, flyTo, select, reveal } = useMap();
   const { data, loading } = useLayer("buses", true);
-  const from = location ?? CENTER;
-  const nearest = featuresOf(data)
-    .filter((f) => f.geometry.type === "Point" && f.properties.detail?.lines)
-    .map((f) => ({ f, m: metres(from, featureCenter(f.geometry)) }))
-    .sort((a, b) => a.m - b.m)[0];
+  // One pass over every stop, redone only when the stops or the position change (not on each departures poll).
+  const nearest = useMemo(() => {
+    const from = location ?? CENTER;
+    let best: { f: Feature; m: number } | undefined;
+    for (const f of featuresOf(data)) {
+      if (f.geometry.type !== "Point" || !f.properties.detail?.lines) continue;
+      const m = metres(from, featureCenter(f.geometry));
+      if (!best || m < best.m) best = { f, m };
+    }
+    return best;
+  }, [data, location]);
   const stopId = nearest?.f.properties.detail?.stopId;
   const list = useDepartures(typeof stopId === "string" ? stopId : undefined);
   // The tile is narrow: "4 мин" rather than "за 4 мин".
@@ -282,21 +288,31 @@ function ExploreList({ onOpenAir }: { onOpenAir(): void }) {
         <h2 className="t-large-title text-balance">{t("explore.today")}</h2>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      {/* The phone sheet's middle detent ends just under these tiles (data-detent, see BottomSheet). */}
+      <div data-detent className="grid grid-cols-2 gap-2.5">
         <AirCard onOpen={onOpenAir} />
         <WeatherCard />
         <GoOut />
         <BusCard />
       </div>
       <OutagesWidget />
-      <EServices />
+      <a
+        href="https://uslugi.gov.mk/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cx("flex min-h-12 items-center justify-between gap-3 rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) px-4", focusRing)}
+      >
+        <span className="t-subhead font-semibold">{t("eservices.title")}</span>
+        <ExternalLink size={16} aria-hidden className="shrink-0 text-label-2" />
+        <span className="sr-only">{t("eservices.opensNew")}</span>
+      </a>
     </div>
   );
 }
 
 /**
  * Explore tab: information widgets only (layer switches live in Settings): Today tiles, the 7-day outage schedule and
- * the e-services. The air tile pushes the air detail; Back returns focus to it.
+ * a link out to the e-services portal. The air tile pushes the air detail; Back returns focus to it.
  */
 export function ExplorePanel() {
   const [view, setView] = useState<"list" | "air">("list");

@@ -1,9 +1,9 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
+import { useFetched } from "@/lib/useFetched";
 import { useMap } from "./MapView";
 
 /** One row of GET /api/buses/stop/[stopId]. */
@@ -25,32 +25,19 @@ export function tidyName(s: string): string {
   });
 }
 
+async function readDepartures(r: Response): Promise<Departure[]> {
+  if (r.status === 404) return []; // an unknown stop: a stale id after the daily feed refresh
+  const list: unknown = r.ok ? await r.json() : null;
+  if (!Array.isArray(list)) throw new Error(String(r.status));
+  return list as Departure[];
+}
+
 /**
- * Next departures at a GTFS stop, re-read every 30 s while the tab is visible. `undefined` while loading,
- * `null` when the timetable is unavailable; an unknown stop (a stale id after the daily feed refresh) is an empty list.
+ * Next departures at a GTFS stop, re-read every 30 s while the tab is visible and cached, so a reopened card or tile shows
+ * the last list at once. `undefined` while loading, `null` when the timetable is unavailable, `[]` for an unknown stop.
  */
 export function useDepartures(stopId: string | undefined): Departure[] | null | undefined {
-  const [state, setState] = useState<{ stopId?: string; list: Departure[] | null }>();
-  useEffect(() => {
-    if (!stopId) return;
-    const ac = new AbortController();
-    const tick = () => {
-      if (document.visibilityState !== "visible") return;
-      fetch(`/api/buses/stop/${encodeURIComponent(stopId)}`, { signal: ac.signal })
-        .then(async (r) => (r.ok ? ((await r.json()) as Departure[]) : r.status === 404 ? [] : null))
-        .then((list) => setState({ stopId, list: Array.isArray(list) ? list : null }))
-        .catch(() => !ac.signal.aborted && setState((s) => (s && s.stopId === stopId ? s : { stopId, list: null })));
-    };
-    tick();
-    const id = setInterval(tick, POLL_MS);
-    document.addEventListener("visibilitychange", tick);
-    return () => {
-      ac.abort();
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", tick);
-    };
-  }, [stopId]);
-  return state && state.stopId === stopId ? state.list : undefined;
+  return useFetched(stopId && `/api/buses/stop/${encodeURIComponent(stopId)}`, readDepartures, POLL_MS);
 }
 
 /** "за 3 мин" / "сега" for a departure within the hour, else its clock time. */
@@ -91,9 +78,10 @@ export function BusDepartures({ stopId }: { stopId?: string }) {
     <section aria-busy={list === undefined} className="flex flex-col gap-1">
       <h3 className="t-footnote font-semibold text-label-2">{t("buses.next")}</h3>
       {list === undefined ? (
-        <div className="flex flex-col gap-2 py-1">
-          <span className="skeleton h-9" />
-          <span className="skeleton h-9" />
+        <div className="flex flex-col gap-1 py-0.5">
+          <span className="skeleton h-10" />
+          <span className="skeleton h-10" />
+          <span className="skeleton h-10" />
         </div>
       ) : list === null ? (
         <p className="t-subhead text-label-2">{t("buses.unavailable")}</p>
@@ -103,7 +91,7 @@ export function BusDepartures({ stopId }: { stopId?: string }) {
         <>
           <ul className="-mx-2 flex flex-col">
             {list.slice(0, SHOWN).map((d) => (
-              <li key={d.tripId}>
+              <li key={d.tripId} className="[contain-intrinsic-size:auto_44px] [content-visibility:auto]">
                 <button
                   type="button"
                   onClick={() => {
@@ -111,7 +99,7 @@ export function BusDepartures({ stopId }: { stopId?: string }) {
                     select(null);
                   }}
                   className={cx(
-                    "flex min-h-11 w-full items-center gap-3 rounded-[10px] px-2 text-left transition-colors hover:bg-(--label)/5 active:bg-(--label)/8",
+                    "flex min-h-11 w-full items-center gap-3 rounded-[10px] px-2 text-left hover:bg-(--label)/5",
                     focusRing,
                   )}
                 >

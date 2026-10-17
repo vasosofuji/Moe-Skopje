@@ -97,11 +97,8 @@ export const mk = {
   "assistant.title": "Асистент за градот",
   "assistant.placeholder": "Прашајте нешто за Скопје…",
   "assistant.send": "Испрати",
-  "assistant.suggest.1": "Каков е воздухот во Аеродром?",
-  "assistant.suggest.2": "Има ли струја утре во Карпош?",
-  "assistant.suggest.3": "Која аптека е дежурна во моја близина?",
   "assistant.refused": "Не можам да одговорам на ова. Обидете се со друго прашање.",
-  "assistant.unavailable": "Асистентот не е достапен",
+  "assistant.unavailable": "Асистентот не е поврзан.",
   "assistant.rateLimited": "Ја достигнавте границата на пораки за овој час. Обидете се подоцна.",
 
   // --- Task 7: air ---
@@ -116,8 +113,7 @@ export const mk = {
   "buses.none": "Нема повеќе поаѓања денес.",
 
   // --- Task 12: assistant ---
-  "assistant.intro": "Прашајте ме за воздухот, прекините, автобусите или аптеките. Одговарам според живите податоци за градот.",
-  "assistant.typing": "Асистентот пишува…",
+  "assistant.typing": "Пишува…",
   "assistant.error": "Асистентот не успеа да одговори. Обидете се повторно.",
 
   // --- Task 4: shell ---
@@ -178,8 +174,7 @@ export const mk = {
   "goOut.reason.air": "Загаден воздух",
   "goOut.reason.rain": "Врне",
   "goOut.reason.temp": "Екстремна температура",
-  "eservices.title": "е-Услуги",
-  "eservices.hint": "Најчестите работи што можете да ги средите онлајн.",
+  "eservices.title": "Е-услуги",
   "eservices.opensNew": "се отвора во нов прозорец",
 
   // --- Wave E1b ---
@@ -224,7 +219,6 @@ export const mk = {
   "route.mode.auto": "Кола",
   "route.mode.bicycle": "Велосипед",
   "route.mode.pedestrian": "Пешки",
-  "route.go": "Најди рута",
   "route.summary": "{km} км · {min} мин",
   "route.avoided": "Заобиколува затворени улици: {n}",
   "route.noneAvoided": "На патот нема затворени улици.",
@@ -265,14 +259,12 @@ export const mk = {
 
   // --- Route planner ---
   "route.pickOnMap": "Избери на картата",
-  "route.pickHint": "Допрете на картата за да ја поставите точката.",
-  "route.pinOnMap": "Точка на картата",
-  "route.searchPlace": "Улица или населба",
+  "route.pickHint": "Допрете на картата.",
+  "route.swap": "Замени почеток и крај",
+  "route.searchPlace": "Место или адреса",
   "route.modeLabel": "Начин на движење",
-  "route.finding": "Бараме рута…",
   "route.clear": "Избриши ја рутата",
   "route.detour": "Заобиколница: +{distance}",
-  "route.needBoth": "Изберете почеток и крај на патот.",
   "route.error.same": "Изберете две различни точки.",
   "route.error.network": "Нема врска со серверот. Проверете ја интернет-врската.",
 

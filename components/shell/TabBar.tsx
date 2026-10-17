@@ -7,8 +7,8 @@ import { Segmented } from "@/components/glass/Segmented";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import type { Tab } from "./AppShell";
+import { spring } from "@/lib/motion";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 export const TAB_ICONS: Record<Tab, LucideIcon> = {
   explore: Compass,

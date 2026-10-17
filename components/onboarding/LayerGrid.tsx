@@ -1,7 +1,6 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { motion } from "motion/react";
 import type { CSSProperties } from "react";
 import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
@@ -13,7 +12,6 @@ export const TIER1 = LAYER_IDS.filter((id) => LAYERS[id].tier === 1 && !HIDDEN_L
 /** `ids` with `id` switched on or off. */
 export const toggleLayer = (ids: LayerId[], id: LayerId) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 /** Onboarding tiles to pick layers: icon, name and a check. Settings edits the same prefs.layers as switch rows. */
 export function LayerGrid({ value, onChange }: { value: LayerId[]; onChange(ids: LayerId[]): void }) {
@@ -25,13 +23,11 @@ export function LayerGrid({ value, onChange }: { value: LayerId[]; onChange(ids:
           const { icon: Icon, color, titleKey } = LAYERS[id];
           const on = value.includes(id);
           return (
-            <motion.button
+            <button
               key={id}
               type="button"
               aria-pressed={on}
               onClick={() => onChange(toggleLayer(value, id))}
-              whileTap={{ scale: 0.96 }}
-              transition={spring}
               style={{ "--c": color } as CSSProperties}
               className={cx(
                 "relative flex min-h-[84px] flex-col items-start justify-between gap-1.5 rounded-card border-[0.5px] p-3 text-left transition-colors",
@@ -53,7 +49,7 @@ export function LayerGrid({ value, onChange }: { value: LayerId[]; onChange(ids:
               >
                 {on && <Check size={13} strokeWidth={3} />}
               </span>
-            </motion.button>
+            </button>
           );
         })}
       </div>

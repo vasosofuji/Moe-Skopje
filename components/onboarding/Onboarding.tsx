@@ -10,8 +10,8 @@ import { cx, focusRing } from "@/lib/cx";
 import { useT, type Lang } from "@/lib/i18n";
 import { DEFAULT_PREFS, usePrefs } from "@/lib/prefs";
 import { LayerGrid } from "./LayerGrid";
+import { fade, spring } from "@/lib/motion";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const STEPS = 3;
 const LANGS: Lang[] = ["mk", "en"];
 
@@ -49,7 +49,7 @@ export function Onboarding() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={fade}
       className="fixed inset-0 z-50"
     >
       <Glass
@@ -78,7 +78,7 @@ export function Onboarding() {
                 <span
                   key={i}
                   className={cx(
-                    "h-2 rounded-full transition-all duration-300",
+                    "h-2 rounded-full transition-[width,background-color] duration-150",
                     i === step ? "w-5 bg-(--system-blue)" : "w-2 bg-(--label)/20",
                   )}
                 />

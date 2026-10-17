@@ -9,13 +9,13 @@ import { useT } from "@/lib/i18n";
 import { LineBadge, tidyName } from "./BusDepartures";
 import { cssColor, useMap, type LngLat, type Trip } from "./MapView";
 import { removeOverlay, setOverlay, TRIP_LAYERS } from "./renderLayer";
+import { spring } from "@/lib/motion";
 
 /** GET /api/buses/trip/[tripId]. */
 type Fix = { source: "live" | "estimated"; lng: number; lat: number; bearing?: number; updatedAt: string; shape?: GeoJSON.LineString };
 
 const POLL_MS = 10_000;
 const JUMP_DEG = 0.02; // about 2 km: further than a bus goes between two fixes, so move there without gliding
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 /**
  * Follows one trip on the map: its route drawn faintly, a glass bus marker with the line number gliding between the 10 s

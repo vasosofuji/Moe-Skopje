@@ -1,9 +1,9 @@
 "use client";
 
-import { LocateFixed, LocateOff, Route as RouteIcon, WifiOff } from "lucide-react";
+import { CornerUpRight, LocateFixed, LocateOff, WifiOff } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { AskBar } from "@/components/assistant/AskBar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import type { Citation } from "@/components/assistant/Citation";
@@ -17,20 +17,24 @@ import { RoutePlanner } from "@/components/route/RoutePlanner";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Dict } from "@/lib/i18n";
-import { HIDDEN_LAYERS } from "@/lib/layers";
+import { HIDDEN_LAYERS, type LayerId } from "@/lib/layers";
+import { spring } from "@/lib/motion";
 import { usePrefs } from "@/lib/prefs";
 import type { Feature } from "@/lib/sources/types";
 import { getCachedLayer, refreshLayer } from "@/lib/useLayer";
 import { useHydrated, useIsDesktop, useMedia } from "@/lib/useMedia";
-import { BottomSheet, SNAPS, type Snap } from "./BottomSheet";
+import { BottomSheet, type Snap } from "./BottomSheet";
 import { SearchPill } from "./SearchPill";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 
 export type Tab = "explore" | "ask" | "settings";
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const TOAST_MS = 6000;
+/** Camera moves stay short and run even with reduced motion (they say where the content went). */
+const CAMERA = { duration: 700, essential: true } as const;
+/** The Today tiles read these whatever the map shows. */
+const TODAY_LAYERS: LayerId[] = ["air", "weather", "buses"];
 
 function Panel({ tab, onCitation }: { tab: Tab; onCitation(c: Citation): void }) {
   if (tab === "explore") return <ExplorePanel />;
@@ -38,15 +42,37 @@ function Panel({ tab, onCitation }: { tab: Tab; onCitation(c: Citation): void })
   return <AssistantPanel onCitation={onCitation} />;
 }
 
+/** The directions entry on phones and tablets: a monochrome glyph next to the search field. */
+function RouteButton({ open, floating, onClick }: { open: boolean; floating: boolean; onClick(): void }) {
+  const { t } = useT();
+  const glyph = <CornerUpRight size={20} aria-hidden />;
+  return floating ? (
+    <GlassButton shape="circle" aria-label={t("route.title")} aria-pressed={open} onClick={onClick} className={cx("shrink-0", open && "text-(--system-blue)")}>
+      {glyph}
+    </GlassButton>
+  ) : (
+    <button
+      type="button"
+      aria-label={t("route.title")}
+      aria-pressed={open}
+      onClick={onClick}
+      className={cx("flex size-11 shrink-0 items-center justify-center rounded-full bg-(--label)/6", focusRing, open && "text-(--system-blue)")}
+    >
+      {glyph}
+    </button>
+  );
+}
+
 /**
  * The whole app: a full-bleed map with glass chrome floating over it.
- * Phones (<768): search pill on top, vaul bottom sheet, floating tab bar.
+ * Phones (<768): search pill and directions glyph on top, vaul bottom sheet, floating tab bar.
  * Tablets (768–1023): 360 px sidebar ending above the tab bar.
- * Desktop (≥1024): 380 px sidebar with Explore and Settings as a segmented control; Ask is the chat bar over the map.
+ * Desktop (≥1024): 380 px sidebar with Explore and Settings as a segmented control; Ask and directions are the
+ * Spotlight bar over the map. Language lives in Settings only.
  * Owns the tab, the selected feature and the camera, and shares them through MapContext (`useMap()`).
  */
 export function AppShell() {
-  const { t, lang, setLang } = useT();
+  const { t } = useT();
   const [prefs, setPrefs] = usePrefs();
   const hydrated = useHydrated();
   const isDesktop = useIsDesktop();
@@ -55,18 +81,23 @@ export function AppShell() {
   const dark = prefs.theme === "dark" || (prefs.theme === "system" && systemDark);
 
   const [tab, setTab] = useState<Tab>("explore");
-  const [snap, setSnap] = useState<Snap>(SNAPS[0]);
+  const [snap, setSnap] = useState<Snap>(0);
   const [selected, select] = useState<Feature | null>(null);
   const [highlight, setHighlight] = useState<Highlight | null>(null);
   const [trip, track] = useState<Trip | null>(null);
   const [map, setMap] = useState<MapLibreMap>();
   const [location, setLocation] = useState<LngLat>();
   const [toast, setToast] = useState<keyof Dict | null>(null);
-  const [routeOpen, setRouteOpen] = useState(false);
+  const [routeOpen, setRouteOpen] = useState(false); // phones and tablets; desktop's planner lives in AskBar
+
+  // A switch or theme tap paints first; the map's heavier redraw follows in a lower-priority render.
+  const mapLayers = useDeferredValue(prefs.layers);
+  const mapDark = useDeferredValue(dark);
 
   const panelTab = isDesktop && tab === "ask" ? "explore" : tab; // desktop asks through the bar, not a tab
-  const sheetFull = !isWide && snap === SNAPS[SNAPS.length - 1]; // the map is covered: hide what floats over it
+  const sheetFull = !isWide && snap === 2; // the map is covered: hide what floats over it
   const insetLeft = isDesktop ? 412 : isWide ? 392 : 0; // sidebar width plus its 16 px margins
+  const planner = routeOpen && !isDesktop;
 
   // The part of the map that is not under a panel.
   const padding = useCallback(
@@ -79,20 +110,20 @@ export function AppShell() {
 
   const flyTo = useCallback(
     (center: LngLat, zoom?: number) => {
-      map?.flyTo({ center, zoom: zoom ?? Math.max(map.getZoom(), 14), padding: padding() });
+      map?.flyTo({ center, zoom: zoom ?? Math.max(map.getZoom(), 14), padding: padding(), ...CAMERA });
     },
     [map, padding],
   );
 
   const showArea = useCallback(
     ([w, s, e, n]: BBox) => {
-      map?.fitBounds([[w, s], [e, n]], { padding: padding(40), maxZoom: 16 });
+      map?.fitBounds([[w, s], [e, n]], { padding: padding(40), maxZoom: 16, ...CAMERA });
     },
     [map, padding],
   );
 
   const reveal = useCallback(() => {
-    if (!isWide) setSnap(SNAPS[0]);
+    if (!isWide) setSnap(0);
   }, [isWide]);
 
   const locate = useCallback(
@@ -125,6 +156,15 @@ export function AppShell() {
       .catch(() => {});
   }, []);
 
+  // Right after hydration (saved prefs are known by then), start the enabled layers and the Today tiles' layers, so they
+  // load alongside the basemap instead of after it. refreshLayer shares any request a component starts as well.
+  const prefetch = useEffectEvent(() => {
+    for (const id of new Set([...TODAY_LAYERS, ...prefs.layers])) if (!HIDDEN_LAYERS.includes(id)) void refreshLayer(id);
+  });
+  useEffect(() => {
+    if (hydrated) prefetch();
+  }, [hydrated]);
+
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(null), TOAST_MS);
@@ -133,16 +173,21 @@ export function AppShell() {
 
   const go = (next: Tab) => {
     setTab(next);
+    setRouteOpen(false);
     if (isWide) return;
-    if (next === "ask") setSnap(SNAPS[SNAPS.length - 1]); // the chat's input sits at the bottom of the panel
-    else if (snap === SNAPS[0]) setSnap(SNAPS[1]);
+    if (next === "ask") setSnap(2); // the chat's input sits in the panel
+    else if (snap === 0) setSnap(1);
+  };
+  const toggleRoute = () => {
+    setRouteOpen(!routeOpen);
+    if (!isWide && !routeOpen) setSnap(1);
   };
 
   // A citation chip flies to the feature and opens its card. A cited layer that is off is switched on first,
   // so the chip never lands on an empty spot; a feature not loaded yet is selected once its layer arrives.
   const onCitation = (c: Citation) => {
     flyTo([c.lng, c.lat], 15);
-    if (!isWide) setSnap(SNAPS[0]); // lower the chat to its peek so the map and the card show; drag up to go on
+    if (!isWide) setSnap(0); // lower the chat to its peek so the map and the card show; drag up to go on
     if (HIDDEN_LAYERS.includes(c.layer)) return select(null);
     if (!prefs.layers.includes(c.layer)) setPrefs({ layers: [...prefs.layers, c.layer] });
     const find = () => getCachedLayer(c.layer)?.features.features.find((f) => f.properties?.id === c.featureId) as Feature | undefined;
@@ -152,46 +197,39 @@ export function AppShell() {
   };
   const closeCard = useCallback(() => select(null), []);
   const closeRoute = useCallback(() => setRouteOpen(false), []);
-  // Where the route planner lives: a floating panel above the chat bar on desktop (see below), otherwise the top of the Explore
-  // content, as a compact "Route" pill that unfolds into the planner. A phone sheet drops to its peek while a point is tapped on the map.
-  const routeSlot =
-    !isDesktop && tab === "explore" ? (
-      routeOpen ? (
-        <RoutePlanner
-          variant="inline"
-          insetLeft={insetLeft}
-          onClose={closeRoute}
-          onPicking={(on) => !isWide && setSnap(on ? SNAPS[0] : SNAPS[1])}
-        />
-      ) : (
-        // A compact pill in the header row, right of the title: the collapsed sheet keeps "Today" in view.
-        <button
-          type="button"
-          onClick={() => setRouteOpen(true)}
-          className={cx("glass glass-pill glass-button t-footnote absolute top-0 right-0 z-10 h-9 min-h-9 gap-1.5 px-3 font-semibold select-none", focusRing)}
-        >
-          <RouteIcon size={16} aria-hidden />
-          {t("route.title")}
-        </button>
-      )
-    ) : null;
-  // The chat bar is centred in the map that the sidebar leaves free and is at most 560 px wide (88 px of margin each side).
-  const barLeft = `(${insetLeft}px + (100vw - ${insetLeft}px) / 2 - min(280px, (100vw - ${insetLeft}px - 176px) / 2))`;
   const stopTracking = useCallback(() => track(null), []);
   const api = useMemo<MapApi>(
     () => ({ map, flyTo, showArea, reveal, select, location, locate, highlight, setHighlight, trip, track }),
     [map, flyTo, showArea, reveal, location, locate, highlight, trip],
   );
 
+  // Phones and tablets: the planner takes the panel's place while it is open (the sheet sits at its middle detent).
+  // A phone sheet drops to its peek while a point is tapped on the map, and rises while a field is typed in.
+  const content = planner ? (
+    <RoutePlanner
+      variant="panel"
+      insetLeft={insetLeft}
+      onClose={closeRoute}
+      onPicking={(on) => !isWide && setSnap(on ? 0 : 1)}
+      onEditing={(on) => !isWide && setSnap(on ? 2 : 1)}
+    />
+  ) : (
+    <Panel tab={isWide ? panelTab : tab} onCitation={onCitation} />
+  );
+
   const onboarding = hydrated && !prefs.onboarded;
-  const other = lang === "mk" ? "en" : "mk";
 
   return (
     <MapContext value={api}>
       <MotionConfig reducedMotion="user">
         <main className="shell fixed inset-0 overflow-hidden">
           <div inert={onboarding} className="contents">
-            <MapView layers={prefs.layers.filter((id) => !HIDDEN_LAYERS.includes(id))} dark={dark} onReady={setMap} onTileError={() => setToast("map.tilesUnavailable")} />
+            <MapView
+              layers={mapLayers.filter((id) => !HIDDEN_LAYERS.includes(id))}
+              dark={mapDark}
+              onReady={setMap}
+              onTileError={() => setToast("map.tilesUnavailable")}
+            />
 
             {/* Layout depends on the viewport and saved prefs, which only the client knows. */}
             {hydrated && (
@@ -201,73 +239,44 @@ export function AppShell() {
                     desktop={isDesktop}
                     header={
                       <>
-                        <SearchPill />
+                        <div className="flex gap-2">
+                          <SearchPill className="min-w-0 flex-1" />
+                          {!isDesktop && <RouteButton open={routeOpen} floating={false} onClick={toggleRoute} />}
+                        </div>
                         {isDesktop && <TabBar variant="segmented" tab={panelTab} onChange={go} />}
                       </>
                     }
                   >
-                    <div className="relative">
-                      {routeSlot}
-                      <Panel tab={panelTab} onCitation={onCitation} />
-                    </div>
+                    {content}
                   </Sidebar>
                 ) : (
                   <>
                     <div
                       inert={sheetFull}
                       className={cx(
-                        "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-20 flex gap-2 transition-opacity duration-300",
+                        "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-20 flex gap-2 transition-opacity duration-150",
                         sheetFull && "opacity-0",
                       )}
                     >
                       <SearchPill floating className="min-w-0 flex-1" />
-                      <GlassButton shape="circle" aria-label={t(`lang.${other}`)} onClick={() => setLang(other)}>
-                        <span lang={other} className="t-subhead font-semibold">
-                          {t(`lang.${other}.short`)}
-                        </span>
-                      </GlassButton>
+                      <RouteButton open={routeOpen} floating onClick={toggleRoute} />
                     </div>
-                    <BottomSheet snap={snap} onSnap={setSnap} title={t(`tab.${tab}`)}>
-                      <div className="relative">
-                        {routeSlot}
-                        <Panel tab={tab} onCitation={onCitation} />
-                      </div>
+                    <BottomSheet snap={snap} onSnap={setSnap} title={planner ? t("route.title") : t(`tab.${tab}`)}>
+                      {content}
                     </BottomSheet>
                   </>
                 )}
 
                 {!isDesktop && <TabBar variant="floating" tab={tab} onChange={go} />}
                 {isDesktop && <AskBar left={insetLeft} onCitation={onCitation} />}
-                {isDesktop && (
-                  <>
-                    <GlassButton
-                      size="sm"
-                      aria-label={t("route.title")}
-                      aria-pressed={routeOpen}
-                      onClick={() => setRouteOpen((open) => !open)}
-                      style={{ right: `calc(100vw - ${barLeft} + 12px)` }}
-                      className={cx("fixed bottom-[54px] z-20", routeOpen && "text-(--system-blue)")}
-                    >
-                      <RouteIcon size={18} aria-hidden />
-                      <span className="hidden xl:inline">{t("route.title")}</span>
-                    </GlassButton>
-                    {routeOpen && (
-                      <div style={{ left: `calc${barLeft}` }} className="fixed bottom-[116px] z-20">
-                        <RoutePlanner variant="floating" insetLeft={insetLeft} onClose={closeRoute} />
-                      </div>
-                    )}
-                  </>
-                )}
 
-                {!sheetFull && (
+                {/* On phones the docked marker card takes the top-right corner, so the locate button steps aside. */}
+                {!sheetFull && !(selected && !isWide) && (
                   <GlassButton
                     shape="circle"
                     aria-label={t("map.myLocation")}
                     onClick={() => void locate(true)}
-                    className={cx(
-                      "fixed z-10",
-                      isWide ? "right-4 bottom-12" : "top-[calc(env(safe-area-inset-top)+68px)] right-3",
-                    )}
+                    className={cx("fixed z-10", isWide ? "right-4 bottom-12" : "top-[calc(env(safe-area-inset-top)+68px)] right-3")}
                   >
                     <LocateFixed size={20} aria-hidden className={location ? "text-(--system-blue)" : undefined} />
                   </GlassButton>
@@ -281,14 +290,7 @@ export function AppShell() {
 
                 <AnimatePresence>
                   {map && selected && !sheetFull && (
-                    <MarkerCard
-                      key={selected.properties.id}
-                      feature={selected}
-                      map={map}
-                      docked={!isDesktop}
-                      insetLeft={insetLeft}
-                      onClose={closeCard}
-                    />
+                    <MarkerCard key={selected.properties.id} feature={selected} map={map} docked={!isDesktop} insetLeft={insetLeft} onClose={closeCard} />
                   )}
                 </AnimatePresence>
 

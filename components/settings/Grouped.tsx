@@ -4,10 +4,10 @@ import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { cx } from "@/lib/cx";
+import { spring } from "@/lib/motion";
 
 // iOS inset grouped list: small-caps section headers, 44 px rows inside a rounded tile, hairlines inset to the text.
 
-const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 /** Focus ring drawn inside the row, where the rounded list cannot clip it. */
 const insetFocus = "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--system-blue) focus-visible:rounded-[10px]";

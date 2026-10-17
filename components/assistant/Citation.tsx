@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { StatusBadge } from "@/components/glass/StatusBadge";
+import { focusRing } from "@/lib/cx";
 import { HIDDEN_LAYERS, isLayerId, LAYERS, type LayerId } from "@/lib/layers";
 import type { Status } from "@/lib/sources/types";
 
@@ -59,16 +60,12 @@ export function parseReply(raw: string): { text: string; citations: Citation[] }
   return { text: raw, citations: [] };
 }
 
-/** Press feedback for plain glass buttons (GlassButton's is a spring; these wrap text, which its fixed height can't). */
-export const PRESS =
-  "active:scale-96 motion-reduce:active:scale-100 motion-reduce:active:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--system-blue)";
-
 /** Chip under an answer: layer colour, feature title, source and status badge. Tapping flies the map to it. */
 export function CitationChip({ c, onClick }: { c: Citation; onClick(): void }) {
   // StatusBadge wants a timestamp; the server sends the age as of when the answer arrived, so pin it once.
   const [updatedAt] = useState(() => new Date(Date.now() - c.ageMin * 60_000).toISOString());
   return (
-    <button type="button" onClick={onClick} className={`glass glass-pill glass-button min-w-0 max-w-full gap-2 py-1 pr-2 pl-3 text-left ${PRESS}`}>
+    <button type="button" onClick={onClick} className={`glass glass-pill glass-button min-w-0 max-w-full gap-2 py-1 pr-2 pl-3 text-left ${focusRing}`}>
       <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-(--dot)" style={{ "--dot": LAYERS[c.layer].color } as CSSProperties} />
       <span className="flex min-w-0 flex-col">
         <span className="t-footnote truncate font-semibold">{c.title}</span>
