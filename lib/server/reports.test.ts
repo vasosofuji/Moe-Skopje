@@ -103,6 +103,18 @@ afterEach(() => {
 test("validatePhoto rejects non-images", () =>
   expect(validatePhoto(new File(["x"], "a.pdf", { type: "application/pdf" }))).toEqual({ ok: false, code: "type" }));
 
+test("validatePhoto rejects SVG (stored XSS in a public bucket) and other non-raster image types", () => {
+  for (const type of ["image/svg+xml", "image/svg", "image/x-icon", "image/jpeg; charset=utf-8", "text/html", ""]) {
+    expect(validatePhoto(new File(["<svg/>"], "a.svg", { type }))).toEqual({ ok: false, code: "type" });
+  }
+});
+
+test("validatePhoto still accepts jpeg, png, webp, gif, heic and heif", () => {
+  for (const type of ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"]) {
+    expect(validatePhoto(photo(1000, type))).toEqual({ ok: true });
+  }
+});
+
 test("validatePhoto rejects > 4 MB", () =>
   expect(validatePhoto(photo(MAX_PHOTO_BYTES + 1))).toEqual({ ok: false, code: "size" }));
 
@@ -177,6 +189,14 @@ test("a photo is uploaded to report-photos/<id>.jpg with its own content type", 
   expect(calls.insert[0].photo_path).toBe(`${idOf(res)}.jpg`);
 });
 
+test("WebP and HEIC are uploaded with their allowlisted content type", async () => {
+  for (const type of ["image/webp", "image/heic"]) {
+    const { db, calls } = fakeDb();
+    expect((await createReport(db, form(body(), photo(1000, type)), "hash")).status).toBe(201);
+    expect(calls.upload.map((u) => u.type)).toEqual([type]);
+  }
+});
+
 test("bad input or photo is a 400 and nothing is written", async () => {
   const { db, calls } = fakeDb();
   const bad = async (f: FormData) => (await createReport(db, f, "hash")).body;
@@ -186,6 +206,7 @@ test("bad input or photo is a 400 and nothing is written", async () => {
   junk.set("data", "{not json");
   expect(await bad(junk)).toEqual({ code: "input" });
   expect(await bad(form(body(), new File(["x"], "a.pdf", { type: "application/pdf" })))).toEqual({ code: "type" });
+  expect(await bad(form(body(), new File(["<svg xmlns='http://www.w3.org/2000/svg'/>"], "a.svg", { type: "image/svg+xml" })))).toEqual({ code: "type" });
   expect(await bad(form(body(), photo(MAX_PHOTO_BYTES + 1)))).toEqual({ code: "size" });
   const text = form(body());
   text.set("photo", "not a file");

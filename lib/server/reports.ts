@@ -63,6 +63,7 @@ export async function createReport(db: SupabaseClient, form: FormData, hash: str
   let photoPath: string | null = null;
   if (field) {
     const path = `${id}.jpg`;
+    // validatePhoto allowlisted field.type (raster image/* only), so that is what the public bucket serves it as
     const { error } = await db.storage.from(PHOTO_BUCKET).upload(path, field, { contentType: field.type });
     if (error) return fail(500, "upload", error);
     photoPath = path;

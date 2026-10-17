@@ -215,17 +215,42 @@ export function systemPrompt(lang: Lang): string {
   ].join("\n");
 }
 
-// ponytail: in-memory and per instance, so the real ceiling is 20 × warm instances per device per hour (a cold start
-// resets it), and devices that never come back keep their entry. Move it to a Supabase table if it gets abused.
-const sent = new Map<string, number[]>();
+// ponytail: in-memory and per instance, so every cap below is really "× warm instances" (a cold start resets it), and
+// devices/IPs that never come back keep their entry. x-device-id is caller-chosen, so the per-IP cap is what stops a fresh
+// id per request; a caller that also rotates IPs is bounded only by the 60/min instance cap (3600/hour/instance).
+// Move it to a Supabase table if it gets abused.
+export const ASSISTANT_PER_IP_HOUR = 40;
+export const ASSISTANT_PER_MINUTE = 60;
+const MINUTE_MS = 60_000;
+const byDevice = new Map<string, number[]>();
+const byIp = new Map<string, number[]>();
+let all: number[] = [];
+const within = (times: number[] | undefined, now: number, span: number) => (times ?? []).filter((t) => now - t < span);
 
-/** Records one message for `hash` and says whether it is within 20 per rolling hour. */
-export function allowMessage(hash: string, now = Date.now()): boolean {
-  const recent = (sent.get(hash) ?? []).filter((t) => now - t < HOUR_MS);
-  const ok = recent.length < ASSISTANT_PER_HOUR;
-  if (ok) recent.push(now);
-  sent.set(hash, recent);
-  return ok;
+/** Test hook: forget every recorded message. */
+export function resetAssistantLimits() {
+  byDevice.clear();
+  byIp.clear();
+  all = [];
+}
+
+/** The caller's address: `x-real-ip`, else the first `x-forwarded-for` entry, else a shared "unknown" bucket. */
+export const clientIp = (req: Request) =>
+  req.headers.get("x-real-ip")?.trim() || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+
+/**
+ * Records one message and says whether it is allowed: at most 20 per device and 40 per IP in a rolling hour, and 60 per
+ * minute across the instance. A refused message is not recorded, so it never eats into anyone's quota.
+ */
+export function allowMessage(hash: string, ip: string, now = Date.now()): boolean {
+  const device = within(byDevice.get(hash), now, HOUR_MS);
+  const net = within(byIp.get(ip), now, HOUR_MS);
+  all = within(all, now, MINUTE_MS);
+  if (device.length >= ASSISTANT_PER_HOUR || net.length >= ASSISTANT_PER_IP_HOUR || all.length >= ASSISTANT_PER_MINUTE) return false;
+  byDevice.set(hash, [...device, now]);
+  byIp.set(ip, [...net, now]);
+  all.push(now);
+  return true;
 }
 
 /** What the client sends: plain-text turns only (no tool blocks, images or documents), so a request stays small. */

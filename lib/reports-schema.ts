@@ -10,6 +10,8 @@ const [WEST, SOUTH, EAST, NORTH] = [21.25, 41.9, 21.6, 42.1];
 export const MAX_DESCRIPTION = 500;
 export const MAX_NICKNAME = 32;
 export const MAX_PHOTO_BYTES = 4 * 1024 * 1024; // Vercel's function body limit is 4.5 MB
+/** Raster formats only: `image/svg+xml` in the public bucket would be stored XSS on the Supabase origin. HEIC/HEIF are iPhone photos. */
+const PHOTO_TYPE = /^image\/(jpeg|png|webp|gif|heic|heif)$/;
 
 export const ReportInputSchema = z.object({
   category: z.enum(REPORT_CATEGORIES),
@@ -23,7 +25,7 @@ export type ReportInput = z.infer<typeof ReportInputSchema>;
 /** The photo is optional (null passes). The server runs this again; the client uses it for a friendly error first. */
 export function validatePhoto(file: File | null): { ok: true } | { ok: false; code: "type" | "size" } {
   if (!file) return { ok: true };
-  if (!file.type.startsWith("image/")) return { ok: false, code: "type" };
+  if (!PHOTO_TYPE.test(file.type)) return { ok: false, code: "type" };
   if (file.size > MAX_PHOTO_BYTES) return { ok: false, code: "size" };
   return { ok: true };
 }

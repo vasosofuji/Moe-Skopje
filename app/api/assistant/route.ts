@@ -1,4 +1,4 @@
-import { AssistantBodySchema, allowMessage, streamAnswer } from "@/lib/server/assistant";
+import { AssistantBodySchema, allowMessage, clientIp, streamAnswer } from "@/lib/server/assistant";
 import { deviceHashOf } from "@/lib/server/reports";
 
 export const maxDuration = 60; // a few tool rounds plus the answer
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   }
   const body = AssistantBodySchema.safeParse(json);
   if (!body.success) return fail(400, "input");
-  if (!allowMessage(hash)) return fail(429, "rate");
+  if (!allowMessage(hash, clientIp(req))) return fail(429, "rate");
 
   const { messages, lang } = body.data;
   while (messages[0].role === "assistant") messages.shift(); // the client sends its last 20 turns; the API wants a user turn first
