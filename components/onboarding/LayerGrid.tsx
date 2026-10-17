@@ -7,8 +7,11 @@ import { cx, focusRing } from "@/lib/cx";
 import { useT } from "@/lib/i18n";
 import { LAYER_IDS, LAYERS, type LayerId } from "@/lib/layers";
 
+/** Layers the UI never offers or draws. Citizen reports left the UI; their lib/ and API code is removed separately. */
+export const HIDDEN_LAYERS: readonly string[] = ["reports"];
+
 /** The must-demo layers (spec §2), in display order. */
-export const TIER1 = LAYER_IDS.filter((id) => LAYERS[id].tier === 1);
+export const TIER1 = LAYER_IDS.filter((id) => LAYERS[id].tier === 1 && !HIDDEN_LAYERS.includes(id));
 
 /** `ids` with `id` switched on or off. */
 export const toggleLayer = (ids: LayerId[], id: LayerId) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);

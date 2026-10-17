@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Glass } from "@/components/glass/Glass";
 import { GlassButton } from "@/components/glass/GlassButton";
 import { useMap } from "@/components/map/MapView";
-import { AppMark } from "@/components/shell/Sidebar";
 import { cx, focusRing } from "@/lib/cx";
 import { useT, type Lang } from "@/lib/i18n";
 import { DEFAULT_PREFS, usePrefs } from "@/lib/prefs";
@@ -15,13 +14,6 @@ import { LayerGrid } from "./LayerGrid";
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 const STEPS = 3;
 const LANGS: Lang[] = ["mk", "en"];
-
-// Soft colour fields behind the glass, so the first screen is frosted colour rather than flat grey while tiles load.
-const BACKDROP = [
-  "radial-gradient(40% 35% at 20% 20%, color-mix(in srgb, var(--system-blue) 45%, transparent), transparent)",
-  "radial-gradient(35% 30% at 85% 30%, color-mix(in srgb, var(--system-pink) 35%, transparent), transparent)",
-  "radial-gradient(45% 35% at 50% 95%, color-mix(in srgb, var(--system-teal) 40%, transparent), transparent)",
-].join(",");
 
 const primary = "w-full bg-(--system-blue) text-white";
 
@@ -51,7 +43,6 @@ export function Onboarding() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
       className="fixed inset-0 z-50"
-      style={{ backgroundImage: BACKDROP }}
     >
       <Glass
         strong
@@ -98,8 +89,7 @@ export function Onboarding() {
             >
               {step === 0 && (
                 <>
-                  <div className="flex flex-col items-start gap-4">
-                    <AppMark size={72} />
+                  <div className="flex flex-col items-start gap-2">
                     <h1 id="onboarding-title" className="t-large-title text-balance">
                       {t("onboarding.welcome")}
                     </h1>

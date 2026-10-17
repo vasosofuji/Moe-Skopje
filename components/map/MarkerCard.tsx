@@ -3,13 +3,15 @@
 import { Clock, ExternalLink, X } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { motion } from "motion/react";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { StatusBadge } from "@/components/glass/StatusBadge";
 import { cx, focusRing } from "@/lib/cx";
-import { pick, useT, type Lang } from "@/lib/i18n";
+import { pick, useT, type Dict, type Lang } from "@/lib/i18n";
+import { formatWhen } from "@/lib/i18n/format";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature } from "@/lib/sources/types";
 import { cachedLayers } from "@/lib/useLayer";
+import { BusDepartures } from "./BusDepartures";
 import { featureCenter, SEVERITY_COLORS } from "./renderLayer";
 
 const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
@@ -23,14 +25,60 @@ function layerOf(f: Feature) {
   );
 }
 
-function when(f: Feature, lang: Lang): string | null {
-  const { startsAt, endsAt } = f.properties;
-  if (!startsAt && !endsAt) return null;
-  const fmt = new Intl.DateTimeFormat(lang === "mk" ? "mk-MK" : "en-GB", { dateStyle: "medium", timeStyle: "short" });
-  const valid = (s?: string) => (s && Number.isFinite(Date.parse(s)) ? new Date(s) : null);
-  const [a, b] = [valid(startsAt), valid(endsAt)];
-  if (a && b) return fmt.formatRange(a, b);
-  return a ? fmt.format(a) : b ? `– ${fmt.format(b)}` : null;
+type Unit = { mk: string; en: string };
+const u = (mk: string, en = mk): Unit => ({ mk, en });
+
+/**
+ * Detail keys worth showing, in display order, with a label and unit. Everything else in `detail` (OSM ids and tags,
+ * flags, JSON blobs) stays out of the card; the pharmacy flags get a chip and a note instead.
+ */
+const FIELDS: [key: string, label: keyof Dict, unit?: Unit][] = [
+  ["pm10", "detail.pm10", u("µg/m³")],
+  ["pm25", "air.pm25", u("µg/m³")],
+  ["no2", "detail.no2", u("µg/m³")],
+  ["o3", "detail.o3", u("µg/m³")],
+  ["noise", "detail.noise", u("dB")],
+  ["temperature", "detail.temperature", u("°C")],
+  ["apparent", "detail.apparent", u("°C")],
+  ["precipitation", "detail.precipitation", u("мм", "mm")],
+  ["wind", "detail.wind", u("км/ч", "km/h")],
+  ["depthKm", "detail.depth", u("км", "km")],
+  ["type", "detail.type"],
+  ["streets", "detail.streets"],
+  ["lines", "detail.lines"],
+  ["municipality", "detail.municipality"],
+  ["addr_street", "detail.address"],
+  ["opening_hours", "detail.hours"],
+  ["phone", "detail.phone"],
+  ["website", "detail.website"],
+  ["operator", "detail.operator"],
+  ["zone", "detail.zone"],
+  ["zonePrice", "detail.price", u("ден./ч", "MKD/h")],
+  ["capacity", "detail.capacity"],
+  ["fee", "detail.fee"],
+];
+
+const httpUrl = (v: string) => {
+  try {
+    const url = new URL(v);
+    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
+  } catch {
+    return null;
+  }
+};
+
+const linkClass = cx("text-(--system-blue)", focusRing);
+
+/** One detail value in the reader's language: decimal comma in Macedonian, yes/no translated, links where they help. */
+function detailValue(key: string, v: string | number, d: Record<string, string | number>, t: (k: keyof Dict) => string, lang: Lang, unit?: Unit): ReactNode {
+  if (typeof v === "number") return `${lang === "mk" ? String(v).replace(".", ",") : v}${unit ? ` ${unit[lang]}` : ""}`;
+  if (key === "fee") return v === "no" ? t("detail.no") : t("detail.yes");
+  if (key === "lines") return v.split(",").join(", ");
+  if (key === "addr_street") return d.addr_housenumber ? `${v} ${d.addr_housenumber}` : v;
+  if (key === "phone") return <a href={`tel:${v.replace(/[^\d+]/g, "")}`} className={linkClass}>{v}</a>;
+  const url = key === "website" ? httpUrl(v) : null;
+  if (url) return <a href={url.href} target="_blank" rel="noreferrer" className={linkClass}>{url.hostname.replace(/^www\./, "")}</a>;
+  return v;
 }
 
 /**
@@ -43,15 +91,13 @@ export function MarkerCard({
   map,
   docked,
   insetLeft = 0,
-  insetRight = 0,
   onClose,
 }: {
   feature: Feature;
   map: MapLibreMap;
   docked: boolean;
-  /** Screen space covered by side panels, which the card stays clear of. */
+  /** Screen width covered by the sidebar, which the card stays clear of. */
   insetLeft?: number;
-  insetRight?: number;
   onClose(): void;
 }) {
   const { t, lang } = useT();
@@ -77,12 +123,14 @@ export function MarkerCard({
   const p = feature.properties;
   const accent = p.severity !== undefined ? SEVERITY_COLORS[p.severity] : (meta?.color ?? "var(--system-blue)");
   const Icon = meta?.icon;
-  const time = when(feature, lang);
+  const d = p.detail ?? {};
+  const time = formatWhen(p.startsAt, p.endsAt, lang);
+  const rows = FIELDS.filter(([k]) => d[k] !== undefined && d[k] !== "");
 
   // Placement: docked cards span the top of the screen; floating ones centre on the point, clamped to the free area.
   const box = map.getContainer().getBoundingClientRect();
   const half = WIDTH / 2;
-  const x = Math.min(Math.max(point.x, insetLeft + GAP + half), box.width - insetRight - GAP - half);
+  const x = Math.min(Math.max(point.x, insetLeft + GAP + half), box.width - GAP - half);
   const below = point.y < 280; // not enough room above the point
   const style: CSSProperties = docked
     ? {}
@@ -121,6 +169,11 @@ export function MarkerCard({
           <div className="min-w-0 flex-1">
             <h2 className="t-headline">{pick(p.title, lang)}</h2>
             {meta && <p className="t-footnote text-label-2">{t(meta.titleKey)}</p>}
+            {d.onDuty === 1 && (
+              <span className="t-caption mt-1 inline-flex h-6 items-center rounded-full bg-(--system-green)/15 px-2 text-(--system-green)">
+                {t("marker.onDuty")}
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -151,15 +204,21 @@ export function MarkerCard({
           </p>
         )}
 
-        {p.detail && Object.keys(p.detail).length > 0 && (
+        {rows.length > 0 && (
           <dl className="t-subhead grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-            {Object.entries(p.detail).map(([k, v]) => (
+            {rows.map(([k, label, unit]) => (
               <div key={k} className="contents">
-                <dt className="text-label-2">{k}</dt>
-                <dd className="min-w-0 break-words text-right">{v}</dd>
+                <dt className="text-label-2">{t(label)}</dt>
+                <dd className="min-w-0 break-words text-right">{detailValue(k, d[k], d, t, lang, unit)}</dd>
               </div>
             ))}
           </dl>
+        )}
+
+        {d.approx === 1 && <p className="t-footnote text-label-2">{t("marker.approx")}</p>}
+
+        {p.kind === "bus-stop" && (
+          <BusDepartures stopId={p.id} lines={String(p.detail?.lines ?? "").split(",").filter(Boolean)} />
         )}
 
         {layer && (

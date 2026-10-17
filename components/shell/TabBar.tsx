@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Megaphone, Settings, Sparkles, type LucideIcon } from "lucide-react";
+import { Compass, MessageCircle, Settings, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { GlassPill } from "@/components/glass/GlassPill";
 import { Segmented } from "@/components/glass/Segmented";
@@ -12,23 +12,23 @@ const spring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 export const TAB_ICONS: Record<Tab, LucideIcon> = {
   explore: Compass,
-  report: Megaphone,
-  ask: Sparkles,
+  ask: MessageCircle,
   settings: Settings,
 };
 const TABS = Object.keys(TAB_ICONS) as Tab[];
 
 /**
- * The four tabs. `floating`: the glass capsule at the bottom of phones and tablets, safe-area aware.
- * `segmented`: a segmented control for the top of the desktop sidebar.
+ * The tabs. `floating`: the glass capsule at the bottom of phones and tablets, safe-area aware.
+ * `segmented`: a segmented control for the top of the desktop sidebar, without Ask (the chat bar over the map has it).
  */
 export function TabBar({ tab, onChange, variant }: { tab: Tab; onChange(tab: Tab): void; variant: "floating" | "segmented" }) {
   const { t } = useT();
 
   if (variant === "segmented") {
+    const tabs = TABS.filter((v) => v !== "ask");
     return (
       <nav aria-label={t("shell.tabs")}>
-        <Segmented id="tab-thumb" label={t("shell.tabs")} options={TABS.map((v) => ({ value: v, label: t(`tab.${v}`) }))} value={tab} onChange={onChange} />
+        <Segmented id="tab-thumb" label={t("shell.tabs")} options={tabs.map((v) => ({ value: v, label: t(`tab.${v}`) }))} value={tab} onChange={onChange} />
       </nav>
     );
   }
@@ -37,7 +37,7 @@ export function TabBar({ tab, onChange, variant }: { tab: Tab; onChange(tab: Tab
     <GlassPill
       as="nav"
       aria-label={t("shell.tabs")}
-      className="fixed bottom-[calc(env(safe-area-inset-bottom)+8px)] left-1/2 z-20 h-[62px] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 gap-0 px-1"
+      className="fixed bottom-[calc(env(safe-area-inset-bottom)+8px)] left-1/2 z-20 h-[62px] w-[min(320px,calc(100vw-24px))] -translate-x-1/2 gap-0 px-1"
     >
       {TABS.map((id) => {
         const Icon = TAB_ICONS[id];
