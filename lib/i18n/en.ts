@@ -131,7 +131,7 @@ export const en: Dict = {
   "shell.noResults": "No results",
   "map.region": "Map of Skopje",
   "map.locationUnavailable": "We couldn't find your location",
-  "explore.nearCentre": "Nearest to the centre",
+  "explore.nearCentre": "Near the centre",
   "explore.distance": "{d} away",
   "marker.when": "When",
   "onboarding.step": "Step {n} of {total}",
@@ -172,7 +172,7 @@ export const en: Dict = {
   // --- Task 13: tier 2 ---
   "goOut.title": "Good to go out?",
   "goOut.score": "Score {score} out of 100",
-  "goOut.verdict.good": "A great day to be outside",
+  "goOut.verdict.good": "A great day",
   "goOut.verdict.fair": "Fine, with some care",
   "goOut.verdict.poor": "Better to stay in",
   "goOut.reason.air": "Polluted air",

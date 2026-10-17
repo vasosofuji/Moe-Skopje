@@ -1,5 +1,5 @@
 // maplibre-gl 6 is ESM-only and looks for its worker next to its own module URL, which Turbopack's chunks don't have.
-// So the worker is served from public/ and MapView points setWorkerUrl at it. Runs before dev and build (package.json).
+// So the worker is served from public/ and MapView points setWorkerUrl at it. Runs after install, before dev and before build (package.json), so it is there however the app starts.
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 
 const from = new URL("../node_modules/maplibre-gl/dist/", import.meta.url);

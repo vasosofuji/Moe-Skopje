@@ -4,7 +4,7 @@ import { RoutePlanner } from "./RoutePlanner";
 
 test("the planner renders both fields, the three travel modes and the submit button", () => {
   const html = renderToStaticMarkup(<RoutePlanner variant="floating" onClose={() => {}} />);
-  for (const text of ["Рута", "Од", "До", "Автомобил", "Велосипед", "Пешки", "Најди рута"]) expect(html).toContain(text);
+  for (const text of ["Рута", "Од", "До", "Кола", "Велосипед", "Пешки", "Најди рута"]) expect(html).toContain(text);
   expect(html).not.toContain("Заобиколува"); // no result yet
 });
 

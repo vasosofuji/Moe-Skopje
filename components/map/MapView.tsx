@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 import { LAYER_IDS, LAYERS, type LayerId } from "@/lib/layers";
 import type { Feature } from "@/lib/sources/types";
 import { getCachedLayer, useLayer } from "@/lib/useLayer";
-import { muteStyle, styleUrl } from "./mapStyle";
+import { localizeLabels, muteStyle, styleUrl } from "./mapStyle";
 import { HIGHLIGHT_LAYERS, hitLayersOf, removeOverlay, renderLayer, setOverlay } from "./renderLayer";
 import { renderRoadworks } from "./roadworksLayer";
 
@@ -146,7 +146,7 @@ export function MapView({
   onReady(map: MapLibreMap | undefined): void;
   onTileError(): void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { map, select, location, highlight, setHighlight } = useMap();
   const container = useRef<HTMLDivElement>(null);
   const appliedDark = useRef<boolean | null>(null);
@@ -170,6 +170,7 @@ export function MapView({
   });
   const initialDark = useEffectEvent(() => dark);
   const reportMap = useEffectEvent(onReady);
+  const reportNoWorker = useEffectEvent(onTileError);
 
   useEffect(() => {
     let m: MapLibreMap | undefined;
@@ -177,6 +178,10 @@ export function MapView({
     void import("maplibre-gl").then(({ Map: MapLibre, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
       setWorkerUrl(WORKER_URL);
+      // A missing worker file (install hook skipped) would leave a dead map; say so with the same toast as a tile outage.
+      fetch(WORKER_URL, { method: "HEAD" })
+        .then((r) => !cancelled && !r.ok && reportNoWorker())
+        .catch(() => !cancelled && reportNoWorker());
       appliedDark.current = initialDark();
       m = new MapLibre({
         container: container.current,
@@ -203,6 +208,16 @@ export function MapView({
       reportMap(undefined);
     };
   }, []);
+
+  // Labels in one script, the app's language: on every style load (styleKey) and when the language changes.
+  useEffect(() => {
+    if (!map || styleKey === 0) return;
+    try {
+      localizeLabels(map, lang);
+    } catch {
+      // A theme switch is reloading the style; its style.load bumps styleKey and re-runs this.
+    }
+  }, [map, lang, styleKey]);
 
   // Theme change: a full reload (diff: false) so style.load fires and our layers are added back.
   useEffect(() => {
@@ -238,9 +253,13 @@ export function MapView({
     void import("maplibre-gl").then(({ AttributionControl }) => {
       if (cancelled) return;
       const link = `<a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">${t("route.fixTheMap")}</a>`;
-      const ctrl = new AttributionControl({ customAttribution: link });
-      map.addControl(ctrl);
+      // Compact, bottom-right, and collapsed: MapLibre opens a compact control by default, so close it right after adding.
+      const ctrl = new AttributionControl({ compact: true, customAttribution: link });
+      map.addControl(ctrl, "bottom-right");
       control = ctrl;
+      const el = map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+      el?.classList.remove("maplibregl-compact-show");
+      el?.removeAttribute("open");
     });
     return () => {
       cancelled = true;
@@ -256,10 +275,11 @@ export function MapView({
     <div
       role="region"
       aria-label={t("map.region")}
-      className={cx("absolute inset-0 transition-opacity duration-700", ready ? "opacity-100" : "opacity-0")}
+      // The region carries the style's own background so a slow first paint shows dark grey / map beige, not black.
+      className={cx("absolute inset-0", dark ? "bg-[#1c1c1e]" : "bg-[#f2f2f7]")}
     >
       {/* MapLibre puts an unlayered position: relative on its container, so this inner div only sizes it. */}
-      <div ref={container} className="h-full w-full" />
+      <div ref={container} className={cx("h-full w-full transition-opacity duration-700", ready ? "opacity-100" : "opacity-0")} />
       {map && styleKey > 0 && (
         <>
           {LAYER_IDS.map((id) => (

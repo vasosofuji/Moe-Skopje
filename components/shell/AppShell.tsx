@@ -15,7 +15,7 @@ import { MarkerCard } from "@/components/map/MarkerCard";
 import { Onboarding } from "@/components/onboarding/Onboarding";
 import { RoutePlanner } from "@/components/route/RoutePlanner";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
-import { cx } from "@/lib/cx";
+import { cx, focusRing } from "@/lib/cx";
 import { useT, type Dict } from "@/lib/i18n";
 import { HIDDEN_LAYERS } from "@/lib/layers";
 import { usePrefs } from "@/lib/prefs";
@@ -153,7 +153,7 @@ export function AppShell() {
   const closeCard = useCallback(() => select(null), []);
   const closeRoute = useCallback(() => setRouteOpen(false), []);
   // Where the route planner lives: a floating panel above the chat bar on desktop (see below), otherwise the top of the Explore
-  // content, as a "Route" button that unfolds into the planner. A phone sheet drops to its peek while a point is tapped on the map.
+  // content, as a compact "Route" pill that unfolds into the planner. A phone sheet drops to its peek while a point is tapped on the map.
   const routeSlot =
     !isDesktop && tab === "explore" ? (
       routeOpen ? (
@@ -164,10 +164,15 @@ export function AppShell() {
           onPicking={(on) => !isWide && setSnap(on ? SNAPS[0] : SNAPS[1])}
         />
       ) : (
-        <GlassButton size="sm" onClick={() => setRouteOpen(true)} className="mb-4 w-full">
-          <RouteIcon size={18} aria-hidden />
+        // A compact pill in the header row, right of the title: the collapsed sheet keeps "Today" in view.
+        <button
+          type="button"
+          onClick={() => setRouteOpen(true)}
+          className={cx("glass glass-pill glass-button t-footnote absolute top-0 right-0 z-10 h-9 min-h-9 gap-1.5 px-3 font-semibold select-none", focusRing)}
+        >
+          <RouteIcon size={16} aria-hidden />
           {t("route.title")}
-        </GlassButton>
+        </button>
       )
     ) : null;
   // The chat bar is centred in the map that the sidebar leaves free and is at most 560 px wide (88 px of margin each side).
@@ -201,8 +206,10 @@ export function AppShell() {
                       </>
                     }
                   >
-                    {routeSlot}
-                    <Panel tab={panelTab} onCitation={onCitation} />
+                    <div className="relative">
+                      {routeSlot}
+                      <Panel tab={panelTab} onCitation={onCitation} />
+                    </div>
                   </Sidebar>
                 ) : (
                   <>
@@ -221,8 +228,10 @@ export function AppShell() {
                       </GlassButton>
                     </div>
                     <BottomSheet snap={snap} onSnap={setSnap} title={t(`tab.${tab}`)}>
-                      {routeSlot}
-                      <Panel tab={tab} onCitation={onCitation} />
+                      <div className="relative">
+                        {routeSlot}
+                        <Panel tab={tab} onCitation={onCitation} />
+                      </div>
                     </BottomSheet>
                   </>
                 )}

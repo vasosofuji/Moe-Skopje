@@ -1,4 +1,4 @@
-import type { Map as MapLibreMap } from "maplibre-gl";
+import type { ExpressionSpecification, Map as MapLibreMap } from "maplibre-gl";
 
 export const styleUrl = (dark: boolean) => `https://tiles.openfreemap.org/styles/${dark ? "dark" : "positron"}`;
 
@@ -22,5 +22,25 @@ export function muteStyle(map: MapLibreMap, dark: boolean): void {
     } else if (type === "line" && ROAD.test(id) && !NOT_ROAD.test(id)) {
       map.setPaintProperty(id, "line-color", p.road);
     }
+  }
+}
+
+/** MapLibre `text-field` that shows one script: the app language's name, then the next best the tiles carry. */
+export function labelField(lang: "mk" | "en"): ExpressionSpecification {
+  return lang === "mk"
+    ? ["coalesce", ["get", "name:mk"], ["get", "name"]]
+    : ["coalesce", ["get", "name:en"], ["get", "name:latin"], ["get", "name"]];
+}
+
+/**
+ * Points every named label of the basemap at labelField(lang). Run on every style.load and when the language changes.
+ * Symbol layers that show something else (road shields, house numbers, icon-only layers) are left alone.
+ */
+export function localizeLabels(map: MapLibreMap, lang: "mk" | "en"): void {
+  const field = labelField(lang);
+  for (const { id, type } of map.getStyle().layers) {
+    if (type !== "symbol") continue;
+    const current = map.getLayoutProperty(id, "text-field");
+    if (current && JSON.stringify(current).includes("name")) map.setLayoutProperty(id, "text-field", field);
   }
 }

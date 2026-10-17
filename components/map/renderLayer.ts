@@ -85,7 +85,7 @@ function layersFor(id: LayerId, src: string, resolve: Resolve): (Layer & { befor
           "heatmap-intensity": HEAT_INTENSITY,
           "heatmap-radius": ["interpolate", ["exponential", 2], ["zoom"], 10, r12 / 4, 14, r12 * 4],
           "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, clear(resolve(AQI_COLORS[0])), 0.02, clear(resolve(AQI_COLORS[0])), ...ramp],
-          "heatmap-opacity": byZoom(FADE[0], 0.55, FADE[1], 0),
+          "heatmap-opacity": byZoom(FADE[0], 0.4, FADE[1], 0),
         },
       } as Layer,
       {
@@ -143,15 +143,16 @@ function layersFor(id: LayerId, src: string, resolve: Resolve): (Layer & { befor
   }
 
   if (id === "buses") {
-    // Stops only (spec §11.6): small indigo dots across the city, a little larger at street level.
+    // Stops only (spec §11.6): indigo dots from zoom 14, a little larger at street level.
     return [
       {
         id: "buses-circle",
         type: "circle",
         source: src,
         filter: isType("Point"),
+        minzoom: 14, // hundreds of stops would drown the outage highlights at city zoom
         paint: {
-          "circle-radius": byZoom(11, 1.5, 14, 4, 16, 6),
+          "circle-radius": byZoom(14, 4, 16, 6),
           "circle-color": color,
           "circle-stroke-color": "#ffffff",
           "circle-stroke-width": byZoom(11, 0.5, 14, 1.5),

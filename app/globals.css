@@ -285,7 +285,8 @@ body {
 @media (prefers-reduced-transparency: reduce) {
   .shell .maplibregl-ctrl.maplibregl-ctrl-attrib { background: var(--glass-bg-solid); backdrop-filter: none; }
 }
-/* Phones: the bottom edge belongs to the sheet and tab bar, so attribution moves under the locate button. */
+/* Compact (i), bottom-right. Phones: the sheet and tab bar own the bottom edge, so it sits just above the sheet's peek
+   (BottomSheet PEEK, 100px, measured above --tab-zone). Wider screens: the corner is clear of the chat bar and locate button. */
 @media (max-width: 767px) {
-  .shell .maplibregl-ctrl-bottom-right { top: calc(env(safe-area-inset-top) + 116px); bottom: auto; }
+  .shell .maplibregl-ctrl-bottom-right { bottom: calc(var(--tab-zone) + 100px); }
 }

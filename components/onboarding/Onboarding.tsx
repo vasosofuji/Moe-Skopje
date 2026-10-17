@@ -2,7 +2,7 @@
 
 import { Check, ChevronLeft, LocateFixed } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Glass } from "@/components/glass/Glass";
 import { GlassButton } from "@/components/glass/GlassButton";
 import { useMap } from "@/components/map/MapView";
@@ -16,6 +16,14 @@ const STEPS = 3;
 const LANGS: Lang[] = ["mk", "en"];
 
 const primary = "w-full bg-(--system-blue) text-white";
+
+// Each step is remounted (keyed), so its Body starts scrolled to the top. Footer stays pinned and clears the home indicator.
+const Body = ({ children }: { children: ReactNode }) => (
+  <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pt-4 pb-4">{children}</div>
+);
+const Footer = ({ children }: { children: ReactNode }) => (
+  <div className="flex shrink-0 flex-col gap-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+20px)]">{children}</div>
+);
 
 /**
  * First run, full screen over the map: (a) language, (b) layers, (c) optional location. Finishing sets `onboarded`.
@@ -49,10 +57,10 @@ export function Onboarding() {
         role="dialog"
         aria-modal
         aria-labelledby="onboarding-title"
-        className="flex h-full flex-col overflow-y-auto rounded-none border-0 px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+24px)]"
+        className="flex h-full flex-col overflow-hidden rounded-none border-0 px-6 pt-[calc(env(safe-area-inset-top)+16px)]"
       >
-        <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col">
-          <div className="flex h-11 items-center justify-between">
+        <div className="mx-auto flex min-h-0 w-full max-w-[440px] flex-1 flex-col">
+          <div className="flex h-11 shrink-0 items-center justify-between">
             {step > 0 ? (
               <button
                 type="button"
@@ -85,10 +93,11 @@ export function Onboarding() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -32 }}
               transition={spring}
-              className="flex flex-1 flex-col gap-6 pt-8"
+              className="flex min-h-0 flex-1 flex-col pt-4"
             >
               {step === 0 && (
                 <>
+                  <Body>
                   <div className="flex flex-col items-start gap-2">
                     <h1 id="onboarding-title" className="t-large-title text-balance">
                       {t("onboarding.welcome")}
@@ -115,14 +124,18 @@ export function Onboarding() {
                       </button>
                     ))}
                   </div>
-                  <GlassButton onClick={() => setStep(1)} className={cx(primary, "mt-auto")}>
-                    {t("common.continue")}
-                  </GlassButton>
+                  </Body>
+                  <Footer>
+                    <GlassButton onClick={() => setStep(1)} className={primary}>
+                      {t("common.continue")}
+                    </GlassButton>
+                  </Footer>
                 </>
               )}
 
               {step === 1 && (
                 <>
+                  <Body>
                   <div className="flex flex-col gap-2">
                     <h1 id="onboarding-title" className="t-large-title text-balance">
                       {t("onboarding.layersTitle")}
@@ -130,18 +143,20 @@ export function Onboarding() {
                     <p className="t-body text-label-2">{t("onboarding.layersBody")}</p>
                   </div>
                   <LayerGrid value={layers} onChange={setLayers} />
-                  <GlassButton onClick={() => setStep(2)} className={cx(primary, "mt-auto")}>
-                    {t("common.continue")}
-                  </GlassButton>
+                  </Body>
+                  <Footer>
+                    <GlassButton onClick={() => setStep(2)} className={primary}>
+                      {t("common.continue")}
+                    </GlassButton>
+                  </Footer>
                 </>
               )}
 
               {step === 2 && (
                 <>
+                  <Body>
                   <div className="flex flex-col items-start gap-4">
-                    <span className="flex size-[72px] items-center justify-center rounded-full bg-(--system-blue)/12 text-(--system-blue)">
-                      <LocateFixed size={34} aria-hidden />
-                    </span>
+                    <LocateFixed size={34} aria-hidden className="text-(--system-blue)" />
                     <h1 id="onboarding-title" className="t-large-title text-balance">
                       {t("onboarding.locationTitle")}
                     </h1>
@@ -152,7 +167,8 @@ export function Onboarding() {
                       </p>
                     )}
                   </div>
-                  <div className="mt-auto flex flex-col gap-2">
+                  </Body>
+                  <Footer>
                     {location === "denied" ? (
                       <GlassButton onClick={finish} className={primary}>
                         {t("onboarding.start")}
@@ -167,7 +183,7 @@ export function Onboarding() {
                         </GlassButton>
                       </>
                     )}
-                  </div>
+                  </Footer>
                 </>
               )}
             </motion.div>
