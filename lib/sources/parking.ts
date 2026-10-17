@@ -1,34 +1,34 @@
-// Baked OSM parking plus the City Parking zone price (data/seed/parking-zones.json). No lib/server imports (tsx).
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { municipalities, municipalityAt, staticAdapter } from "./static";
+// The `parking` layer (spec §11.7): City Parking's zone polygons, baked by scripts/bake-parking.ts into
+// data/static/parking-zones.geojson (zone list from gradskiparking.com.mk matched to OSM streets, buffered, unioned). No lib/server imports (tsx).
+import { loadSeed } from "./seed";
+import { readStatic } from "./static";
 import type { Adapter, Feature } from "./types";
 
-type Zones = { zones: { zone: string; pricePerHour: number; municipalities: string[] }[] };
-
-const PAID_ELSEWHERE = new Set(["private", "customers", "delivery", "no"]);
+type ZoneProps = { zone: string; color: string; title: { mk: string; en: string }; price?: number };
 
 export function parkingAdapter(): Adapter {
-  const base = staticAdapter("parking", "parking.geojson", "parking", {
-    source: { name: "OpenStreetMap, City Parking Skopje", url: "https://www.gradskiparking.com.mk/" },
-  });
   return {
-    ...base,
+    id: "parking",
+    ttl: 86400,
+    static: true,
+    minFeatures: 1,
+    source: { name: "Градски паркинг Скопје", url: "https://www.gradskiparking.com.mk/zonsko-parking-zoni.nspx" },
     async fetch() {
-      const [features, munis, zones] = await Promise.all([
-        base.fetch(),
-        municipalities(),
-        readFile(join(process.cwd(), "data", "seed", "parking-zones.json"), "utf8").then((s) => JSON.parse(s) as Zones),
-      ]);
-      return features.map((f): Feature => {
-        const d = f.properties.detail;
-        if (f.geometry.type !== "Point" || d?.fee === "no" || PAID_ELSEWHERE.has(String(d?.access))) return f;
-        const [lng, lat] = f.geometry.coordinates;
-        const muni = municipalityAt(munis, lng, lat);
-        const zone = zones.zones.find((z) => muni && z.municipalities.includes(muni));
-        if (!zone) return f;
-        return { ...f, properties: { ...f.properties, detail: { ...d, zone: zone.zone, zonePrice: zone.pricePerHour } } };
-      });
+      const fc = JSON.parse(await readStatic("parking-zones.geojson")) as GeoJSON.FeatureCollection<GeoJSON.Geometry, ZoneProps>;
+      return fc.features.map(
+        ({ geometry, properties: p }): Feature => ({
+          type: "Feature",
+          geometry,
+          properties: {
+            id: `parking-zone:${p.zone}`,
+            kind: "parking-zone",
+            title: p.title,
+            ...(p.price === undefined ? {} : { value: p.price, unit: "МКД/час" }),
+            detail: { zone: p.zone, color: p.color },
+          },
+        }),
+      );
     },
+    seed: () => loadSeed("parking"),
   };
 }

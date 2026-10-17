@@ -22,7 +22,7 @@ test("baked layers resolve as static; buses merge stops and routes", async () =>
   for (const l of [buses, parking, schools]) expect(l.status).toBe("static");
   const kinds = new Set(buses.features.features.map((f) => f.properties?.kind));
   expect(kinds).toEqual(new Set(["bus-stop", "bus-route"]));
-  expect(parking.features.features.length).toBeGreaterThan(100);
+  expect(parking.features.features.map((f) => f.properties?.kind)).toEqual(Array(5).fill("parking-zone")); // zone polygons, not OSM lots
 });
 
 test("water: announcements for today that name no place serve the seed (demo data), not an empty live layer", async () => {

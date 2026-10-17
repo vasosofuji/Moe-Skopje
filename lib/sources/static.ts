@@ -16,6 +16,8 @@ const readBaked: Reader = (file) => readFile(join(process.cwd(), "data", "static
 let read: Reader = readBaked;
 /** Test hook: serve the data/static files from somewhere else. Call without an argument to restore the baked files. */
 export const setStaticReader = (reader: Reader = readBaked) => void (read = reader);
+/** Text of a baked file in data/static, for adapters whose files are not plain OSM points (parking zones). */
+export const readStatic = (file: string) => read(file);
 
 // Macedonian Cyrillic → Latin, used for `title.en` when OSM has no `name:en`.
 const LATIN: Record<string, string> = {
@@ -36,7 +38,6 @@ export function toLatin(s: string): string {
 const UNNAMED: Record<string, { mk: string; en: string }> = {
   "bus-stop": { mk: "Автобуска постојка", en: "Bus stop" },
   "bus-route": { mk: "Линија", en: "Line" },
-  parking: { mk: "Паркинг", en: "Parking" },
   pharmacy: { mk: "Аптека", en: "Pharmacy" },
   school: { mk: "Училиште", en: "School" },
 };

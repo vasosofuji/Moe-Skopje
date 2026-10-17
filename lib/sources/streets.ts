@@ -15,7 +15,8 @@ export type StreetCollection = GeoJSON.FeatureCollection<GeoJSON.MultiLineString
 // "ул.", "бул." and friends, after normalizeName (so "Ul." and "Bul." arrive here as "ул" and "бул" too).
 const PREFIX = new Set(["ул", "улица", "бул", "булев", "булевар"]);
 
-const tokens = (s: string) => normalizeName(s).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+// "23ти" and "23-ти" are both "23", "ти": a digit run ends where the letters start.
+const tokens = (s: string) => normalizeName(s).replace(/(\d)(?=\p{L})/gu, "$1 ").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
 /**
  * The matching key of a street name: lowercase Cyrillic words (numbers kept) without the ул./бул./булевар prefix.

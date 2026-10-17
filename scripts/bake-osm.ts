@@ -153,11 +153,6 @@ const DATASETS: Record<string, Dataset> = {
         ? base(f, rounded(f.geometry), ["ref", "from", "to", "operator", "network"])
         : null,
   },
-  parking: {
-    file: "parking.geojson",
-    query: q(`nwr["amenity"="parking"](${BBOX});`, "out center;"),
-    pick: point(["parking", "fee", "capacity", "access", "operator"]),
-  },
   pharmacies: {
     file: "pharmacies.geojson",
     query: q(`nwr["amenity"="pharmacy"](${BBOX});`, "out center;"),

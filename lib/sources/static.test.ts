@@ -55,14 +55,24 @@ test("municipalities() returns exactly the 10 baked polygons", async () => {
   expect(fc.features.every((f) => /Polygon/.test(f.geometry.type) && f.properties.name_en)).toBe(true);
 });
 
-test("baked datasets validate; parking in Центар gets the zone A price", async () => {
+test("baked datasets validate; parking is the five City Parking zone polygons with colour and price", async () => {
   const parking = await parkingAdapter().fetch();
-  expect(parking.length).toBeGreaterThan(100);
-  expect(parking.every((f) => FeatureSchema.safeParse(f).success)).toBe(true);
-  expect(parking.find((f) => f.properties.detail?.zone === "A")?.properties.detail?.zonePrice).toBe(40);
+  expect(parking.map((f) => f.properties.detail?.zone)).toEqual(["A0", "A", "B", "C", "D"]);
+  expect(parking.every((f) => FeatureSchema.safeParse(f).success && /Polygon/.test(f.geometry.type))).toBe(true);
+  const a = parking.find((f) => f.properties.detail?.zone === "A")!;
+  expect(a.properties).toMatchObject({ id: "parking-zone:A", kind: "parking-zone", title: { mk: "Црвена зона (А)", en: "Red zone (A)" }, value: 40, unit: "МКД/час", detail: { zone: "A", color: "#FF3B30" } });
+  const a0 = parking.find((f) => f.properties.detail?.zone === "A0")!;
+  expect(a0.properties.value).toBeUndefined(); // the price list has no A0 price
   const buses = await staticBuses().fetch();
   expect(buses.filter((f) => f.properties.kind === "bus-stop").length).toBeGreaterThan(300);
   expect(buses.some((f) => f.properties.kind === "bus-route")).toBe(true);
+});
+
+test("parkingAdapter is a static layer of the baked zone file; an empty file counts as a failed fetch", async () => {
+  const a = parkingAdapter();
+  expect(a).toMatchObject({ id: "parking", static: true, minFeatures: 1, source: { name: "Градски паркинг Скопје" } });
+  setStaticReader(async () => JSON.stringify({ type: "FeatureCollection", features: [] }));
+  expect(await a.fetch()).toEqual([]); // minFeatures 1 makes getLayer fall back
 });
 
 test("setStaticReader() with no argument goes back to the baked files", async () => {

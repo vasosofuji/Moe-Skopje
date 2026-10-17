@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "check:sources": "tsx scripts/check-sources.ts",
-    "bake:osm": "tsx scripts/bake-osm.ts"
+    "bake:osm": "tsx scripts/bake-osm.ts",
+    "bake:parking": "tsx scripts/bake-parking.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
@@ -35,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "osmtogeojson": "^3.0.0-beta.5",
+    "polygon-clipping": "^0.15.7",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",

@@ -168,6 +168,15 @@ test("locateStreets takes the notice's own municipality first, a border street w
   expect(locateStreets("нема улици", "Карпош")).toEqual([]);
 });
 
+test("findStreets reads '23ти Октомври', '23-ти Октомври' and '23 - ти октомври' as one street", () => {
+  setStreets({ type: "FeatureCollection", features: [street("23-ти Октомври", "Аеродром", 21.45), street("Булевар 8-ми Септември", "Карпош", 21.4)] });
+  for (const text of ["ул. 23ти Октомври", "ул. „23-ти Октомври“", "23 - ти октомври бр. 4"]) {
+    expect(names(findStreets(text)), text).toEqual(["23-ти Октомври/Аеродром"]);
+  }
+  expect(names(findStreets("8 - ми Септември"))).toEqual(["Булевар 8-ми Септември/Карпош"]);
+  expect(findStreets("23 октомври")).toEqual([]); // the date, not the street
+});
+
 test("findStreets is [] for empty text", () => {
   setStreets(FIXTURE);
   expect(findStreets("")).toEqual([]);
