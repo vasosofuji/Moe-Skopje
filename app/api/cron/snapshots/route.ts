@@ -5,7 +5,7 @@ import { loadGtfs } from "@/lib/sources/gtfs";
 import { registry } from "@/lib/sources/registry";
 
 // Sequential on purpose (one source at a time, gentle on the upstreams), so give the whole run room.
-export const maxDuration = 300;
+export const maxDuration = 60; // Vercel Hobby cap; each layer is time-boxed and failures are per-layer
 
 /** Layers with something to snapshot: everything except the baked datasets. */
 const refreshable = () => (Object.keys(registry) as LayerId[]).filter((id) => !registry[id]?.static);

@@ -22,4 +22,4 @@
 - **Honesty:** each layer falls back from live to last-good snapshot to clearly labelled demo data. Nothing fabricated is shown as live.
 - **EVN:** their only outage endpoint returns 404 for everyone today; the adapter keeps polling and goes live on its own when it returns.
 - **Live bus GPS:** the vehicle API exists but needs a key. With `MODESHIFT_API_KEY` set, the badge switches to "Во живо".
-- **Stack:** Next.js on Vercel (fra1), MapLibre + OpenFreeMap, Valhalla routing, Claude (`claude-opus-5-5`) with tool use over the live layers.
+- **Stack:** Next.js on Vercel (fra1), MapLibre + OpenFreeMap, Valhalla routing, Claude (`claude-sonnet-5-5`) with tool use over the live layers.

@@ -11,7 +11,7 @@ import type { Feature, LayerResponse } from "@/lib/sources/types";
 import { getLayer } from "./layer";
 
 // Spec §5.5. Every tool is read-only: nothing the model says can change data.
-export const MODEL = "claude-opus-5-5";
+export const MODEL = "claude-sonnet-5-5";
 export const ASSISTANT_PER_HOUR = 20;
 const HOUR_MS = 60 * 60 * 1000;
 const MAX_FEATURES = 15;
