@@ -1,0 +1,100 @@
+/* One layout system for the chrome over the map: safe areas, gutters, bar sizes, the free map area and the z-index
+   scale. Chrome positions itself with these (top-(--map-t), z-(--z-bar), ...) instead of its own numbers, so two pieces
+   of chrome never claim the same spot. Breakpoints match AppShell: phones < 768 px, tablets 768-1023, desktop >= 1024. */
+:root {
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  --gutter: 16px;
+  --gap: 8px;
+  --control: 48px; /* a map control (GlassButton md circle) */
+  --search-h: 48px;
+  --search-t: calc(var(--safe-t) + 12px);
+  --tabbar-h: calc(49px + var(--safe-b)); /* the solid tab bar; the phone sheet rests on top of it */
+  --tab-zone: var(--tabbar-h); /* older name, still read by globals.css and BottomSheet */
+  --sheet-peek: 100px; /* BottomSheet's PEEK */
+  --ask-h: 56px;
+  --attrib-h: 24px; /* MapLibre's compact attribution */
+  --float-w: 420px; /* the widest a floating pill (bus tracker) gets */
+
+  /* The free map area, gutter included: what floats over the map stays inside it. Phones: under the search row and
+     above the sheet's peek. */
+  --map-t: calc(var(--search-t) + var(--search-h) + var(--gap));
+  --map-r: calc(var(--safe-r) + var(--gutter));
+  --map-b: calc(var(--tabbar-h) + var(--sheet-peek) + var(--gap));
+  --map-l: calc(var(--safe-l) + var(--gutter));
+  /* The map controls stack grows up from here; the attribution sits in the same row, at the left. */
+  --controls-b: var(--map-b);
+  --attrib-b: calc(var(--controls-b) + (var(--control) - var(--attrib-h)) / 2);
+
+  --z-map: 0;
+  --z-chrome: 10; /* map controls */
+  --z-cards: 20; /* bus tracker */
+  --z-sheet: 30; /* phone sheet, sidebar */
+  --z-bar: 40; /* tab bar, phone search row, desktop ask bar */
+  --z-overlay: 50; /* onboarding */
+  --z-toast: 60;
+
+  --bar-bg: #f9f9f9;
+  --bar-hairline: rgb(0 0 0 / .3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bar-bg: #161617;
+    --bar-hairline: rgb(255 255 255 / .15);
+  }
+}
+:root[data-theme="dark"] {
+  --bar-bg: #161617;
+  --bar-hairline: rgb(255 255 255 / .15);
+}
+
+/* Tablets: a sidebar on the left that ends above the tab bar. */
+@media (min-width: 768px) {
+  :root {
+    --sidebar-w: 360px;
+    --sidebar-l: calc(var(--safe-l) + var(--gutter));
+    --sidebar-r: calc(var(--sidebar-l) + var(--sidebar-w));
+    --float-w: 340px;
+    --map-t: calc(var(--safe-t) + var(--gutter));
+    --map-l: calc(var(--sidebar-r) + var(--gutter));
+    --map-b: calc(var(--tabbar-h) + var(--gutter));
+    --sidebar-b: var(--map-b);
+  }
+}
+
+/* Desktop: full-height sidebar, no tab bar. From the bottom: the attribution, the ask bar, then the controls stack.
+   The ask bar keeps --ask-inset clear on both sides, so neither it nor what unfolds from it reaches the controls. */
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 20px;
+    --sidebar-w: 380px;
+    --sidebar-b: calc(var(--safe-b) + var(--gutter));
+    --map-b: calc(var(--safe-b) + 16px);
+    --attrib-b: var(--map-b);
+    --ask-b: calc(var(--map-b) + var(--attrib-h) + var(--gap));
+    --ask-inset: calc(var(--map-r) + var(--control) + var(--gap));
+    --controls-b: calc(var(--ask-b) + var(--ask-h) + var(--gap));
+  }
+}
+
+/* The phone sheet's place in the scale (BottomSheet's container is the parent of vaul's drawer). Unlayered, so it
+   outranks the container's z utility. */
+.shell div:has(> [data-vaul-drawer]) { z-index: var(--z-sheet); }
+
+/* MapLibre's attribution (MapView adds it bottom-left): compact, inside the free map area, never under the sheet, and
+   never wider than the room left of the controls. Unlayered, like MapLibre's own stylesheet. */
+.shell .maplibregl-ctrl-bottom-left {
+  left: var(--map-l);
+  bottom: var(--attrib-b);
+  transition: opacity .15s;
+}
+/* A raised phone sheet covers its row: it steps aside with the map controls. */
+.shell[data-raised] .maplibregl-ctrl-bottom-left { opacity: 0; visibility: hidden; }
+.shell .maplibregl-ctrl-bottom-left .maplibregl-ctrl.maplibregl-ctrl-attrib {
+  margin: 0;
+  max-width: calc(100vw - var(--map-l) - var(--map-r) - var(--control) - var(--gap));
+}

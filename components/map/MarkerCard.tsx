@@ -3,7 +3,7 @@
 import { Clock, ExternalLink, X } from "lucide-react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { motion } from "motion/react";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { StatusBadge } from "@/components/glass/StatusBadge";
 import { cx, focusRing } from "@/lib/cx";
 import { pick, useT, type Dict, type Lang } from "@/lib/i18n";
@@ -93,9 +93,9 @@ function detailValue(key: string, v: string | number, d: Record<string, string |
 }
 
 /**
- * Details of the selected feature. On desktop it floats above (or below) the feature and follows it as the map moves;
- * on phones it docks under the search pill. Either way it scales in from the feature's point.
- * Remount it per feature (key) so it measures the new point.
+ * Details of the selected feature. `docked`: part of the panel it belongs to, at the top of the phone sheet or the
+ * sidebar (AppShell always docks it). Otherwise it floats above (or below) the feature, follows it as the map moves and
+ * scales in from its point. Remount it per feature (key) so it measures the new point.
  */
 export function MarkerCard({
   feature,
@@ -129,6 +129,12 @@ export function MarkerCard({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Docked at the top of a panel that may be scrolled down: bring it into view.
+  const article = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (docked) article.current?.scrollIntoView({ block: "nearest" });
+  }, [docked]);
+
   const layer = layerOf(feature);
   const meta = layer && LAYERS[layer.id as LayerId];
   const p = feature.properties;
@@ -154,27 +160,27 @@ export function MarkerCard({
         width: WIDTH,
         transform: `translate(-50%, ${below ? `${GAP}px` : `calc(-100% - ${GAP}px)`})`,
       };
-  const origin = docked ? `${point.x - 12}px 0px` : `${point.x - x + half}px ${below ? "0%" : "100%"}`;
+  const origin = docked ? "50% 0%" : `${point.x - x + half}px ${below ? "0%" : "100%"}`;
   // A floating card never runs off the screen: it gets the room between the point and the edge, and scrolls inside.
   const room = Math.round((below ? box.height - point.y : point.y) - GAP - 16);
   const maxHeight = docked ? undefined : `min(60dvh, ${Math.max(160, room)}px)`;
 
   return (
-    <div
-      style={style}
-      className={cx(
-        "fixed z-30",
-        docked && "inset-x-3 top-[calc(env(safe-area-inset-top)+68px)] mx-auto max-w-[420px]",
-      )}
-    >
+    <div style={style} className={cx(!docked && "fixed z-(--z-cards)")}>
       <motion.article
+        ref={article}
         aria-label={pick(p.title, lang)}
-        initial={{ opacity: 0, scale: 0.6 }}
+        data-detent={docked || undefined} // the phone sheet's middle detent ends under the card
+        initial={{ opacity: 0, scale: docked ? 0.96 : 0.6 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.6 }}
+        exit={{ opacity: 0, scale: docked ? 0.96 : 0.6 }}
         transition={spring}
         style={{ transformOrigin: origin, maxHeight }}
-        className="glass glass-card flex max-h-[60dvh] flex-col gap-3 overflow-y-auto"
+        // Docked, it is a tile of its panel (same fill and hairline as the Today tiles); the panel scrolls, not the card.
+        className={cx(
+          "flex flex-col gap-3",
+          docked ? "mb-4 scroll-mt-4 rounded-card border-[0.5px] border-(--glass-stroke) bg-(--tile) p-4" : "glass glass-card max-h-[60dvh] overflow-y-auto",
+        )}
       >
         <header className="flex items-start gap-3">
           <span

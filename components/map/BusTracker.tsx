@@ -20,19 +20,15 @@ const JUMP_DEG = 0.02; // about 2 km: further than a bus goes between two fixes,
 /**
  * Follows one trip on the map: its route drawn faintly, a glass bus marker with the line number gliding between the 10 s
  * fixes, and a small panel saying whether the position is live GPS or estimated from the timetable. Remount per trip (key).
- * `floating`: centred over the free part of the map (tablet, desktop); otherwise docked under the search pill.
+ * The parent places the panel (AppShell: under the search row on phones, top of the free map area on wider screens).
  */
 export function BusTracker({
   trip,
   map,
-  floating,
-  insetLeft = 0,
   onClose,
 }: {
   trip: Trip;
   map: MapLibreMap;
-  floating: boolean;
-  insetLeft?: number;
   onClose(): void;
 }) {
   const { t } = useT();
@@ -138,7 +134,6 @@ export function BusTracker({
   );
 
   const live = fix?.source === "live";
-  const style: CSSProperties = floating ? { left: `calc(${insetLeft}px + (100vw - ${insetLeft}px) / 2)`, width: 340 } : {};
 
   return (
     <motion.section
@@ -147,11 +142,7 @@ export function BusTracker({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={spring}
-      style={style}
-      className={cx(
-        "glass fixed z-20 flex items-center gap-1 rounded-card p-1.5 pl-2.5",
-        floating ? "top-4 -translate-x-1/2" : "top-[calc(env(safe-area-inset-top)+68px)] right-[64px] left-3",
-      )}
+      className="glass pointer-events-auto flex w-full max-w-(--float-w) shrink-0 items-center gap-1 rounded-card p-1.5 pl-2.5"
     >
       <button
         type="button"

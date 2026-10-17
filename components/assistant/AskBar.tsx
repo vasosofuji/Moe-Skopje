@@ -75,14 +75,13 @@ export function AskBar({ left, onCitation }: { left: number; onCitation(c: Citat
   return (
     <div
       ref={root}
-      style={{ left }}
       onKeyDown={(e) => {
         if (e.key !== "Escape") return;
         e.stopPropagation(); // Esc here is the bar's, not the marker card's
         if (view) setView(null);
         else field.current?.blur();
       }}
-      className="pointer-events-none fixed right-0 bottom-12 z-20 flex justify-center px-[88px]"
+      className="pointer-events-none fixed right-(--safe-r) bottom-(--ask-b) left-(--sidebar-r) z-(--z-bar) flex justify-center px-(--ask-inset)"
     >
       <div className="pointer-events-auto relative w-full max-w-[560px]">
         <AnimatePresence>
