@@ -142,4 +142,11 @@ export const mk = {
   "air.stations": "Мерни станици ({n})",
   "air.official": "Официјална",
   "air.trend": "PM10, последни 7 дена (дневен просек)",
+
+  // --- Task 9: buses ---
+  "buses.next": "Следни поаѓања",
+  "buses.line": "Линија {line}",
+  "buses.none": "Нема повеќе поаѓања денес.",
+  "buses.noTimetable": "Нема распоред за линиите на оваа постојка.",
+  "buses.approximate": "Приближен распоред, не е официјален.",
 };
